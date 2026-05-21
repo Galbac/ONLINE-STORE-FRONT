@@ -1,0 +1,6 @@
+.next
+node_modules
+.git
+.idea
+npm-debug.log
+yarn-error.log

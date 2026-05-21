@@ -1,0 +1,10 @@
+.next
+node_modules
+tsconfig.tsbuildinfo
+.playwright-mcp
+homepage-*.png
+.DS_Store
+frontend_pages_api_full.md
+frontend_tz_from_openapi_actual.md
+openapi.json
+img_test/

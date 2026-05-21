@@ -1,0 +1,115 @@
+import type {
+  ProductDiscountedResponse,
+  ProductNewResponse,
+  ProductPopularResponse,
+  ProductShortResponse,
+} from "../types";
+
+const fallbackItems: ProductShortResponse[] = [
+  {
+    id: 1,
+    name: "Яблоки Гала",
+    slug: "yabloki-gala",
+    price: "129",
+    old_price: "152",
+    discount_percent: 15,
+    unit: "1 кг",
+    product_type: "piece",
+    is_available: true,
+    stock_display: "В наличии",
+  },
+  {
+    id: 2,
+    name: "Бананы",
+    slug: "banany",
+    price: "89",
+    unit: "1 кг",
+    product_type: "piece",
+    is_available: true,
+    stock_display: "В наличии",
+  },
+  {
+    id: 3,
+    name: "Клубника",
+    slug: "klubnika",
+    price: "199",
+    unit: "250 г",
+    product_type: "weight",
+    is_available: true,
+    stock_display: "В наличии",
+  },
+  {
+    id: 4,
+    name: "Апельсины",
+    slug: "apelsiny",
+    price: "119",
+    old_price: "149",
+    discount_percent: 20,
+    unit: "1 кг",
+    product_type: "piece",
+    is_available: true,
+    stock_display: "В наличии",
+  },
+  {
+    id: 5,
+    name: "Голубика",
+    slug: "golubika",
+    price: "169",
+    old_price: "199",
+    discount_percent: 15,
+    unit: "125 г",
+    product_type: "weight",
+    is_available: true,
+    stock_display: "В наличии",
+  },
+  {
+    id: 6,
+    name: "Авокадо Хасс",
+    slug: "avokado-hass",
+    price: "149",
+    unit: "1 шт.",
+    product_type: "piece",
+    is_available: true,
+    stock_display: "В наличии",
+  },
+  {
+    id: 7,
+    name: "Мандарины",
+    slug: "mandariny",
+    price: "99",
+    old_price: "109",
+    discount_percent: 10,
+    unit: "1 кг",
+    product_type: "piece",
+    is_available: true,
+    stock_display: "В наличии",
+  },
+  {
+    id: 8,
+    name: "Малина",
+    slug: "malina",
+    price: "199",
+    unit: "125 г",
+    product_type: "weight",
+    is_available: true,
+    stock_display: "В наличии",
+  },
+];
+
+export const fallbackPopularProducts: ProductPopularResponse = {
+  items: fallbackItems,
+  total: fallbackItems.length,
+};
+
+export const fallbackDiscountedProducts: ProductDiscountedResponse = {
+  items: fallbackItems.filter((item) => item.discount_percent),
+  total: fallbackItems.filter((item) => item.discount_percent).length,
+  page: 1,
+  limit: 8,
+  pages: 1,
+};
+
+export const fallbackNewProducts: ProductNewResponse = {
+  items: fallbackItems.slice().reverse(),
+  total: fallbackItems.length,
+};

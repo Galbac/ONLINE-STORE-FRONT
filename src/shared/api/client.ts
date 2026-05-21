@@ -4,6 +4,8 @@ interface ApiClientConfig {
   baseUrl: string;
 }
 
+const API_REQUEST_TIMEOUT_MS = 3000;
+
 class ApiClient {
   private readonly baseUrl: string;
 
@@ -30,6 +32,7 @@ class ApiClient {
       next: {
         revalidate: 60,
       },
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -46,6 +49,7 @@ class ApiClient {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
     };
 
     if (data !== undefined) {
@@ -67,6 +71,7 @@ class ApiClient {
       headers: {
         Accept: "application/json",
       },
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {

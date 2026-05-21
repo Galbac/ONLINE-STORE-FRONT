@@ -4,6 +4,8 @@ export const API_ENDPOINTS = {
   CATEGORY: {
     TREE: "/api/categories/tree",
     LIST: "/api/categories",
+    BY_SLUG: (slug: string): string => `/api/categories/slug/${slug}`,
+    BY_ID: (categoryId: number): string => `/api/categories/${categoryId}`,
   },
   PRODUCT: {
     POPULAR: "/api/products/popular",

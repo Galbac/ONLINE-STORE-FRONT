@@ -2,6 +2,7 @@ export interface CategoryShortResponse {
   id: number;
   name: string;
   slug: string;
+  description?: string | null;
   parent_id?: number | null;
   image_url?: string | null;
   sort_order: number;
@@ -21,4 +22,22 @@ export interface CategoryListResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface CategoryBreadcrumbResponse {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface CategorySeoResponse {
+  title?: string | null;
+  description?: string | null;
+  keywords?: string | null;
+}
+
+export interface CategoryDetailResponse extends CategoryShortResponse {
+  breadcrumbs?: CategoryBreadcrumbResponse[] | null;
+  children?: CategoryShortResponse[] | null;
+  seo?: CategorySeoResponse | null;
 }

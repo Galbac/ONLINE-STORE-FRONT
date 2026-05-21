@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
     ME: "/api/auth/me",
     REFRESH: "/api/auth/refresh",
     REGISTER: "/api/auth/register",
+    RESET_PASSWORD: "/api/auth/reset-password",
   },
   CATEGORY: {
     TREE: "/api/categories/tree",

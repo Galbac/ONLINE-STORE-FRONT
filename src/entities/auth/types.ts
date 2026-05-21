@@ -20,6 +20,12 @@ export interface ForgotPasswordRequest {
   login: string;
 }
 
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+  new_password_confirm: string;
+}
+
 export interface MessageResponse {
   message: string;
 }

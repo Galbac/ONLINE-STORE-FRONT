@@ -6,6 +6,7 @@ import type {
   MessageResponse,
   RefreshTokenRequest,
   RegisterAuthResponse,
+  ResetPasswordRequest,
   TokenPairResponse,
   UserLoginRequest,
   UserRegisterRequest,
@@ -26,6 +27,13 @@ export const authApi = {
   forgotPassword: async (data: ForgotPasswordRequest): Promise<MessageResponse> => {
     return apiClient.post<ForgotPasswordRequest, MessageResponse>(
       API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+      data,
+    );
+  },
+
+  resetPassword: async (data: ResetPasswordRequest): Promise<MessageResponse> => {
+    return apiClient.post<ResetPasswordRequest, MessageResponse>(
+      API_ENDPOINTS.AUTH.RESET_PASSWORD,
       data,
     );
   },

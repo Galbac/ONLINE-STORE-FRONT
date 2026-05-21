@@ -6,6 +6,7 @@ export type {
   MessageResponse,
   RefreshTokenRequest,
   RegisterAuthResponse,
+  ResetPasswordRequest,
   TokenPairResponse,
   UserLoginRequest,
   UserRegisterRequest,

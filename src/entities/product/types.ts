@@ -54,3 +54,22 @@ export interface ProductListResponse {
   limit: number;
   pages: number;
 }
+
+export interface ProductSearchParams {
+  q?: string;
+  page?: number;
+  limit?: number;
+  category_id?: number;
+  in_stock?: boolean;
+  has_discount?: boolean;
+  sort?: "relevance" | "price_asc" | "price_desc" | "newest" | "popular";
+}
+
+export interface ProductSearchResponse {
+  query: string;
+  items: ProductShortResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}

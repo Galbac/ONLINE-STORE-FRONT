@@ -1,9 +1,17 @@
 import { Search } from "lucide-react";
+import { ROUTES } from "@/shared/config";
 import { Button } from "@/shared/ui";
 
-export const ProductSearch = () => {
+interface ProductSearchProps {
+  defaultValue?: string | undefined;
+}
+
+export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
   return (
-    <form className="border-border bg-bg-primary flex min-w-0 flex-1 overflow-hidden rounded-lg border shadow-[0_8px_24px_rgb(22_145_13/0.08)]">
+    <form
+      className="border-border bg-bg-primary flex min-w-0 flex-1 overflow-hidden rounded-lg border shadow-[0_8px_24px_rgb(22_145_13/0.08)]"
+      action={ROUTES.SEARCH}
+    >
       <label className="sr-only" htmlFor="site-search">
         Поиск товаров
       </label>
@@ -14,6 +22,7 @@ export const ProductSearch = () => {
           id="site-search"
           name="q"
           placeholder="Поиск по товарам, категориям, брендам..."
+          defaultValue={defaultValue}
           type="search"
         />
       </div>

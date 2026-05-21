@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
     DISCOUNTED: "/api/products/discounted",
     NEW: "/api/products/new",
     LIST: "/api/products",
+    SEARCH: "/api/products/search",
   },
   DISCOUNT: {
     ACTIVE: "/api/discounts/active",

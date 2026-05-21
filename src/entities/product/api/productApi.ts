@@ -5,6 +5,8 @@ import type {
   ProductListResponse,
   ProductNewResponse,
   ProductPopularResponse,
+  ProductSearchParams,
+  ProductSearchResponse,
 } from "../types";
 
 export const productApi = {
@@ -45,6 +47,18 @@ export const productApi = {
       limit: 8,
       in_stock: true,
       days: 30,
+    });
+  },
+
+  search: async (params: ProductSearchParams = {}): Promise<ProductSearchResponse> => {
+    return apiClient.get<ProductSearchResponse>(API_ENDPOINTS.PRODUCT.SEARCH, {
+      q: params.q,
+      page: params.page ?? 1,
+      limit: params.limit ?? 24,
+      category_id: params.category_id,
+      in_stock: params.in_stock,
+      has_discount: params.has_discount,
+      sort: params.sort ?? "relevance",
     });
   },
 };

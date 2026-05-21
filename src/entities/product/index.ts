@@ -11,5 +11,7 @@ export type {
   ProductListResponse,
   ProductNewResponse,
   ProductPopularResponse,
+  ProductSearchParams,
+  ProductSearchResponse,
   ProductShortResponse,
 } from "./types";

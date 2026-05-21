@@ -2,7 +2,9 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost
 
 export const API_ENDPOINTS = {
   AUTH: {
+    LOGIN: "/api/auth/login",
     ME: "/api/auth/me",
+    REFRESH: "/api/auth/refresh",
     REGISTER: "/api/auth/register",
   },
   CATEGORY: {

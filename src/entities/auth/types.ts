@@ -7,6 +7,34 @@ export interface UserRegisterRequest {
   email?: string | null;
 }
 
+export interface UserLoginRequest {
+  login: string;
+  password: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface TokenPairResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+export interface UserShortResponse {
+  id: number;
+  name: string;
+  phone: string;
+  email: string | null;
+  role: UserRole;
+  is_active: boolean;
+}
+
+export interface AuthResponse extends TokenPairResponse {
+  user: UserShortResponse;
+}
+
 export interface RegisterAuthResponse {
   id: number;
   name: string;

@@ -16,6 +16,7 @@ class ApiClient {
   async get<TResponse>(
     url: string,
     params?: Record<string, string | number | boolean | null | undefined>,
+    headers?: HeadersInit,
   ): Promise<TResponse> {
     const requestUrl = new URL(`${this.baseUrl}${url}`);
 
@@ -28,6 +29,7 @@ class ApiClient {
     const response = await fetch(requestUrl, {
       headers: {
         Accept: "application/json",
+        ...headers,
       },
       next: {
         revalidate: 60,

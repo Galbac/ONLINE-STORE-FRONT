@@ -7,4 +7,5 @@ export const ROUTES = {
   CART: "/cart",
   FAVORITES: "/favorites",
   LOGIN: "/login",
+  REGISTER: "/register",
 } as const;

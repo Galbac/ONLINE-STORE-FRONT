@@ -1,6 +1,10 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export const API_ENDPOINTS = {
+  AUTH: {
+    ME: "/api/auth/me",
+    REGISTER: "/api/auth/register",
+  },
   CATEGORY: {
     TREE: "/api/categories/tree",
     LIST: "/api/categories",

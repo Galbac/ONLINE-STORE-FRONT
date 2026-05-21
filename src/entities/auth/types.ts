@@ -1,0 +1,32 @@
+export type UserRole = "customer" | "manager" | "admin" | string;
+
+export interface UserRegisterRequest {
+  name: string;
+  phone: string;
+  password: string;
+  email?: string | null;
+}
+
+export interface RegisterAuthResponse {
+  id: number;
+  name: string;
+  phone: string;
+  email: string | null;
+  role: UserRole;
+  is_active: boolean;
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+export interface CurrentUserResponse {
+  id: number;
+  name: string;
+  phone: string;
+  email: string | null;
+  role: UserRole;
+  permissions: string[];
+  is_active: boolean;
+  is_verified?: boolean;
+  created_at: string;
+}

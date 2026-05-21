@@ -89,6 +89,7 @@ export const LoginForm = () => {
         <span className="border-border focus-within:border-accent-primary flex h-14 items-center gap-3 rounded-lg border px-4 transition">
           <input
             className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
+            autoComplete="username"
             name="login"
             placeholder="Введите email или телефон"
             type="text"
@@ -103,6 +104,7 @@ export const LoginForm = () => {
         <span className="border-border focus-within:border-accent-primary flex h-14 items-center gap-3 rounded-lg border px-4 transition">
           <input
             className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
+            autoComplete="current-password"
             name="password"
             placeholder="Введите пароль"
             type={showPassword ? "text" : "password"}

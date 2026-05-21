@@ -82,6 +82,7 @@ export const RegisterForm = () => {
     >
       <FormField label="Имя">
         <TextInput
+          autoComplete="name"
           icon={<UserRound size={20} />}
           name="name"
           placeholder="Введите ваше имя"
@@ -93,6 +94,7 @@ export const RegisterForm = () => {
 
       <FormField label="Телефон">
         <TextInput
+          autoComplete="tel"
           icon={<Phone size={20} />}
           name="phone"
           placeholder="+7 (___) ___-__-__"
@@ -104,6 +106,7 @@ export const RegisterForm = () => {
 
       <FormField label="Email">
         <TextInput
+          autoComplete="email"
           icon={<Mail size={20} />}
           name="email"
           placeholder="Введите ваш email"
@@ -115,6 +118,7 @@ export const RegisterForm = () => {
 
       <FormField label="Пароль">
         <PasswordInput
+          autoComplete="new-password"
           name="password"
           placeholder="Введите пароль"
           showPassword={showPassword}
@@ -126,6 +130,7 @@ export const RegisterForm = () => {
 
       <FormField label="Подтверждение пароля">
         <PasswordInput
+          autoComplete="new-password"
           name="confirmPassword"
           placeholder="Повторите пароль"
           showPassword={showConfirmPassword}
@@ -199,6 +204,7 @@ const FormField = ({ children, label }: FormFieldProps) => {
 };
 
 interface TextInputProps {
+  autoComplete: string;
   icon: React.ReactNode;
   name: string;
   placeholder: string;
@@ -207,11 +213,20 @@ interface TextInputProps {
   onChange: (value: string) => void;
 }
 
-const TextInput = ({ icon, name, onChange, placeholder, type, value }: TextInputProps) => {
+const TextInput = ({
+  autoComplete,
+  icon,
+  name,
+  onChange,
+  placeholder,
+  type,
+  value,
+}: TextInputProps) => {
   return (
     <span className="border-border focus-within:border-accent-primary flex h-14 items-center gap-3 rounded-lg border px-4 transition">
       <input
         className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
+        autoComplete={autoComplete}
         name={name}
         placeholder={placeholder}
         type={type}
@@ -224,6 +239,7 @@ const TextInput = ({ icon, name, onChange, placeholder, type, value }: TextInput
 };
 
 interface PasswordInputProps {
+  autoComplete: string;
   name: string;
   placeholder: string;
   showPassword: boolean;
@@ -233,6 +249,7 @@ interface PasswordInputProps {
 }
 
 const PasswordInput = ({
+  autoComplete,
   name,
   onChange,
   onToggleVisibility,
@@ -244,6 +261,7 @@ const PasswordInput = ({
     <span className="border-border focus-within:border-accent-primary flex h-14 items-center gap-3 rounded-lg border px-4 transition">
       <input
         className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
+        autoComplete={autoComplete}
         name={name}
         placeholder={placeholder}
         type={showPassword ? "text" : "password"}

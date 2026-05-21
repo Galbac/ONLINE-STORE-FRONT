@@ -2,6 +2,8 @@ import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import type {
   AuthResponse,
   CurrentUserResponse,
+  ForgotPasswordRequest,
+  MessageResponse,
   RefreshTokenRequest,
   RegisterAuthResponse,
   TokenPairResponse,
@@ -17,6 +19,13 @@ export const authApi = {
   register: async (data: UserRegisterRequest): Promise<RegisterAuthResponse> => {
     return apiClient.post<UserRegisterRequest, RegisterAuthResponse>(
       API_ENDPOINTS.AUTH.REGISTER,
+      data,
+    );
+  },
+
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<MessageResponse> => {
+    return apiClient.post<ForgotPasswordRequest, MessageResponse>(
+      API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
       data,
     );
   },

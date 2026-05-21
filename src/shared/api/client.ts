@@ -38,6 +38,43 @@ class ApiClient {
 
     return (await response.json()) as TResponse;
   }
+
+  async post<TRequest, TResponse>(url: string, data?: TRequest): Promise<TResponse> {
+    const config: RequestInit = {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    };
+
+    if (data !== undefined) {
+      config.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(`${this.baseUrl}${url}`, config);
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    return (await response.json()) as TResponse;
+  }
+
+  async delete<TResponse>(url: string): Promise<TResponse> {
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    return (await response.json()) as TResponse;
+  }
 }
 
 export const apiClient = new ApiClient({ baseUrl: API_BASE_URL });

@@ -33,3 +33,24 @@ export interface ProductDiscountedResponse {
   limit: number;
   pages: number;
 }
+
+export interface ProductListParams {
+  page?: number;
+  limit?: number;
+  category_id?: number;
+  category_slug?: string;
+  in_stock?: boolean;
+  min_price?: string | number;
+  max_price?: string | number;
+  has_discount?: boolean;
+  product_type?: "piece" | "weight";
+  sort?: "price_asc" | "price_desc" | "newest" | "popular" | "name_asc" | "name_desc";
+}
+
+export interface ProductListResponse {
+  items: ProductShortResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}

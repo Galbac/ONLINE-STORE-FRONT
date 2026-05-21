@@ -14,13 +14,27 @@ const productEmojiByName: Record<string, string> = {
   "Авокадо Хасс": "🥑",
   Мандарины: "🍊",
   Малина: "🍓",
+  "Томаты сливовидные": "🍅",
+  "Огурцы длинные": "🥒",
+  "Молоко Домик в деревне": "🥛",
+  "Сыр Российский": "🧀",
+  "Хлеб Бородинский": "🍞",
+  "Сок Добрый Апельсин": "🧃",
+  "Яйцо куриное C1": "🥚",
+  "Йогурт Epica": "🥛",
+  "Творог Простоквашино": "🥛",
+  "Масло сливочное": "🧈",
+  "Хлебцы Щедрые": "🍞",
+  "Вода Святой Источник": "💧",
 };
 
 interface ProductCardProps {
   product: ProductShortResponse;
+  cartControl?: React.ReactNode;
+  favoriteControl?: React.ReactNode;
 }
 
-export const ProductCard = ({ product }: ProductCardProps) => {
+export const ProductCard = ({ cartControl, favoriteControl, product }: ProductCardProps) => {
   const emoji = productEmojiByName[product.name] ?? "🥬";
 
   return (
@@ -30,13 +44,15 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           -{product.discount_percent}%
         </span>
       ) : null}
-      <button
-        className="text-text-muted hover:text-error absolute top-3 right-3 transition"
-        type="button"
-        aria-label={`Добавить ${product.name} в избранное`}
-      >
-        <Heart size={20} />
-      </button>
+      {favoriteControl ?? (
+        <button
+          className="text-text-muted hover:text-error absolute top-3 right-3 transition"
+          type="button"
+          aria-label={`Добавить ${product.name} в избранное`}
+        >
+          <Heart size={20} />
+        </button>
+      )}
 
       <Link
         className="mb-4 flex h-36 items-center justify-center"
@@ -73,13 +89,15 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             </span>
           ) : null}
         </div>
-        <button
-          className="bg-accent-primary hover:bg-accent-hover grid size-10 place-items-center rounded-lg text-white transition"
-          type="button"
-          aria-label={`Добавить ${product.name} в корзину`}
-        >
-          <ShoppingCart size={18} />
-        </button>
+        {cartControl ?? (
+          <button
+            className="bg-accent-primary hover:bg-accent-hover grid size-10 place-items-center rounded-lg text-white transition"
+            type="button"
+            aria-label={`Добавить ${product.name} в корзину`}
+          >
+            <ShoppingCart size={18} />
+          </button>
+        )}
       </div>
     </article>
   );

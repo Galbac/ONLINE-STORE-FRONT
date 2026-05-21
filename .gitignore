@@ -41,6 +41,7 @@ playwright-report/
 test-results/
 .playwright-mcp/
 homepage-*.png
+catalog-*.png
 
 # Caches
 .cache/

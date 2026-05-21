@@ -9,11 +9,20 @@ export const API_ENDPOINTS = {
     POPULAR: "/api/products/popular",
     DISCOUNTED: "/api/products/discounted",
     NEW: "/api/products/new",
+    LIST: "/api/products",
   },
   DISCOUNT: {
     ACTIVE: "/api/discounts/active",
   },
   DELIVERY: {
     OPTIONS: "/api/delivery/options",
+  },
+  CART: {
+    DETAIL: "/api/cart",
+    ITEMS: "/api/cart/items",
+  },
+  FAVORITE: {
+    LIST: "/api/favorites",
+    BY_PRODUCT_ID: (productId: number): string => `/api/favorites/${productId}`,
   },
 } as const;

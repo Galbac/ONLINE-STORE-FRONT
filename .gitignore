@@ -1,9 +1,65 @@
-.next
-node_modules
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Next.js / React
+.next/
+out/
+build/
+dist/
+next-env.d.ts
 tsconfig.tsbuildinfo
-.playwright-mcp
+*.tsbuildinfo
+
+# Production
+*.local
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Tests / coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+.playwright-mcp/
 homepage-*.png
+
+# Caches
+.cache/
+.eslintcache
+.stylelintcache
+.turbo/
+.vercel/
+.parcel-cache/
+
+# OS / editors
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Generated project artifacts
+AGENTS.md
 frontend_pages_api_full.md
 frontend_tz_from_openapi_actual.md
 openapi.json

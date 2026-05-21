@@ -39,3 +39,16 @@ export interface MessageCartResponse {
   message: string;
   cart: CartResponse;
 }
+
+export interface CartSummaryResponse {
+  items_count: number;
+  total_quantity: string;
+  subtotal: string;
+  discount_amount: string;
+  promo_discount_amount: string;
+  delivery_price?: string | null;
+  final_price: string;
+  has_warnings: boolean;
+  warnings_count: number;
+  promo_code?: string | null;
+}

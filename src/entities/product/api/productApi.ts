@@ -1,12 +1,16 @@
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import type {
   ProductDiscountedResponse,
+  ProductDetailParams,
+  ProductDetailResponse,
   ProductListParams,
   ProductListResponse,
   ProductNewResponse,
   ProductPopularResponse,
   ProductSearchParams,
   ProductSearchResponse,
+  ProductSimilarParams,
+  ProductSimilarResponse,
 } from "../types";
 
 export const productApi = {
@@ -59,6 +63,36 @@ export const productApi = {
       in_stock: params.in_stock,
       has_discount: params.has_discount,
       sort: params.sort ?? "relevance",
+    });
+  },
+
+  getBySlug: async (
+    slug: string,
+    params: ProductDetailParams = {},
+  ): Promise<ProductDetailResponse> => {
+    return apiClient.get<ProductDetailResponse>(API_ENDPOINTS.PRODUCT.BY_SLUG(slug), {
+      with_similar: params.with_similar ?? false,
+      with_breadcrumbs: params.with_breadcrumbs ?? true,
+    });
+  },
+
+  getById: async (
+    productId: number,
+    params: ProductDetailParams = {},
+  ): Promise<ProductDetailResponse> => {
+    return apiClient.get<ProductDetailResponse>(API_ENDPOINTS.PRODUCT.BY_ID(productId), {
+      with_similar: params.with_similar ?? false,
+      with_breadcrumbs: params.with_breadcrumbs ?? true,
+    });
+  },
+
+  getSimilar: async (
+    productId: number,
+    params: ProductSimilarParams = {},
+  ): Promise<ProductSimilarResponse> => {
+    return apiClient.get<ProductSimilarResponse>(API_ENDPOINTS.PRODUCT.SIMILAR(productId), {
+      limit: params.limit ?? 8,
+      in_stock: params.in_stock ?? true,
     });
   },
 };

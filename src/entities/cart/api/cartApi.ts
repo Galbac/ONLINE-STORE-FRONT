@@ -1,5 +1,10 @@
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
-import type { CartItemCreateRequest, CartResponse, MessageCartResponse } from "../types";
+import type {
+  CartItemCreateRequest,
+  CartResponse,
+  CartSummaryResponse,
+  MessageCartResponse,
+} from "../types";
 
 export const cartApi = {
   get: async (): Promise<CartResponse> => {
@@ -11,5 +16,9 @@ export const cartApi = {
       API_ENDPOINTS.CART.ITEMS,
       data,
     );
+  },
+
+  getSummary: async (): Promise<CartSummaryResponse> => {
+    return apiClient.get<CartSummaryResponse>(API_ENDPOINTS.CART.SUMMARY);
   },
 };

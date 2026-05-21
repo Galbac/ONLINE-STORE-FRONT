@@ -1,5 +1,6 @@
 import type {
   ProductDiscountedResponse,
+  ProductDetailResponse,
   ProductListResponse,
   ProductNewResponse,
   ProductPopularResponse,
@@ -249,4 +250,37 @@ export const fallbackDiscountedProducts: ProductDiscountedResponse = {
 export const fallbackNewProducts: ProductNewResponse = {
   items: fallbackItems.slice().reverse(),
   total: fallbackItems.length,
+};
+
+export const fallbackProductDetail: ProductDetailResponse = {
+  id: 1,
+  name: "Яблоки Гала",
+  slug: "yabloki-gala",
+  description:
+    "Яблоки Гала — сочные, сладкие и ароматные. Отличаются тонкой кожицей с ярким румянцем и нежной мякотью с приятной сладостью. Подходят для перекуса, салатов и десертов.",
+  category: {
+    id: 2,
+    name: "Фрукты и ягоды",
+    slug: "frukty-i-yagody",
+  },
+  price: "129",
+  old_price: "152",
+  discount_percent: 15,
+  unit: "1 кг",
+  product_type: "weight",
+  quantity_step: "0.5",
+  min_quantity: "0.5",
+  is_available: true,
+  stock_quantity: "6",
+  stock_display: "В наличии",
+  images: [],
+  breadcrumbs: [
+    {
+      id: 2,
+      name: "Фрукты и ягоды",
+      slug: "frukty-i-yagody",
+    },
+  ],
+  similar: fallbackItems.slice(1, 7),
+  seo: null,
 };

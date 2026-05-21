@@ -13,6 +13,9 @@ export const API_ENDPOINTS = {
     NEW: "/api/products/new",
     LIST: "/api/products",
     SEARCH: "/api/products/search",
+    BY_ID: (productId: number): string => `/api/products/${productId}`,
+    BY_SLUG: (slug: string): string => `/api/products/slug/${slug}`,
+    SIMILAR: (productId: number): string => `/api/products/${productId}/similar`,
   },
   DISCOUNT: {
     ACTIVE: "/api/discounts/active",
@@ -22,6 +25,7 @@ export const API_ENDPOINTS = {
   },
   CART: {
     DETAIL: "/api/cart",
+    SUMMARY: "/api/cart/summary",
     ITEMS: "/api/cart/items",
   },
   FAVORITE: {

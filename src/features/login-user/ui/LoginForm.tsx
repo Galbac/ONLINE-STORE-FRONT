@@ -20,8 +20,6 @@ const initialValues: LoginFormValues = {
   rememberMe: false,
 };
 
-const socialProviders = ["vk", "ok", "G", "apple"] as const;
-
 export const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -165,25 +163,6 @@ export const LoginForm = () => {
       >
         Войти
       </button>
-
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 text-center">
-        <span className="bg-border h-px" />
-        <span className="text-text-secondary text-sm">или войдите с помощью</span>
-        <span className="bg-border h-px" />
-      </div>
-
-      <div className="flex flex-wrap justify-center gap-5">
-        {socialProviders.map((provider) => (
-          <button
-            className="border-border hover:bg-bg-hover grid h-14 w-24 place-items-center rounded-lg border text-xl font-bold transition"
-            type="button"
-            key={provider}
-            aria-label={`Войти через ${provider}`}
-          >
-            {provider === "apple" ? "" : provider}
-          </button>
-        ))}
-      </div>
 
       <div className="bg-border h-px" />
 

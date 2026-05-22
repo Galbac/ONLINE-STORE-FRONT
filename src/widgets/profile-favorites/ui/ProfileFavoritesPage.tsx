@@ -1,17 +1,21 @@
-import { fallbackProfileFavorites, favoriteApi, type FavoritesResponse } from "@/entities/favorite";
+import { type FavoritesResponse } from "@/entities/favorite";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { ProfileFavoritesView } from "./ProfileFavoritesView";
 
-export const ProfileFavoritesPage = async () => {
-  const favorites = await favoriteApi
-    .getList({ page: 1, limit: 100 })
-    .catch((): FavoritesResponse => fallbackProfileFavorites);
+const emptyFavorites: FavoritesResponse = {
+  items: [],
+  total: 0,
+  page: 1,
+  limit: 100,
+  pages: 0,
+};
 
+export const ProfileFavoritesPage = () => {
   return (
     <>
       <Header />
-      <ProfileFavoritesView initialFavorites={favorites} />
+      <ProfileFavoritesView initialFavorites={emptyFavorites} />
       <Footer />
     </>
   );

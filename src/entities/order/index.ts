@@ -1,5 +1,4 @@
 export { orderApi } from "./api/orderApi";
-export { fallbackMyOrders, fallbackOrderDetail, fallbackOrderStatus } from "./model/fallback";
 export type {
   OrderAddressResponse,
   OrderCancelRequest,

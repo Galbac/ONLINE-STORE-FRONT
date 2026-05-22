@@ -12,15 +12,10 @@ import {
   SprayCan,
   Wheat,
 } from "lucide-react";
-import { fallbackCart, cartApi } from "@/entities/cart";
-import {
-  categoryApi,
-  fallbackCategories,
-  fallbackCategoryTree,
-  type CategoryShortResponse,
-} from "@/entities/category";
-import { fallbackFavorites, favoriteApi } from "@/entities/favorite";
-import { fallbackCatalogProducts, productApi, type ProductListParams } from "@/entities/product";
+import { cartApi } from "@/entities/cart";
+import { categoryApi, type CategoryShortResponse } from "@/entities/category";
+import { favoriteApi } from "@/entities/favorite";
+import { productApi, type ProductListParams } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { cn, ROUTES } from "@/shared/config";
 import { Button, Container, ProductCard } from "@/shared/ui";
@@ -81,21 +76,14 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   }
 
   const [categoryTree, categories, products, cart, favorites] = await Promise.all([
-    categoryApi.getTree().catch(() => fallbackCategoryTree),
-    categoryApi.getList().catch(() => fallbackCategories),
-    productApi.getList(productParams).catch(() => fallbackCatalogProducts),
-    cartApi.get().catch(() => fallbackCart),
-    favoriteApi.getList().catch(() => fallbackFavorites),
+    categoryApi.getTree(),
+    categoryApi.getList(),
+    productApi.getList(productParams),
+    cartApi.get(),
+    favoriteApi.getList(),
   ]);
 
-  const visibleCategories =
-    categories.items.length > 0
-      ? categories.items
-      : categoryTree.items.length > 0
-        ? categoryTree.items
-        : fallbackCategories.items;
-  const visibleProducts =
-    products.items.length > 0 ? products.items : fallbackCatalogProducts.items;
+  const visibleCategories = categories.items.length > 0 ? categories.items : categoryTree.items;
   const selectedCategory = visibleCategories.find((category) => category.id === categoryId);
   const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
@@ -126,7 +114,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
             <section>
               <CatalogToolbar
                 selectedCategoryName={selectedCategory?.name}
-                productsTotal={products.total || fallbackCatalogProducts.total}
+                productsTotal={products.total}
                 inStock={inStock}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
@@ -134,7 +122,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
               />
 
               <div className="mt-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
-                {visibleProducts.map((product) => (
+                {products.items.map((product) => (
                   <ProductCard
                     key={product.id}
                     product={product}
@@ -158,7 +146,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
               <CatalogPagination
                 currentPage={products.page || page}
-                totalPages={products.pages || fallbackCatalogProducts.pages}
+                totalPages={products.pages}
                 searchParams={searchParams}
               />
             </section>

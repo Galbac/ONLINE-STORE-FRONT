@@ -1,10 +1,10 @@
-import { fallbackAddresses, profileApi } from "@/entities/profile";
+import { profileApi } from "@/entities/profile";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { ProfileAddressesView } from "./ProfileAddressesView";
 
 export const ProfileAddressesPage = async () => {
-  const addresses = await profileApi.getAddresses().catch(() => fallbackAddresses);
+  const addresses = await profileApi.getAddresses();
 
   return (
     <>

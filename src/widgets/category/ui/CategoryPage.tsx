@@ -2,22 +2,15 @@ import type { CSSProperties, ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Grid2X2, List } from "lucide-react";
-import { fallbackCart, cartApi } from "@/entities/cart";
+import { cartApi } from "@/entities/cart";
 import {
   categoryApi,
-  fallbackCategoryDetail,
-  fallbackCategoryDetails,
   type CategoryBreadcrumbResponse,
   type CategoryDetailResponse,
   type CategoryShortResponse,
 } from "@/entities/category";
-import { fallbackFavorites, favoriteApi } from "@/entities/favorite";
-import {
-  fallbackCatalogProducts,
-  productApi,
-  type ProductListParams,
-  type ProductListResponse,
-} from "@/entities/product";
+import { favoriteApi } from "@/entities/favorite";
+import { productApi, type ProductListParams } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { cn, ROUTES } from "@/shared/config";
 import { Container, ProductCard } from "@/shared/ui";
@@ -43,60 +36,28 @@ const sortOptions: Array<{ label: string; value: NonNullable<ProductListParams["
   { label: "По названию", value: "name_asc" },
 ];
 
-const categoryEmoji: Record<string, string> = {
-  Яблоки: "🍎",
-  Бананы: "🍌",
-  Цитрусовые: "🍊",
-  Ягоды: "🫐",
-  Виноград: "🍇",
-  "Экзотические фрукты": "🥭",
-  Сухофрукты: "🍑",
-  "Овощи и зелень": "🥦",
-  "Фрукты и ягоды": "🍎",
-  "Молоко и яйца": "🥛",
-  "Мясо и птица": "🥩",
-  Рыба: "🐟",
-  Напитки: "🧃",
-};
-
-const fruitProductSlugs = new Set([
-  "yabloki-gala",
-  "banany",
-  "klubnika",
-  "apelsiny",
-  "golubika",
-  "avokado-hass",
-  "mandariny",
-  "malina",
-]);
-
 export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) => {
   const page = toPositiveNumber(searchParams.page, 1);
   const inStock = searchParams.in_stock !== "false";
   const sort = searchParams.sort ?? "popular";
-  const fallbackCategory = getFallbackCategory(slug);
 
-  const categoryBySlug = await categoryApi.getBySlug(slug).catch(() => fallbackCategory);
-  const category = await categoryApi.getById(categoryBySlug.id).catch(() => categoryBySlug);
+  const categoryBySlug = await categoryApi.getBySlug(slug);
+  const category = await categoryApi.getById(categoryBySlug.id);
 
   const [products, cart, favorites] = await Promise.all([
-    productApi
-      .getList({
-        page,
-        limit: 24,
-        category_id: category.id,
-        category_slug: category.slug,
-        in_stock: inStock,
-        sort,
-      })
-      .catch(() => getFallbackProducts(category.slug, page)),
-    cartApi.get().catch(() => fallbackCart),
-    favoriteApi.getList().catch(() => fallbackFavorites),
+    productApi.getList({
+      page,
+      limit: 24,
+      category_id: category.id,
+      category_slug: category.slug,
+      in_stock: inStock,
+      sort,
+    }),
+    cartApi.get(),
+    favoriteApi.getList(),
   ]);
 
-  const visibleProducts =
-    products.items.length > 0 ? products.items : getFallbackProducts(category.slug, page).items;
-  const childCategories = getChildCategories(category, fallbackCategory);
+  const childCategories = category.children ?? [];
   const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
 
@@ -123,12 +84,12 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
             <CategoryToolbar
               category={category}
               inStock={inStock}
-              productsTotal={products.total || visibleProducts.length}
+              productsTotal={products.total}
               sort={sort}
             />
 
             <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-              {visibleProducts.map((product) => (
+              {products.items.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -154,7 +115,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
               currentPage={products.page || page}
               searchParams={searchParams}
               slug={category.slug}
-              totalPages={products.pages || getFallbackProducts(category.slug, page).pages}
+              totalPages={products.pages}
             />
           </section>
         </Container>
@@ -255,7 +216,7 @@ const SubcategoryCard = ({ subcategory }: SubcategoryCardProps) => {
             width={120}
           />
         ) : (
-          <span className="text-5xl leading-none">{categoryEmoji[subcategory.name] ?? "🥗"}</span>
+          <Grid2X2 className="text-accent-primary" size={36} />
         )}
       </span>
       <span className="mt-4 flex items-center justify-between gap-3 text-sm font-bold">
@@ -446,38 +407,6 @@ const toPositiveNumber = (value: string | undefined, fallback: number): number =
   }
 
   return parsed;
-};
-
-const getFallbackCategory = (slug: string): CategoryDetailResponse => {
-  return (
-    fallbackCategoryDetails.find((category) => category.slug === slug) ?? fallbackCategoryDetail
-  );
-};
-
-const getChildCategories = (
-  category: CategoryDetailResponse,
-  fallbackCategory: CategoryDetailResponse,
-): CategoryShortResponse[] => {
-  if (category.children?.length) {
-    return category.children;
-  }
-
-  return fallbackCategory.children ?? [];
-};
-
-const getFallbackProducts = (categorySlug: string, page: number): ProductListResponse => {
-  const items =
-    categorySlug === "frukty-i-yagody"
-      ? fallbackCatalogProducts.items.filter((product) => fruitProductSlugs.has(product.slug))
-      : fallbackCatalogProducts.items;
-
-  return {
-    ...fallbackCatalogProducts,
-    items,
-    total: categorySlug === "frukty-i-yagody" ? 72 : fallbackCatalogProducts.total,
-    page,
-    pages: categorySlug === "frukty-i-yagody" ? 3 : fallbackCatalogProducts.pages,
-  };
 };
 
 const buildCategoryHref = (slug: string, params: Record<string, string | undefined>): string => {

@@ -1,38 +1,14 @@
 import Link from "next/link";
 import { ArrowRight, Clock, MapPinned, ShieldCheck, Truck } from "lucide-react";
-import {
-  categoryApi,
-  fallbackCategories,
-  fallbackCategoryTree,
-  type CategoryShortResponse,
-} from "@/entities/category";
-import { deliveryApi, fallbackDeliveryOptions } from "@/entities/delivery";
-import {
-  discountApi,
-  fallbackActiveDiscounts,
-  type DiscountShortResponse,
-} from "@/entities/discount";
-import {
-  fallbackDiscountedProducts,
-  fallbackNewProducts,
-  fallbackPopularProducts,
-  productApi,
-  type ProductShortResponse,
-} from "@/entities/product";
+import { categoryApi, type CategoryShortResponse } from "@/entities/category";
+import { deliveryApi } from "@/entities/delivery";
+import { discountApi, type DiscountShortResponse } from "@/entities/discount";
+import { productApi, type ProductShortResponse } from "@/entities/product";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard, Section } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
-
-const categoryEmoji: Record<string, string> = {
-  "Овощи и зелень": "🥦",
-  "Фрукты и ягоды": "🍎",
-  "Молоко и яйца": "🥛",
-  "Мясо и птица": "🥩",
-  Рыба: "🐟",
-  Напитки: "🧃",
-};
 
 export const HomePage = async () => {
   const [
@@ -44,31 +20,17 @@ export const HomePage = async () => {
     discounts,
     delivery,
   ] = await Promise.all([
-    categoryApi.getTree().catch(() => fallbackCategoryTree),
-    categoryApi.getList().catch(() => fallbackCategories),
-    productApi.getPopular().catch(() => fallbackPopularProducts),
-    productApi.getDiscounted().catch(() => fallbackDiscountedProducts),
-    productApi.getNew().catch(() => fallbackNewProducts),
-    discountApi.getActive().catch(() => fallbackActiveDiscounts),
-    deliveryApi.getOptions().catch(() => fallbackDeliveryOptions),
+    categoryApi.getTree(),
+    categoryApi.getList(),
+    productApi.getPopular(),
+    productApi.getDiscounted(),
+    productApi.getNew(),
+    discountApi.getActive(),
+    deliveryApi.getOptions(),
   ]);
 
   const visibleCategories: CategoryShortResponse[] =
-    categories.items.length > 0
-      ? categories.items
-      : categoryTree.items.length > 0
-        ? categoryTree.items
-        : fallbackCategories.items;
-  const visiblePopularProducts =
-    popularProducts.items.length > 0 ? popularProducts.items : fallbackPopularProducts.items;
-  const visibleDiscountedProducts =
-    discountedProducts.items.length > 0
-      ? discountedProducts.items
-      : fallbackDiscountedProducts.items;
-  const visibleNewProducts =
-    newProducts.items.length > 0 ? newProducts.items : fallbackNewProducts.items;
-  const visibleDiscounts =
-    discounts.items.length > 0 ? discounts.items : fallbackActiveDiscounts.items;
+    categories.items.length > 0 ? categories.items : categoryTree.items;
 
   return (
     <>
@@ -77,14 +39,14 @@ export const HomePage = async () => {
         <Container className="py-6">
           <Hero />
           <CategorySection categories={visibleCategories.slice(0, 6)} />
-          <PromoStrip discounts={visibleDiscounts} />
+          <PromoStrip discounts={discounts.items} />
           <ProductSection
-            products={visiblePopularProducts}
+            products={popularProducts.items}
             title="Популярные товары"
             href={ROUTES.CATALOG}
           />
           <ProductSection
-            products={visibleDiscountedProducts}
+            products={discountedProducts.items}
             title="Товары со скидкой"
             href="/catalog?has_discount=true"
           />
@@ -97,7 +59,7 @@ export const HomePage = async () => {
             pickupDescription={delivery.pickup.description}
           />
           <ProductSection
-            products={visibleNewProducts}
+            products={newProducts.items}
             title="Новинки"
             href="/catalog?sort=newest"
           />
@@ -149,7 +111,7 @@ const CategorySection = ({ categories }: CategorySectionProps) => {
             key={category.id}
           >
             <span className="block text-5xl leading-none">
-              {categoryEmoji[category.name] ?? "🥗"}
+              <ShieldCheck size={34} />
             </span>
             <span className="mt-5 flex items-center justify-between gap-3 text-sm font-bold">
               {category.name}

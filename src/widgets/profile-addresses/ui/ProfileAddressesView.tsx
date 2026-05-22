@@ -51,7 +51,7 @@ type FormMode = "create" | "edit";
 const emptyFormValues: AddressFormValues = {
   apartment: "",
   building: "",
-  city: "Москва",
+  city: "",
   comment: "",
   entrance: "",
   floor: "",
@@ -528,7 +528,7 @@ const AddressForm = ({
           required
           className="md:col-span-2"
           label="Улица"
-          placeholder="Примерная"
+          placeholder="Улица"
           value={values.street}
           onChange={(value) => onChange("street", value)}
         />

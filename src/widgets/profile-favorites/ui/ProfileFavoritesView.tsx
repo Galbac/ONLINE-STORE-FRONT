@@ -18,21 +18,6 @@ interface ProfileFavoritesViewProps {
   initialFavorites: FavoritesResponse;
 }
 
-const productEmojiByName: Record<string, string> = {
-  "Авокадо Хасс": "🥑",
-  Бананы: "🍌",
-  "Гель для стирки Persil": "🧴",
-  "Кофе Nescafe Gold": "☕",
-  "Молоко Простоквашино 2,5%": "🥛",
-  "Огурцы среднеплодные": "🥒",
-  "Сыр Российский": "🧀",
-  "Томаты сливовидные": "🍅",
-  "Филе куриное": "🥩",
-  "Хлеб Бородинский": "🍞",
-  "Хлопья овсяные": "🥣",
-  "Шоколад Alpen Gold": "🍫",
-};
-
 export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewProps) => {
   const [products, setProducts] = useState<FavoriteProductResponse[]>(initialFavorites.items);
   const [cartProductIds, setCartProductIds] = useState<Set<number>>(() => new Set());
@@ -40,15 +25,18 @@ export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewP
   const [isClearing, setIsClearing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(true);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const accessToken = getAccessToken();
 
     if (!accessToken) {
+      setIsAuthorized(false);
       return;
     }
 
+    setIsAuthorized(true);
     let isMounted = true;
 
     const loadFavorites = async (): Promise<void> => {
@@ -181,7 +169,9 @@ export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewP
           <StatusPanel text={message} tone="success" />
         ) : null}
 
-        {products.length > 0 ? (
+        {!isAuthorized ? (
+          <AuthRequired />
+        ) : products.length > 0 ? (
           <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
             {products.map((product) => (
               <FavoriteProductCard
@@ -237,8 +227,6 @@ const FavoriteProductCard = ({
   onRemoveFavorite,
   product,
 }: FavoriteProductCardProps) => {
-  const emoji = productEmojiByName[product.name] ?? "🥬";
-
   return (
     <article className="border-border relative flex min-h-[360px] flex-col rounded-lg border bg-white p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_42px_rgb(20_28_18/0.08)]">
       <button
@@ -264,7 +252,9 @@ const FavoriteProductCard = ({
             width={240}
           />
         ) : (
-          <span className="text-7xl leading-none">{emoji}</span>
+          <span className="bg-bg-hover text-accent-primary grid size-24 place-items-center rounded-full">
+            <ShoppingCart size={38} />
+          </span>
         )}
       </Link>
 
@@ -321,6 +311,26 @@ const EmptyFavorites = () => {
         href={ROUTES.CATALOG}
       >
         Перейти в каталог
+      </Link>
+    </section>
+  );
+};
+
+const AuthRequired = () => {
+  return (
+    <section className="border-border rounded-lg border bg-white p-8 text-center shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
+      <span className="bg-bg-hover text-accent-primary mx-auto grid size-16 place-items-center rounded-full">
+        <Heart size={32} />
+      </span>
+      <h2 className="text-text-primary mt-5 text-2xl font-bold">Войдите в профиль</h2>
+      <p className="text-text-secondary mx-auto mt-3 max-w-xl leading-7">
+        Избранное хранится в вашем аккаунте и загружается после авторизации.
+      </p>
+      <Link
+        className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-7 inline-flex h-12 items-center justify-center rounded-lg px-5 text-sm font-bold transition"
+        href={ROUTES.LOGIN}
+      >
+        Войти
       </Link>
     </section>
   );

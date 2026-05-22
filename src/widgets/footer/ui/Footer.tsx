@@ -36,7 +36,7 @@ export const Footer = () => {
               </a>
               <span className="flex items-center gap-2">
                 <MapPin size={17} className="text-accent-primary" />
-                Москва, ул. Примерная, д. 123
+                Адрес магазина
               </span>
             </div>
           </div>

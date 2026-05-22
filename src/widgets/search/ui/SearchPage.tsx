@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { Grid2X2, List, RotateCcw, SearchX } from "lucide-react";
-import { fallbackCart, cartApi } from "@/entities/cart";
-import { categoryApi, fallbackCategories, type CategoryShortResponse } from "@/entities/category";
-import { fallbackFavorites, favoriteApi } from "@/entities/favorite";
-import {
-  fallbackCatalogProducts,
-  productApi,
-  type ProductSearchParams,
-  type ProductSearchResponse,
-} from "@/entities/product";
+import { cartApi } from "@/entities/cart";
+import { categoryApi, type CategoryShortResponse } from "@/entities/category";
+import { favoriteApi } from "@/entities/favorite";
+import { productApi, type ProductSearchParams } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { ProductSearch } from "@/features/product-search";
 import { cn, ROUTES } from "@/shared/config";
@@ -62,14 +57,13 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   }
 
   const [categories, products, cart, favorites] = await Promise.all([
-    categoryApi.getList().catch(() => fallbackCategories),
-    productApi.search(productParams).catch(() => getFallbackSearchResponse(query, page)),
-    cartApi.get().catch(() => fallbackCart),
-    favoriteApi.getList().catch(() => fallbackFavorites),
+    categoryApi.getList(),
+    productApi.search(productParams),
+    cartApi.get(),
+    favoriteApi.getList(),
   ]);
 
-  const visibleCategories =
-    categories.items.length > 0 ? categories.items : fallbackCategories.items;
+  const visibleCategories = categories.items;
   const selectedCategory = visibleCategories.find((category) => category.id === categoryId);
   const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
@@ -536,22 +530,4 @@ const getProductCountLabel = (count: number): string => {
   }
 
   return "товаров";
-};
-
-const getFallbackSearchResponse = (query: string, page: number): ProductSearchResponse => {
-  const normalizedQuery = query.toLocaleLowerCase("ru-RU");
-  const items = normalizedQuery
-    ? fallbackCatalogProducts.items.filter((product) =>
-        product.name.toLocaleLowerCase("ru-RU").includes(normalizedQuery),
-      )
-    : fallbackCatalogProducts.items;
-
-  return {
-    query,
-    items,
-    total: items.length,
-    page,
-    limit: 24,
-    pages: Math.max(1, Math.ceil(items.length / 24)),
-  };
 };

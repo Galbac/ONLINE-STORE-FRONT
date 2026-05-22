@@ -1,5 +1,5 @@
-import { fallbackOrderDetail, fallbackOrderStatus, orderApi } from "@/entities/order";
-import { fallbackPaymentDetail, paymentApi } from "@/entities/payment";
+import { orderApi } from "@/entities/order";
+import { paymentApi } from "@/entities/payment";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { CheckoutSuccessView } from "./CheckoutSuccessView";
@@ -11,12 +11,14 @@ interface CheckoutSuccessPageProps {
 
 export const CheckoutSuccessPage = async ({ orderId, paymentId }: CheckoutSuccessPageProps) => {
   const [order, status, payment] = await Promise.all([
-    orderId ? orderApi.getById(orderId).catch(() => fallbackOrderDetail) : fallbackOrderDetail,
-    orderId ? orderApi.getStatus(orderId).catch(() => fallbackOrderStatus) : fallbackOrderStatus,
-    paymentId
-      ? paymentApi.getById(paymentId).catch(() => fallbackPaymentDetail)
-      : fallbackPaymentDetail,
+    orderId ? orderApi.getById(orderId) : null,
+    orderId ? orderApi.getStatus(orderId) : null,
+    paymentId ? paymentApi.getById(paymentId) : null,
   ]);
+
+  if (!order || !status || !payment) {
+    throw new Error("Order or payment id is required for checkout success page.");
+  }
 
   return (
     <>

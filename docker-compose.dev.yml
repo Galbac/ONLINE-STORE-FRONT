@@ -7,9 +7,9 @@ services:
     command: yarn dev
     ports:
       - "3000:3000"
+    env_file:
+      - .env.local
     environment:
-      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://host.docker.internal:8000}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       NEXT_TELEMETRY_DISABLED: "1"
     volumes:
       - .:/app

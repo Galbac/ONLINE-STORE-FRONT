@@ -75,9 +75,9 @@ export const CheckoutView = ({
   const firstAvailableSlot = timeSlots.items.find((slot) => slot.available) ?? timeSlots.items[0];
 
   const [contact, setContact] = useState<ContactState>({
-    name: "Иван Иванов",
-    phone: "+7 (916) 123-45-67",
-    email: "ivan.ivanov@mail.ru",
+    name: "",
+    phone: "",
+    email: "",
   });
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
@@ -259,7 +259,7 @@ export const CheckoutView = ({
                     {deliveryCalculation.zone?.name ??
                       selectedAddress?.city ??
                       selectedPickupPoint?.city ??
-                      "Москва"}
+                      "Не выбрана"}
                   </span>
                 </div>
                 <div className="text-right">

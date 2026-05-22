@@ -1,16 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Search, Star } from "lucide-react";
-import { cartApi, fallbackCart, fallbackCartSummary } from "@/entities/cart";
-import { fallbackFavorites, favoriteApi } from "@/entities/favorite";
+import { cartApi } from "@/entities/cart";
+import { favoriteApi } from "@/entities/favorite";
 import {
-  fallbackCatalogProducts,
-  fallbackProductDetail,
   productApi,
   type ProductBreadcrumbResponse,
   type ProductDetailResponse,
   type ProductImageResponse,
-  type ProductShortResponse,
 } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { ProductPurchaseActions } from "@/features/product-purchase-actions";
@@ -25,38 +22,28 @@ interface ProductPageProps {
 }
 
 export const ProductPage = async ({ slug }: ProductPageProps) => {
-  const productBySlug = await productApi
-    .getBySlug(slug, {
-      with_breadcrumbs: true,
-      with_similar: false,
-    })
-    .catch(() => getFallbackProduct(slug));
+  const productBySlug = await productApi.getBySlug(slug, {
+    with_breadcrumbs: true,
+    with_similar: false,
+  });
 
   const [product, similarProducts, cartSummary, cart, favorites] = await Promise.all([
-    productApi
-      .getById(productBySlug.id, {
-        with_breadcrumbs: true,
-        with_similar: false,
-      })
-      .catch(() => productBySlug),
-    productApi
-      .getSimilar(productBySlug.id, {
-        limit: 6,
-        in_stock: true,
-      })
-      .catch(() => ({
-        items: productBySlug.similar ?? fallbackCatalogProducts.items.slice(1, 7),
-        total: productBySlug.similar?.length ?? 6,
-      })),
-    cartApi.getSummary().catch(() => fallbackCartSummary),
-    cartApi.get().catch(() => fallbackCart),
-    favoriteApi.getList().catch(() => fallbackFavorites),
+    productApi.getById(productBySlug.id, {
+      with_breadcrumbs: true,
+      with_similar: false,
+    }),
+    productApi.getSimilar(productBySlug.id, {
+      limit: 6,
+      in_stock: true,
+    }),
+    cartApi.getSummary(),
+    cartApi.get(),
+    favoriteApi.getList(),
   ]);
 
   const favoriteProductIds = new Set(favorites.items.map((favoriteProduct) => favoriteProduct.id));
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
-  const relatedProducts =
-    similarProducts.items.length > 0 ? similarProducts.items : getFallbackSimilar(product.id);
+  const relatedProducts = similarProducts.items;
 
   return (
     <>
@@ -356,45 +343,6 @@ const Characteristic = ({ label, value }: CharacteristicProps) => {
       <dd>{value}</dd>
     </div>
   );
-};
-
-const getFallbackProduct = (slug: string): ProductDetailResponse => {
-  const fallbackShortProduct =
-    fallbackCatalogProducts.items.find((product) => product.slug === slug) ??
-    fallbackCatalogProducts.items[0];
-
-  if (!fallbackShortProduct) {
-    return fallbackProductDetail;
-  }
-
-  const product: ProductDetailResponse = {
-    ...fallbackProductDetail,
-    id: fallbackShortProduct.id,
-    name: fallbackShortProduct.name,
-    slug: fallbackShortProduct.slug,
-    price: fallbackShortProduct.price,
-    unit: fallbackShortProduct.unit,
-    product_type:
-      fallbackShortProduct.slug === fallbackProductDetail.slug
-        ? fallbackProductDetail.product_type
-        : fallbackShortProduct.product_type,
-    stock_display: fallbackShortProduct.stock_display,
-    is_available: fallbackShortProduct.is_available,
-  };
-
-  if (fallbackShortProduct.old_price !== undefined) {
-    product.old_price = fallbackShortProduct.old_price;
-  }
-
-  if (fallbackShortProduct.discount_percent !== undefined) {
-    product.discount_percent = fallbackShortProduct.discount_percent;
-  }
-
-  return product;
-};
-
-const getFallbackSimilar = (productId: number): ProductShortResponse[] => {
-  return fallbackCatalogProducts.items.filter((product) => product.id !== productId).slice(0, 6);
 };
 
 const isLowStock = (stockQuantity: string): boolean => {

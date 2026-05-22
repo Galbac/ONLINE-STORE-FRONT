@@ -1,10 +1,4 @@
 export { deliveryApi } from "./api/deliveryApi";
-export {
-  fallbackDeliveryCalculate,
-  fallbackDeliveryOptions,
-  fallbackDeliveryTimeSlots,
-  fallbackPickupPoints,
-} from "./model/fallback";
 export type {
   DeliveryCalculateRequest,
   DeliveryCalculateResponse,

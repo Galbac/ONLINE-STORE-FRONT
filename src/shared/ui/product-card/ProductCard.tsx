@@ -5,29 +5,6 @@ import type { ProductShortResponse } from "@/entities/product";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 
-const productEmojiByName: Record<string, string> = {
-  "Яблоки Гала": "🍎",
-  Бананы: "🍌",
-  Клубника: "🍓",
-  Апельсины: "🍊",
-  Голубика: "🫐",
-  "Авокадо Хасс": "🥑",
-  Мандарины: "🍊",
-  Малина: "🍓",
-  "Томаты сливовидные": "🍅",
-  "Огурцы длинные": "🥒",
-  "Молоко Домик в деревне": "🥛",
-  "Сыр Российский": "🧀",
-  "Хлеб Бородинский": "🍞",
-  "Сок Добрый Апельсин": "🧃",
-  "Яйцо куриное C1": "🥚",
-  "Йогурт Epica": "🥛",
-  "Творог Простоквашино": "🥛",
-  "Масло сливочное": "🧈",
-  "Хлебцы Щедрые": "🍞",
-  "Вода Святой Источник": "💧",
-};
-
 interface ProductCardProps {
   product: ProductShortResponse;
   cartControl?: React.ReactNode;
@@ -35,8 +12,6 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ cartControl, favoriteControl, product }: ProductCardProps) => {
-  const emoji = productEmojiByName[product.name] ?? "🥬";
-
   return (
     <article className="border-border bg-bg-primary hover:shadow-soft relative flex min-h-[330px] flex-col rounded-lg border p-4 shadow-[0_10px_28px_rgb(20_28_18/0.06)] transition hover:-translate-y-1">
       {product.discount_percent ? (
@@ -67,7 +42,9 @@ export const ProductCard = ({ cartControl, favoriteControl, product }: ProductCa
             width={220}
           />
         ) : (
-          <span className="text-7xl leading-none">{emoji}</span>
+          <span className="bg-bg-hover text-accent-primary grid size-24 place-items-center rounded-full">
+            <ShoppingCart size={38} />
+          </span>
         )}
       </Link>
 

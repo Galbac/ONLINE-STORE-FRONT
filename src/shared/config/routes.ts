@@ -6,6 +6,7 @@ export const ROUTES = {
   SEARCH: "/search",
   CART: "/cart",
   CHECKOUT: "/checkout",
+  CHECKOUT_SUCCESS: "/checkout/success",
   FAVORITES: "/favorites",
   FORGOT_PASSWORD: "/forgot-password",
   LOGIN: "/login",

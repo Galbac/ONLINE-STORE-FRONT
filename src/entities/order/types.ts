@@ -26,3 +26,80 @@ export interface OrderCreateResponse {
   payment_url?: string | null;
   created_at: string;
 }
+
+export interface OrderAddressResponse {
+  id: number;
+  city: string;
+  street: string;
+  house: string;
+  apartment?: string | null;
+  comment?: string | null;
+}
+
+export interface OrderPickupPointResponse {
+  id: number;
+  name: string;
+}
+
+export interface OrderPaymentResponse {
+  id: number;
+  amount: string;
+  status: string;
+  payment_url?: string | null;
+}
+
+export interface OrderItemResponse {
+  id?: number | null;
+  product_id: number;
+  product_name: string;
+  product_slug: string;
+  price: string;
+  old_price?: string | null;
+  quantity: string;
+  unit: string;
+  product_type: string;
+  discount_amount: string;
+  total_price: string;
+  final_price: string;
+}
+
+export interface OrderDetailResponse {
+  id: number;
+  order_number: string;
+  status: string;
+  payment_method?: string | null;
+  payment_status?: string | null;
+  delivery_type: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string | null;
+  address?: OrderAddressResponse | null;
+  pickup_point?: OrderPickupPointResponse | null;
+  payment?: OrderPaymentResponse | null;
+  items: OrderItemResponse[];
+  subtotal: string;
+  discount_amount: string;
+  promo_discount_amount: string;
+  delivery_price: string;
+  final_price: string;
+  comment?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderNextActionResponse {
+  type: string;
+  label: string;
+}
+
+export interface OrderStatusResponse {
+  id: number;
+  order_number: string;
+  status: string;
+  status_label: string;
+  payment_status?: string | null;
+  payment_status_label?: string | null;
+  delivery_type: string;
+  next_action?: OrderNextActionResponse | null;
+  updated_at: string;
+}

@@ -57,6 +57,8 @@ export const API_ENDPOINTS = {
   },
   ORDER: {
     CREATE: "/api/orders",
+    BY_ID: (orderId: number): string => `/api/orders/${orderId}`,
+    STATUS: (orderId: number): string => `/api/orders/${orderId}/status`,
   },
   PAYMENT: {
     CREATE: "/api/payments/create",

@@ -2,6 +2,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost
 
 export const API_ENDPOINTS = {
   AUTH: {
+    CHANGE_PASSWORD: "/api/auth/change-password",
     FORGOT_PASSWORD: "/api/auth/forgot-password",
     LOGIN: "/api/auth/login",
     LOGOUT: "/api/auth/logout",

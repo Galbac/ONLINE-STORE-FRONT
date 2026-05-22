@@ -1,6 +1,7 @@
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import type {
   AuthResponse,
+  ChangePasswordRequest,
   CurrentUserResponse,
   ForgotPasswordRequest,
   LogoutRequest,
@@ -51,5 +52,16 @@ export const authApi = {
 
   logout: async (data: LogoutRequest): Promise<MessageResponse> => {
     return apiClient.post<LogoutRequest, MessageResponse>(API_ENDPOINTS.AUTH.LOGOUT, data);
+  },
+
+  changePassword: async (
+    data: ChangePasswordRequest,
+    accessToken?: string | null,
+  ): Promise<MessageResponse> => {
+    return apiClient.post<ChangePasswordRequest, MessageResponse>(
+      API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
+      data,
+      accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    );
   },
 };

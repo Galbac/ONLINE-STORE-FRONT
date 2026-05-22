@@ -44,12 +44,17 @@ class ApiClient {
     return (await response.json()) as TResponse;
   }
 
-  async post<TRequest, TResponse>(url: string, data?: TRequest): Promise<TResponse> {
+  async post<TRequest, TResponse>(
+    url: string,
+    data?: TRequest,
+    headers?: HeadersInit,
+  ): Promise<TResponse> {
     const config: RequestInit = {
       method: "POST",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        ...headers,
       },
       signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
     };

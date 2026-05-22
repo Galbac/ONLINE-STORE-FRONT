@@ -12,6 +12,7 @@ export const ROUTES = {
   LOGIN: "/login",
   PROFILE: "/profile",
   PROFILE_ADDRESSES: "/profile/addresses",
+  PROFILE_CHANGE_PASSWORD: "/profile/change-password",
   PROFILE_FAVORITES: "/profile/favorites",
   PROFILE_NOTIFICATIONS: "/profile/notifications",
   PROFILE_ORDERS: "/profile/orders",

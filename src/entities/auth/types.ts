@@ -20,6 +20,12 @@ export interface LogoutRequest {
   refresh_token: string;
 }
 
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+  new_password_confirm: string;
+}
+
 export interface ForgotPasswordRequest {
   login: string;
 }

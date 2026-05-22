@@ -220,9 +220,9 @@ const DeliveryBlock = ({
         <p className="text-text-secondary mt-3 leading-7">{pickupDescription}</p>
         <Link
           className="border-border bg-bg-primary hover:bg-bg-hover mt-6 inline-flex h-12 items-center gap-2 rounded-lg border px-5 text-sm font-bold transition"
-          href="#"
+          href={ROUTES.CHECKOUT}
         >
-          Найти ближайший магазин
+          Выбрать самовывоз
           <ArrowRight size={18} />
         </Link>
       </div>

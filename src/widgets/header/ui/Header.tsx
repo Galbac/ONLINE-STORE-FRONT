@@ -2,9 +2,30 @@ import Link from "next/link";
 import { Heart, MapPin, Menu, Phone, ShoppingCart, UserRound } from "lucide-react";
 import { ProductSearch } from "@/features/product-search";
 import { ROUTES } from "@/shared/config";
-import { Button, Container, Logo } from "@/shared/ui";
+import { Container, Logo } from "@/shared/ui";
 
-const navItems = ["О компании", "Доставка и оплата", "Акции", "Магазины", "Карьера", "Контакты"];
+const navItems = [
+  {
+    href: ROUTES.CATALOG,
+    label: "Каталог",
+  },
+  {
+    href: `${ROUTES.CATALOG}?has_discount=true`,
+    label: "Акции",
+  },
+  {
+    href: `${ROUTES.CATALOG}?sort=newest`,
+    label: "Новинки",
+  },
+  {
+    href: ROUTES.CHECKOUT,
+    label: "Доставка",
+  },
+  {
+    href: ROUTES.PROFILE_ORDERS,
+    label: "Мои заказы",
+  },
+] as const;
 
 export const Header = () => {
   return (
@@ -17,8 +38,12 @@ export const Header = () => {
           </span>
           <nav className="text-text-primary hidden items-center gap-8 lg:flex">
             {navItems.map((item) => (
-              <Link className="hover:text-accent-primary transition" href="#" key={item}>
-                {item}
+              <Link
+                className="hover:text-accent-primary transition"
+                href={item.href}
+                key={item.label}
+              >
+                {item.label}
               </Link>
             ))}
           </nav>
@@ -29,10 +54,13 @@ export const Header = () => {
 
         <div className="grid grid-cols-[auto_auto_minmax(260px,1fr)_auto] items-center gap-5 max-lg:grid-cols-[1fr_auto]">
           <Logo />
-          <Button className="gap-2 px-6 max-lg:order-3 max-lg:w-full" type="button">
+          <Link
+            className="bg-accent-primary text-accent-contrast hover:bg-accent-hover inline-flex h-12 items-center justify-center gap-2 rounded-lg px-6 text-sm font-bold transition max-lg:order-3 max-lg:w-full"
+            href={ROUTES.CATALOG}
+          >
             <Menu size={20} />
             Каталог
-          </Button>
+          </Link>
           <div className="max-lg:order-4 max-lg:col-span-2">
             <ProductSearch />
           </div>
@@ -53,9 +81,6 @@ export const Header = () => {
             </Link>
             <Link className="relative text-center text-sm font-semibold" href={ROUTES.CART}>
               <ShoppingCart className="mx-auto mb-1" size={22} />
-              <span className="bg-warning absolute -top-2 -right-2 grid size-5 place-items-center rounded-full text-xs text-white">
-                3
-              </span>
               Корзина
             </Link>
           </div>

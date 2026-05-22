@@ -162,10 +162,10 @@ const ProfileCard = ({ email, user }: ProfileCardProps) => {
 
       <Link
         className="border-accent-primary text-accent-primary hover:bg-bg-hover mt-10 inline-flex h-14 w-full items-center justify-center gap-3 rounded-lg border px-6 text-base font-bold transition"
-        href="#"
+        href={ROUTES.PROFILE_ADDRESSES}
       >
         <Pencil size={20} />
-        Редактировать профиль
+        Управлять адресами доставки
       </Link>
     </section>
   );

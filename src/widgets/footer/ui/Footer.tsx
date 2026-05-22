@@ -1,10 +1,61 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { ROUTES } from "@/shared/config";
 import { Container, Logo } from "@/shared/ui";
 
-const buyerLinks = ["Как сделать заказ", "Способы оплаты", "Доставка", "Возврат товара"];
-const companyLinks = ["О компании", "Новости", "Карьера", "Партнёрам"];
-const helpLinks = ["Центр поддержки", "Условия использования", "Политика конфиденциальности"];
+interface FooterLink {
+  href: string;
+  label: string;
+}
+
+const buyerLinks: FooterLink[] = [
+  {
+    href: ROUTES.CATALOG,
+    label: "Каталог",
+  },
+  {
+    href: ROUTES.CART,
+    label: "Корзина",
+  },
+  {
+    href: ROUTES.CHECKOUT,
+    label: "Оформление заказа",
+  },
+  {
+    href: ROUTES.PROFILE_ORDERS,
+    label: "Мои заказы",
+  },
+];
+
+const companyLinks: FooterLink[] = [
+  {
+    href: `${ROUTES.CATALOG}?has_discount=true`,
+    label: "Акции",
+  },
+  {
+    href: `${ROUTES.CATALOG}?sort=newest`,
+    label: "Новинки",
+  },
+  {
+    href: ROUTES.PROFILE_FAVORITES,
+    label: "Избранное",
+  },
+];
+
+const helpLinks: FooterLink[] = [
+  {
+    href: ROUTES.FORGOT_PASSWORD,
+    label: "Восстановить пароль",
+  },
+  {
+    href: ROUTES.PROFILE_ADDRESSES,
+    label: "Адреса доставки",
+  },
+  {
+    href: ROUTES.PROFILE_NOTIFICATIONS,
+    label: "Уведомления",
+  },
+];
 
 export const Footer = () => {
   return (
@@ -52,7 +103,7 @@ export const Footer = () => {
 
 interface FooterColumnProps {
   title: string;
-  links: string[];
+  links: FooterLink[];
 }
 
 const FooterColumn = ({ title, links }: FooterColumnProps) => {
@@ -61,9 +112,9 @@ const FooterColumn = ({ title, links }: FooterColumnProps) => {
       <h3 className="mb-4 text-sm font-bold">{title}</h3>
       <ul className="text-text-secondary space-y-3 text-sm">
         {links.map((link) => (
-          <li key={link}>
-            <Link className="hover:text-accent-primary transition" href="#">
-              {link}
+          <li key={link.href}>
+            <Link className="hover:text-accent-primary transition" href={link.href}>
+              {link.label}
             </Link>
           </li>
         ))}

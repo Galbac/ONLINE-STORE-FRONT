@@ -1,9 +1,10 @@
 const PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BROWSER_API_BASE_URL = process.env.NEXT_PUBLIC_BROWSER_API_URL || "";
 
 export const API_BASE_URL =
   typeof window === "undefined"
     ? process.env.API_INTERNAL_URL || PUBLIC_API_BASE_URL
-    : PUBLIC_API_BASE_URL;
+    : BROWSER_API_BASE_URL;
 
 export const API_ENDPOINTS = {
   AUTH: {

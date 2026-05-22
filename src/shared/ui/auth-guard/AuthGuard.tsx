@@ -40,8 +40,11 @@ export const clearStoredAuth = (): void => {
 
 export const storeAuthTokens = ({ accessToken, refreshToken, remember }: AuthTokens): void => {
   const storage = remember ? window.localStorage : window.sessionStorage;
+  const staleStorage = remember ? window.sessionStorage : window.localStorage;
   const cookieMaxAge = remember ? `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}` : "";
 
+  staleStorage.removeItem("access_token");
+  staleStorage.removeItem("refresh_token");
   storage.setItem("access_token", accessToken);
   storage.setItem("refresh_token", refreshToken);
   document.cookie = `access_token=${encodeURIComponent(accessToken)}; path=/; samesite=lax${cookieMaxAge}`;

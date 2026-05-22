@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+const API_PROXY_TARGET = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(
+  /\/$/,
+  "",
+);
+
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
@@ -13,6 +18,14 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${API_PROXY_TARGET}/api/:path*`,
+      },
+    ];
   },
 };
 

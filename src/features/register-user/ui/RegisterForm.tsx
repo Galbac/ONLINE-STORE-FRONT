@@ -152,10 +152,7 @@ export const RegisterForm = () => {
           onChange={(event) => handleChange("agreement", event.target.checked)}
         />
         <span>
-          Я согласен с правилами обработки персональных данных и{" "}
-          <Link className="text-accent-primary hover:text-accent-hover" href="#">
-            пользовательским соглашением
-          </Link>
+          Я согласен с правилами обработки персональных данных и пользовательским соглашением
         </span>
       </label>
 

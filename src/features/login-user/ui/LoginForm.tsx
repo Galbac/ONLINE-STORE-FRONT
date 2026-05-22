@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { cn, ROUTES } from "@/shared/config";
@@ -22,6 +23,8 @@ const initialValues: LoginFormValues = {
 const socialProviders = ["vk", "ok", "G", "apple"] as const;
 
 export const LoginForm = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [values, setValues] = useState<LoginFormValues>(initialValues);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -76,6 +79,8 @@ export const LoginForm = () => {
 
         setSuccessMessage("Вы вошли в аккаунт.");
         setValues(initialValues);
+        router.replace(getSafeNextPath(searchParams.get("next")));
+        router.refresh();
       } catch {
         setErrorMessage("Не удалось войти. Проверьте email, телефон или пароль.");
       }
@@ -193,6 +198,14 @@ export const LoginForm = () => {
       </p>
     </form>
   );
+};
+
+const getSafeNextPath = (nextPath: string | null): string => {
+  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
+    return ROUTES.PROFILE;
+  }
+
+  return nextPath;
 };
 
 interface FormFieldProps {

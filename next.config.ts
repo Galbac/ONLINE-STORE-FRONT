@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
-const API_PROXY_TARGET = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(
+const API_PROXY_TARGET = (
+  process.env.API_INTERNAL_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8000"
+).replace(
   /\/$/,
   "",
 );

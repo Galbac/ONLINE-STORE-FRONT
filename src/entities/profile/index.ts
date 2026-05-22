@@ -5,6 +5,7 @@ export type {
   AddressListResponse,
   AddressResponse,
   AddressUpdateRequest,
+  ProfileMessageResponse,
   ProfileAddressShortResponse,
   ProfileOrderShortResponse,
   ProfileStatsResponse,

@@ -72,12 +72,17 @@ class ApiClient {
     return (await response.json()) as TResponse;
   }
 
-  async patch<TRequest, TResponse>(url: string, data: TRequest): Promise<TResponse> {
+  async patch<TRequest, TResponse>(
+    url: string,
+    data: TRequest,
+    headers?: HeadersInit,
+  ): Promise<TResponse> {
     const response = await fetch(`${this.baseUrl}${url}`, {
       method: "PATCH",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        ...headers,
       },
       body: JSON.stringify(data),
       signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
@@ -90,12 +95,17 @@ class ApiClient {
     return (await response.json()) as TResponse;
   }
 
-  async delete<TResponse, TRequest = undefined>(url: string, data?: TRequest): Promise<TResponse> {
+  async delete<TResponse, TRequest = undefined>(
+    url: string,
+    data?: TRequest,
+    headers?: HeadersInit,
+  ): Promise<TResponse> {
     const config: RequestInit = {
       method: "DELETE",
       headers: {
         Accept: "application/json",
         ...(data !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...headers,
       },
       signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
     };

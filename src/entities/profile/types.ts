@@ -94,3 +94,7 @@ export interface AddressListResponse {
   limit: number;
   offset: number;
 }
+
+export interface ProfileMessageResponse {
+  message: string;
+}

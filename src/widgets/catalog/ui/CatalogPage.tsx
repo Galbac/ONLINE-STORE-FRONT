@@ -36,14 +36,6 @@ interface CatalogSearchParams {
   sort?: ProductListParams["sort"];
 }
 
-const brandFilters = [
-  ["Простоквашино", 24],
-  ["Домик в деревне", 18],
-  ["ВкусВилл", 31],
-  ["Добрый", 22],
-  ["Чудское озеро", 12],
-] as const;
-
 const sortOptions: Array<{ label: string; value: NonNullable<ProductListParams["sort"]> }> = [
   { label: "По популярности", value: "popular" },
   { label: "Сначала новинки", value: "newest" },
@@ -269,26 +261,6 @@ const CatalogFilters = ({
             Применить
           </Button>
         </form>
-      </FilterPanel>
-
-      <FilterPanel title="Бренд">
-        <div className="border-border text-text-muted mb-4 flex h-11 items-center rounded-lg border px-3 text-sm">
-          Поиск бренда...
-        </div>
-        <ul className="space-y-3">
-          {brandFilters.map(([brand, count]) => (
-            <li className="flex items-center justify-between gap-3 text-sm" key={brand}>
-              <label className="flex items-center gap-2">
-                <span className="border-border size-4 rounded border" />
-                {brand}
-              </label>
-              <span className="text-text-muted">{count}</span>
-            </li>
-          ))}
-        </ul>
-        <button className="text-accent-primary mt-4 text-sm font-semibold" type="button">
-          Показать ещё
-        </button>
       </FilterPanel>
 
       <FilterPanel title="Сортировка">

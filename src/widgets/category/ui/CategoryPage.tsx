@@ -186,12 +186,7 @@ const CategoryHero = ({ category }: CategoryHeroProps) => {
           <p className="text-text-secondary mt-5 text-base leading-8 md:text-lg">
             {category.description}
           </p>
-        ) : (
-          <p className="text-text-secondary mt-5 text-base leading-8 md:text-lg">
-            Свежий ассортимент категории каждый день: проверенное качество, понятные цены и быстрая
-            доставка.
-          </p>
-        )}
+        ) : null}
       </div>
     </section>
   );

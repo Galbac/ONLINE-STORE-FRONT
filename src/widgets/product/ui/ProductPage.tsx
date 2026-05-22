@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Search, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react";
 import { cartApi, emptyCartResponse, emptyCartSummaryResponse } from "@/entities/cart";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import {
@@ -61,15 +61,8 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               </p>
               <h1 className="text-text-primary text-4xl leading-tight font-bold">{product.name}</h1>
 
-              <div className="mt-5 flex flex-wrap items-center gap-5 text-sm">
-                <span className="inline-flex items-center gap-1">
-                  <Star className="fill-warning text-warning" size={18} />
-                  4.8
-                </span>
-                <span>128 отзывов</span>
-                <span className="text-text-muted">
-                  Арт. {product.id.toString().padStart(6, "0")}
-                </span>
+              <div className="text-text-muted mt-5 text-sm">
+                Арт. {product.id.toString().padStart(6, "0")}
               </div>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -206,7 +199,9 @@ const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
             priority
           />
         ) : (
-          <span className="text-[180px] leading-none">🍎</span>
+          <span className="bg-bg-hover text-accent-primary grid size-36 place-items-center rounded-full">
+            <ImageOff size={64} />
+          </span>
         )}
         <button
           className="border-border absolute top-1/2 left-5 grid size-11 -translate-y-1/2 place-items-center rounded-full border bg-white shadow-[0_8px_18px_rgb(20_28_18/0.08)]"
@@ -232,31 +227,22 @@ const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
       </div>
 
       <div className="mt-5 grid grid-cols-5 gap-4">
-        {(sortedImages.length > 0
-          ? sortedImages
-          : Array.from({ length: 5 }, (_, index) => ({ id: index, url: "", sort_order: index }))
-        )
-          .slice(0, 5)
-          .map((image, index) => (
-            <button
-              className="border-border data-[active=true]:border-accent-primary grid aspect-square place-items-center overflow-hidden rounded-lg border bg-white p-2"
-              type="button"
-              data-active={index === 0}
-              key={`${image.id}-${index}`}
-            >
-              {image.url ? (
-                <Image
-                  alt={`${productName}, изображение ${index + 1}`}
-                  className="h-full w-full object-contain"
-                  height={100}
-                  src={image.url}
-                  width={100}
-                />
-              ) : (
-                <span className="text-4xl leading-none">🍎</span>
-              )}
-            </button>
-          ))}
+        {sortedImages.slice(0, 5).map((image, index) => (
+          <button
+            className="border-border data-[active=true]:border-accent-primary grid aspect-square place-items-center overflow-hidden rounded-lg border bg-white p-2"
+            type="button"
+            data-active={index === 0}
+            key={`${image.id}-${index}`}
+          >
+            <Image
+              alt={`${productName}, изображение ${index + 1}`}
+              className="h-full w-full object-contain"
+              height={100}
+              src={image.url}
+              width={100}
+            />
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -305,10 +291,11 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
     <div className="mt-8 space-y-7">
       <section>
         <h2 className="mb-3 text-base font-bold">Описание</h2>
-        <p className="text-text-secondary text-sm leading-7">
-          {product.description ??
-            "Свежий продукт с проверенным качеством, понятным происхождением и быстрой доставкой."}
-        </p>
+        {product.description ? (
+          <p className="text-text-secondary text-sm leading-7">{product.description}</p>
+        ) : (
+          <p className="text-text-muted text-sm">Описание товара не указано.</p>
+        )}
       </section>
       <section>
         <h2 className="mb-4 text-base font-bold">Характеристики</h2>
@@ -318,12 +305,10 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
             label="Тип товара"
             value={product.product_type === "weight" ? "Весовой" : "Штучный"}
           />
-          <Characteristic label="Срок хранения" value="Уточняется при сборке заказа" />
           <Characteristic
             label="Остаток"
             value={`${formatQuantity(product.stock_quantity)} ${unitLabel(product.unit)}`}
           />
-          <Characteristic label="Состав" value={product.name} />
         </dl>
       </section>
     </div>

@@ -107,7 +107,7 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
               href={ROUTES.PROFILE_FAVORITES}
               icon={<Heart size={30} />}
               title="Избранное"
-              text="Любимые товары и бренды"
+              text="Любимые товары"
             />
             <QuickLink
               href={ROUTES.PROFILE_NOTIFICATIONS}

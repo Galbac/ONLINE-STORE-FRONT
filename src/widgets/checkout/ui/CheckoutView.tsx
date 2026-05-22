@@ -814,14 +814,23 @@ const formatQuantity = (value: number | string): string => {
 const getDateOptions = (selectedDate: string): Array<{ label: string; value: string }> => {
   const [year = 2026, month = 5, day = 22] = selectedDate.split("-").map(Number);
   const baseDate = new Date(year, month - 1, day);
-  const labels = ["Сегодня", "Завтра", "Пн", "Вт", "Ср"];
 
-  return labels.map((label, index) => {
+  return Array.from({ length: 5 }, (_, index) => {
     const date = new Date(baseDate);
     date.setDate(baseDate.getDate() + index);
+    const label =
+      index === 0
+        ? "Сегодня"
+        : index === 1
+          ? "Завтра"
+          : new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(date);
+    const dayMonth = new Intl.DateTimeFormat("ru-RU", {
+      day: "numeric",
+      month: "short",
+    }).format(date);
 
     return {
-      label: `${label}\n${date.getDate()} мая`,
+      label: `${label}\n${dayMonth}`,
       value: formatDateValue(date),
     };
   });

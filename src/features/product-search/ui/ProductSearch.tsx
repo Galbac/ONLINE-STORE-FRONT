@@ -21,7 +21,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
           className="placeholder:text-text-muted h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"
           id="site-search"
           name="q"
-          placeholder="Поиск по товарам, категориям, брендам..."
+          placeholder="Поиск по товарам и категориям..."
           defaultValue={defaultValue}
           type="search"
         />

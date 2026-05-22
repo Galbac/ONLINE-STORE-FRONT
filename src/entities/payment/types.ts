@@ -40,3 +40,21 @@ export interface PaymentConfirmResponse {
   currency: string;
   paid_at?: string | null;
 }
+
+export interface PaymentCancelRequest {
+  reason?: string | null;
+}
+
+export interface PaymentCancelPaymentResponse {
+  id: number;
+  order_id: number;
+  status: string;
+  amount: string;
+  currency: string;
+  cancelled_at?: string | null;
+}
+
+export interface PaymentCancelResponse {
+  message: string;
+  payment: PaymentCancelPaymentResponse;
+}

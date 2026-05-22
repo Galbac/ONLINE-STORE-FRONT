@@ -72,12 +72,14 @@ export const API_ENDPOINTS = {
     CREATE: "/api/orders",
     MY: "/api/orders/my",
     BY_ID: (orderId: number): string => `/api/orders/${orderId}`,
+    CANCEL: (orderId: number): string => `/api/orders/${orderId}/cancel`,
     REPEAT: (orderId: number): string => `/api/orders/${orderId}/repeat`,
     STATUS: (orderId: number): string => `/api/orders/${orderId}/status`,
   },
   PAYMENT: {
     CREATE: "/api/payments/create",
     BY_ID: (paymentId: number): string => `/api/payments/${paymentId}`,
+    CANCEL: (paymentId: number): string => `/api/payments/${paymentId}/cancel`,
     CONFIRM: (paymentId: number): string => `/api/payments/${paymentId}/confirm`,
   },
 } as const;

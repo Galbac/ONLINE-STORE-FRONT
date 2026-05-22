@@ -2,6 +2,8 @@ import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import type {
   OrderCreateRequest,
   OrderCreateResponse,
+  OrderCancelRequest,
+  OrderCancelResponse,
   OrderDetailResponse,
   OrderListParams,
   OrderMyListResponse,
@@ -88,6 +90,18 @@ export const orderApi = {
 
   getStatus: async (orderId: number): Promise<OrderStatusResponse> => {
     return apiClient.get<OrderStatusResponse>(API_ENDPOINTS.ORDER.STATUS(orderId));
+  },
+
+  cancel: async (
+    orderId: number,
+    data: OrderCancelRequest = {},
+    accessToken?: string | null,
+  ): Promise<OrderCancelResponse> => {
+    return apiClient.post<OrderCancelRequest, OrderCancelResponse>(
+      API_ENDPOINTS.ORDER.CANCEL(orderId),
+      data,
+      getAuthHeaders(accessToken),
+    );
   },
 
   repeat: async (

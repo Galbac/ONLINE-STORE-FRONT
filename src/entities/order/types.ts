@@ -154,6 +154,24 @@ export interface RepeatOrderResponse {
   warnings: RepeatOrderWarningResponse[];
 }
 
+export interface OrderCancelRequest {
+  reason?: string | null;
+}
+
+export interface OrderShortStatusResponse {
+  id: number;
+  order_number: string;
+  status: string;
+  payment_status?: string | null;
+  cancel_reason?: string | null;
+  cancelled_at?: string | null;
+}
+
+export interface OrderCancelResponse {
+  message: string;
+  order: OrderShortStatusResponse;
+}
+
 export interface OrderNextActionResponse {
   type: string;
   label: string;

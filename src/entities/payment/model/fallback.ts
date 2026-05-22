@@ -4,7 +4,7 @@ export const fallbackPaymentDetail: PaymentDetailResponse = {
   id: 1,
   order_id: 12345,
   order_number: "2026-05-22-12345",
-  amount: "556.30",
+  amount: "659",
   currency: "RUB",
   status: "paid",
   provider: "online",

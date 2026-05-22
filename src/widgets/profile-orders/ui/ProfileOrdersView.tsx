@@ -304,10 +304,13 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-          <Button className="gap-2" variant="secondary">
+          <Link
+            className="border-border bg-bg-primary text-text-primary hover:bg-bg-hover inline-flex h-12 items-center justify-center gap-2 rounded-lg border px-5 text-sm font-bold transition"
+            href={ROUTES.PROFILE_ORDER(order.id)}
+          >
             Подробнее
             <ChevronRight size={18} />
-          </Button>
+          </Link>
           <Button
             className="border-accent-primary text-accent-primary hover:bg-bg-hover gap-2 bg-white"
             variant="secondary"

@@ -1,3 +1,25 @@
+import type { CartResponse } from "@/entities/cart";
+
+export interface OrderListParams {
+  status?: string | null;
+  payment_status?: string | null;
+  delivery_type?: "delivery" | "pickup" | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  page?: number;
+  limit?: number;
+}
+
+export interface ProfileOrderListParams {
+  status?: string | null;
+  payment_status?: string | null;
+  delivery_type?: "delivery" | "pickup" | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  limit?: number;
+  offset?: number;
+}
+
 export interface OrderCreateRequest {
   delivery_type: "delivery" | "pickup";
   payment_method: "online" | "on_delivery";
@@ -85,6 +107,51 @@ export interface OrderDetailResponse {
   comment?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface OrderShortResponse {
+  id: number;
+  order_number: string;
+  status: string;
+  payment_method?: string | null;
+  payment_status?: string | null;
+  delivery_type?: string | null;
+  items_count?: number;
+  final_price: string;
+  created_at: string;
+}
+
+export interface OrderMyListResponse {
+  items: OrderShortResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export interface ProfileOrderListResponse {
+  items: OrderShortResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface RepeatOrderRequest {
+  replace_cart?: boolean;
+}
+
+export interface RepeatOrderWarningResponse {
+  product_id: number;
+  product_name: string;
+  reason: string;
+  requested_quantity?: string | null;
+  added_quantity?: string | null;
+}
+
+export interface RepeatOrderResponse {
+  message: string;
+  cart: CartResponse;
+  warnings: RepeatOrderWarningResponse[];
 }
 
 export interface OrderNextActionResponse {

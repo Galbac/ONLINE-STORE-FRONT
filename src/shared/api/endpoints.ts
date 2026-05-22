@@ -1,4 +1,9 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export const API_BASE_URL =
+  typeof window === "undefined"
+    ? process.env.API_INTERNAL_URL || PUBLIC_API_BASE_URL
+    : PUBLIC_API_BASE_URL;
 
 export const API_ENDPOINTS = {
   AUTH: {
@@ -57,13 +62,17 @@ export const API_ENDPOINTS = {
     SUMMARY: "/api/profile",
     ADDRESSES: "/api/profile/addresses",
     ADDRESS_BY_ID: (addressId: number): string => `/api/profile/addresses/${addressId}`,
+    ORDERS: "/api/profile/orders",
+    ORDER_REPEAT: (orderId: number): string => `/api/profile/orders/${orderId}/repeat`,
   },
   USER: {
     ME: "/api/users/me",
   },
   ORDER: {
     CREATE: "/api/orders",
+    MY: "/api/orders/my",
     BY_ID: (orderId: number): string => `/api/orders/${orderId}`,
+    REPEAT: (orderId: number): string => `/api/orders/${orderId}/repeat`,
     STATUS: (orderId: number): string => `/api/orders/${orderId}/status`,
   },
   PAYMENT: {

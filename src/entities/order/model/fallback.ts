@@ -1,4 +1,4 @@
-import type { OrderDetailResponse, OrderStatusResponse } from "../types";
+import type { OrderDetailResponse, OrderMyListResponse, OrderStatusResponse } from "../types";
 
 export const fallbackOrderDetail: OrderDetailResponse = {
   id: 12345,
@@ -46,4 +46,68 @@ export const fallbackOrderStatus: OrderStatusResponse = {
   delivery_type: fallbackOrderDetail.delivery_type,
   next_action: null,
   updated_at: fallbackOrderDetail.updated_at,
+};
+
+export const fallbackMyOrders: OrderMyListResponse = {
+  items: [
+    {
+      id: 12345,
+      order_number: "2024-05-26-12345",
+      status: "delivered",
+      payment_method: "online",
+      payment_status: "paid",
+      delivery_type: "delivery",
+      items_count: 6,
+      final_price: "1780",
+      created_at: "2024-05-26T10:35:00Z",
+    },
+    {
+      id: 11223,
+      order_number: "2024-05-24-11223",
+      status: "processing",
+      payment_method: "online",
+      payment_status: "paid",
+      delivery_type: "delivery",
+      items_count: 4,
+      final_price: "2450",
+      created_at: "2024-05-24T18:20:00Z",
+    },
+    {
+      id: 9876,
+      order_number: "2024-05-22-09876",
+      status: "cancelled",
+      payment_method: "cash",
+      payment_status: "pending",
+      delivery_type: "pickup",
+      items_count: 2,
+      final_price: "980",
+      created_at: "2024-05-22T14:15:00Z",
+    },
+    {
+      id: 7765,
+      order_number: "2024-05-20-07765",
+      status: "delivered",
+      payment_method: "online",
+      payment_status: "paid",
+      delivery_type: "pickup",
+      items_count: 8,
+      final_price: "3210",
+      created_at: "2024-05-20T09:50:00Z",
+    },
+    {
+      id: 6654,
+      order_number: "2024-05-18-06654",
+      status: "delivered",
+      payment_method: "cash",
+      payment_status: "pending",
+      delivery_type: "delivery",
+      items_count: 3,
+      final_price: "1120",
+      created_at: "2024-05-18T16:40:00Z",
+    },
+  ],
+  total: 5,
+  page: 1,
+  limit: 20,
+  pages: 1,
 };

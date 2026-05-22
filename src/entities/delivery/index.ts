@@ -1,3 +1,21 @@
 export { deliveryApi } from "./api/deliveryApi";
-export { fallbackDeliveryOptions } from "./model/fallback";
-export type { DeliveryOptionItemResponse, DeliveryOptionsResponse } from "./types";
+export {
+  fallbackDeliveryCalculate,
+  fallbackDeliveryOptions,
+  fallbackDeliveryTimeSlots,
+  fallbackPickupPoints,
+} from "./model/fallback";
+export type {
+  DeliveryCalculateRequest,
+  DeliveryCalculateResponse,
+  DeliveryOptionItemResponse,
+  DeliveryOptionsResponse,
+  DeliveryTimeSlotResponse,
+  DeliveryTimeSlotsParams,
+  DeliveryTimeSlotsResponse,
+  DeliveryZoneShortResponse,
+  PickupPointDetailResponse,
+  PickupPointListParams,
+  PickupPointListResponse,
+  PickupPointResponse,
+} from "./types";

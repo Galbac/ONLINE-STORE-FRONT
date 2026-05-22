@@ -30,6 +30,10 @@ export const API_ENDPOINTS = {
   },
   DELIVERY: {
     OPTIONS: "/api/delivery/options",
+    CALCULATE: "/api/delivery/calculate",
+    PICKUP_POINTS: "/api/delivery/pickup-points",
+    PICKUP_POINT_BY_ID: (pointId: number): string => `/api/delivery/pickup-points/${pointId}`,
+    TIME_SLOTS: "/api/delivery/time-slots",
   },
   CART: {
     DETAIL: "/api/cart",
@@ -46,5 +50,17 @@ export const API_ENDPOINTS = {
   FAVORITE: {
     LIST: "/api/favorites",
     BY_PRODUCT_ID: (productId: number): string => `/api/favorites/${productId}`,
+  },
+  PROFILE: {
+    ADDRESSES: "/api/profile/addresses",
+    ADDRESS_BY_ID: (addressId: number): string => `/api/profile/addresses/${addressId}`,
+  },
+  ORDER: {
+    CREATE: "/api/orders",
+  },
+  PAYMENT: {
+    CREATE: "/api/payments/create",
+    BY_ID: (paymentId: number): string => `/api/payments/${paymentId}`,
+    CONFIRM: (paymentId: number): string => `/api/payments/${paymentId}/confirm`,
   },
 } as const;

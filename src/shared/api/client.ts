@@ -67,6 +67,24 @@ class ApiClient {
     return (await response.json()) as TResponse;
   }
 
+  async patch<TRequest, TResponse>(url: string, data: TRequest): Promise<TResponse> {
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    return (await response.json()) as TResponse;
+  }
+
   async delete<TResponse>(url: string): Promise<TResponse> {
     const response = await fetch(`${this.baseUrl}${url}`, {
       method: "DELETE",

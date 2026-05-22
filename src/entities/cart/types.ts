@@ -3,6 +3,42 @@ export interface CartItemCreateRequest {
   quantity: number | string;
 }
 
+export interface CartItemUpdateRequest {
+  quantity: number | string;
+}
+
+export interface ApplyPromoCodeRequest {
+  code: string;
+}
+
+export interface PromoCodeCheckRequest {
+  code: string;
+  cart_total?: number | string | null;
+}
+
+export interface PromoCodeCheckResponse {
+  valid: boolean;
+  code: string;
+  discount_type?: string | null;
+  discount_value?: string | null;
+  discount_amount?: string | null;
+  min_order_amount?: string | null;
+  amount_left?: string | null;
+  message: string;
+}
+
+export type PromoCodeApplyRequest = ApplyPromoCodeRequest;
+
+export interface CartPromoCodeResponse {
+  code: string;
+  discount_amount: string;
+}
+
+export interface CartWarningResponse {
+  product_id: number;
+  message: string;
+}
+
 export interface CartItemResponse {
   id: number;
   product_id: number;
@@ -25,6 +61,7 @@ export interface CartItemResponse {
 export interface CartResponse {
   id: number;
   items: CartItemResponse[];
+  promo_code?: CartPromoCodeResponse | null;
   items_count: number;
   total_quantity: string;
   subtotal: string;
@@ -32,7 +69,7 @@ export interface CartResponse {
   promo_discount_amount: string;
   delivery_price?: string | null;
   final_price: string;
-  warnings: unknown[];
+  warnings: CartWarningResponse[];
 }
 
 export interface MessageCartResponse {
@@ -52,3 +89,5 @@ export interface CartSummaryResponse {
   warnings_count: number;
   promo_code?: string | null;
 }
+
+export type PromoCodeApplyResponse = MessageCartResponse;

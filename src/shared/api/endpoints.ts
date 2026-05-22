@@ -35,6 +35,13 @@ export const API_ENDPOINTS = {
     DETAIL: "/api/cart",
     SUMMARY: "/api/cart/summary",
     ITEMS: "/api/cart/items",
+    ITEM_BY_ID: (cartItemId: number): string => `/api/cart/items/${cartItemId}`,
+    APPLY_PROMO_CODE: "/api/cart/apply-promo-code",
+    PROMO_CODE: "/api/cart/promo-code",
+  },
+  PROMO_CODE: {
+    CHECK: "/api/promo-codes/check",
+    APPLY: "/api/promo-codes/apply",
   },
   FAVORITE: {
     LIST: "/api/favorites",

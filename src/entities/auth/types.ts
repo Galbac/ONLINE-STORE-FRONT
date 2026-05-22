@@ -16,6 +16,10 @@ export interface RefreshTokenRequest {
   refresh_token: string;
 }
 
+export interface LogoutRequest {
+  refresh_token: string;
+}
+
 export interface ForgotPasswordRequest {
   login: string;
 }

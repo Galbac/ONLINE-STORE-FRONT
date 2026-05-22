@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
   AUTH: {
     FORGOT_PASSWORD: "/api/auth/forgot-password",
     LOGIN: "/api/auth/login",
+    LOGOUT: "/api/auth/logout",
     ME: "/api/auth/me",
     REFRESH: "/api/auth/refresh",
     REGISTER: "/api/auth/register",
@@ -52,8 +53,12 @@ export const API_ENDPOINTS = {
     BY_PRODUCT_ID: (productId: number): string => `/api/favorites/${productId}`,
   },
   PROFILE: {
+    SUMMARY: "/api/profile",
     ADDRESSES: "/api/profile/addresses",
     ADDRESS_BY_ID: (addressId: number): string => `/api/profile/addresses/${addressId}`,
+  },
+  USER: {
+    ME: "/api/users/me",
   },
   ORDER: {
     CREATE: "/api/orders",

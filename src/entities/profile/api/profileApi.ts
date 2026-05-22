@@ -4,9 +4,14 @@ import type {
   AddressListResponse,
   AddressResponse,
   AddressUpdateRequest,
+  ProfileSummaryResponse,
 } from "../types";
 
 export const profileApi = {
+  getSummary: async (): Promise<ProfileSummaryResponse> => {
+    return apiClient.get<ProfileSummaryResponse>(API_ENDPOINTS.PROFILE.SUMMARY);
+  },
+
   getAddresses: async (): Promise<AddressListResponse> => {
     return apiClient.get<AddressListResponse>(API_ENDPOINTS.PROFILE.ADDRESSES);
   },

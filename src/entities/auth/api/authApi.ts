@@ -3,6 +3,7 @@ import type {
   AuthResponse,
   CurrentUserResponse,
   ForgotPasswordRequest,
+  LogoutRequest,
   MessageResponse,
   RefreshTokenRequest,
   RegisterAuthResponse,
@@ -46,5 +47,9 @@ export const authApi = {
 
   refresh: async (data: RefreshTokenRequest): Promise<TokenPairResponse> => {
     return apiClient.post<RefreshTokenRequest, TokenPairResponse>(API_ENDPOINTS.AUTH.REFRESH, data);
+  },
+
+  logout: async (data: LogoutRequest): Promise<MessageResponse> => {
+    return apiClient.post<LogoutRequest, MessageResponse>(API_ENDPOINTS.AUTH.LOGOUT, data);
   },
 };

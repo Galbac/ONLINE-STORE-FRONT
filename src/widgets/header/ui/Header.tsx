@@ -37,9 +37,12 @@ export const Header = () => {
             <ProductSearch />
           </div>
           <div className="flex items-center gap-4 max-lg:justify-end">
-            <Link className="hidden text-center text-sm font-semibold md:block" href={ROUTES.LOGIN}>
+            <Link
+              className="hidden text-center text-sm font-semibold md:block"
+              href={ROUTES.PROFILE}
+            >
               <UserRound className="mx-auto mb-1" size={22} />
-              Войти
+              Профиль
             </Link>
             <Link
               className="hidden text-center text-sm font-semibold md:block"

@@ -1,3 +1,48 @@
+import type { UserRole } from "@/entities/auth";
+
+export interface ProfileUserResponse {
+  id: number;
+  name: string;
+  phone: string;
+  email: string | null;
+  role: UserRole;
+  is_active: boolean;
+  is_verified?: boolean;
+}
+
+export interface ProfileStatsResponse {
+  orders_count: number;
+  addresses_count: number;
+}
+
+export interface ProfileAddressShortResponse {
+  id: number;
+  city: string;
+  street: string;
+  house: string;
+  apartment?: string | null;
+}
+
+export interface ProfileOrderShortResponse {
+  id: number;
+  order_number: string;
+  status: string;
+  payment_method?: string | null;
+  payment_status?: string | null;
+  delivery_type?: string | null;
+  final_price: string;
+  items_count?: number;
+  created_at: string;
+}
+
+export interface ProfileSummaryResponse {
+  user: ProfileUserResponse;
+  stats: ProfileStatsResponse;
+  default_address?: ProfileAddressShortResponse | null;
+  active_order?: ProfileOrderShortResponse | null;
+  recent_orders: ProfileOrderShortResponse[];
+}
+
 export interface AddressCreateRequest {
   title?: string | null;
   city: string;

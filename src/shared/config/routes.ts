@@ -10,6 +10,11 @@ export const ROUTES = {
   FAVORITES: "/favorites",
   FORGOT_PASSWORD: "/forgot-password",
   LOGIN: "/login",
+  PROFILE: "/profile",
+  PROFILE_ADDRESSES: "/profile/addresses",
+  PROFILE_FAVORITES: "/profile/favorites",
+  PROFILE_NOTIFICATIONS: "/profile/notifications",
+  PROFILE_ORDERS: "/profile/orders",
   REGISTER: "/register",
   RESET_PASSWORD: "/reset-password",
 } as const;

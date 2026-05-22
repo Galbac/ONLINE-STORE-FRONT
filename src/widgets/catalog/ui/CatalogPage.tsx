@@ -15,9 +15,9 @@ import {
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
-import { productApi, type ProductListParams } from "@/entities/product";
+import { productApi, type ProductListParams, type ProductListResponse } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
-import { fallbackOnUnauthorized } from "@/shared/api";
+import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { Button, Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
@@ -56,17 +56,20 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const page = toPositiveNumber(searchParams.page, 1);
   const categoryId = toOptionalNumber(searchParams.category_id);
   const inStock = searchParams.in_stock !== "false";
-  const minPrice = searchParams.min_price;
-  const maxPrice = searchParams.max_price ?? "1000";
-  const sort = searchParams.sort ?? "popular";
+  const minPrice = toOptionalPrice(searchParams.min_price);
+  const maxPrice = toOptionalPrice(searchParams.max_price);
+  const sort = toCatalogSort(searchParams.sort);
 
   const productParams: ProductListParams = {
     page,
     limit: 24,
     in_stock: inStock,
-    max_price: maxPrice,
     sort,
   };
+
+  if (maxPrice !== undefined) {
+    productParams.max_price = maxPrice;
+  }
 
   if (categoryId !== undefined) {
     productParams.category_id = categoryId;
@@ -79,7 +82,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const [categoryTree, categories, products, cart, favorites] = await Promise.all([
     categoryApi.getTree(),
     categoryApi.getList(),
-    productApi.getList(productParams),
+    getCatalogProducts(productParams, page),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
   ]);
@@ -122,34 +125,40 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 sort={sort}
               />
 
-              <div className="mt-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
-                {products.items.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    cartControl={
-                      <CatalogCartButton
-                        initialInCart={cartProductIds.has(product.id)}
-                        productId={product.id}
-                        productName={product.name}
+              {products.items.length > 0 ? (
+                <>
+                  <div className="mt-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
+                    {products.items.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        cartControl={
+                          <CatalogCartButton
+                            initialInCart={cartProductIds.has(product.id)}
+                            productId={product.id}
+                            productName={product.name}
+                          />
+                        }
+                        favoriteControl={
+                          <CatalogFavoriteButton
+                            initialFavorite={favoriteProductIds.has(product.id)}
+                            productId={product.id}
+                            productName={product.name}
+                          />
+                        }
                       />
-                    }
-                    favoriteControl={
-                      <CatalogFavoriteButton
-                        initialFavorite={favoriteProductIds.has(product.id)}
-                        productId={product.id}
-                        productName={product.name}
-                      />
-                    }
-                  />
-                ))}
-              </div>
+                    ))}
+                  </div>
 
-              <CatalogPagination
-                currentPage={products.page || page}
-                totalPages={products.pages}
-                searchParams={searchParams}
-              />
+                  <CatalogPagination
+                    currentPage={products.page || page}
+                    totalPages={products.pages}
+                    searchParams={searchParams}
+                  />
+                </>
+              ) : (
+                <CatalogEmptyState />
+              )}
             </section>
           </div>
         </Container>
@@ -410,6 +419,23 @@ const FilterChip = ({ label }: FilterChipProps) => {
   );
 };
 
+const CatalogEmptyState = () => {
+  return (
+    <div className="border-border mt-5 rounded-lg border p-8 text-center">
+      <h2 className="text-text-primary text-xl font-bold">Товары не найдены</h2>
+      <p className="text-text-secondary mt-3 text-sm">
+        Измените фильтры или сбросьте параметры каталога.
+      </p>
+      <Link
+        className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-5 inline-flex h-12 items-center justify-center rounded-lg px-5 text-sm font-bold transition"
+        href={ROUTES.CATALOG}
+      >
+        Сбросить фильтры
+      </Link>
+    </div>
+  );
+};
+
 interface CatalogPaginationProps {
   currentPage: number;
   totalPages: number;
@@ -512,6 +538,53 @@ const toOptionalNumber = (value: string | undefined): number | undefined => {
   }
 
   return parsed;
+};
+
+const toOptionalPrice = (value: string | undefined): string | undefined => {
+  const normalizedValue = value?.trim();
+
+  if (!normalizedValue) {
+    return undefined;
+  }
+
+  const parsed = Number(normalizedValue);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return undefined;
+  }
+
+  return normalizedValue;
+};
+
+const toCatalogSort = (
+  value: ProductListParams["sort"] | undefined,
+): NonNullable<ProductListParams["sort"]> => {
+  const option = sortOptions.find((sortOption) => sortOption.value === value);
+
+  return option?.value ?? "popular";
+};
+
+const getEmptyProductListResponse = (page: number): ProductListResponse => ({
+  items: [],
+  total: 0,
+  page,
+  limit: 24,
+  pages: 0,
+});
+
+const getCatalogProducts = async (
+  params: ProductListParams,
+  page: number,
+): Promise<ProductListResponse> => {
+  try {
+    return await productApi.getList(params);
+  } catch (error) {
+    if (isApiErrorStatus(error, 400) || isApiErrorStatus(error, 404)) {
+      return getEmptyProductListResponse(page);
+    }
+
+    throw error;
+  }
 };
 
 const buildCatalogHref = (params: Record<string, string | undefined>): string => {

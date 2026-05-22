@@ -73,8 +73,12 @@ export const orderApi = {
     );
   },
 
-  getById: async (orderId: number): Promise<OrderDetailResponse> => {
-    return apiClient.get<OrderDetailResponse>(API_ENDPOINTS.ORDER.BY_ID(orderId));
+  getById: async (orderId: number, accessToken?: string | null): Promise<OrderDetailResponse> => {
+    return apiClient.get<OrderDetailResponse>(
+      API_ENDPOINTS.ORDER.BY_ID(orderId),
+      undefined,
+      getAuthHeaders(accessToken),
+    );
   },
 
   getProfileOrders: async (
@@ -88,8 +92,12 @@ export const orderApi = {
     );
   },
 
-  getStatus: async (orderId: number): Promise<OrderStatusResponse> => {
-    return apiClient.get<OrderStatusResponse>(API_ENDPOINTS.ORDER.STATUS(orderId));
+  getStatus: async (orderId: number, accessToken?: string | null): Promise<OrderStatusResponse> => {
+    return apiClient.get<OrderStatusResponse>(
+      API_ENDPOINTS.ORDER.STATUS(orderId),
+      undefined,
+      getAuthHeaders(accessToken),
+    );
   },
 
   cancel: async (

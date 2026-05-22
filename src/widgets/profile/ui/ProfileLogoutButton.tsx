@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { LogOut } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { cn, ROUTES } from "@/shared/config";
+import { clearStoredAuth } from "@/shared/ui";
 
 export const ProfileLogoutButton = () => {
   const [isPending, startTransition] = useTransition();
@@ -21,10 +22,7 @@ export const ProfileLogoutButton = () => {
       } catch {
         // Локальный выход важнее сетевой ошибки: токены всё равно удаляем ниже.
       } finally {
-        window.localStorage.removeItem("access_token");
-        window.localStorage.removeItem("refresh_token");
-        window.sessionStorage.removeItem("access_token");
-        window.sessionStorage.removeItem("refresh_token");
+        clearStoredAuth();
         window.location.href = ROUTES.LOGIN;
       }
     });

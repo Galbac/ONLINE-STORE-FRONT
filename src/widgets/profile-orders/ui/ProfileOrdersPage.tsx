@@ -1,16 +1,22 @@
-import { orderApi } from "@/entities/order";
+import type { ProfileOrderListResponse } from "@/entities/order";
+import { AuthGuard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { ProfileOrdersView } from "./ProfileOrdersView";
 
-export const ProfileOrdersPage = async () => {
-  const orders = await orderApi.getProfileOrders({ offset: 0, limit: 20 });
+const emptyOrders: ProfileOrderListResponse = {
+  items: [],
+  total: 0,
+  limit: 20,
+  offset: 0,
+};
 
+export const ProfileOrdersPage = () => {
   return (
-    <>
+    <AuthGuard>
       <Header />
-      <ProfileOrdersView initialOrders={orders} />
+      <ProfileOrdersView initialOrders={emptyOrders} />
       <Footer />
-    </>
+    </AuthGuard>
   );
 };

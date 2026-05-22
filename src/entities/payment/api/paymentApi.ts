@@ -21,8 +21,15 @@ export const paymentApi = {
     );
   },
 
-  getById: async (paymentId: number): Promise<PaymentDetailResponse> => {
-    return apiClient.get<PaymentDetailResponse>(API_ENDPOINTS.PAYMENT.BY_ID(paymentId));
+  getById: async (
+    paymentId: number,
+    accessToken?: string | null,
+  ): Promise<PaymentDetailResponse> => {
+    return apiClient.get<PaymentDetailResponse>(
+      API_ENDPOINTS.PAYMENT.BY_ID(paymentId),
+      undefined,
+      getAuthHeaders(accessToken),
+    );
   },
 
   confirm: async (

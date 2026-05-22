@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { cn, ROUTES } from "@/shared/config";
+import { storeAuthTokens } from "@/shared/ui";
 
 interface RegisterFormValues {
   name: string;
@@ -62,8 +63,11 @@ export const RegisterForm = () => {
           email: values.email.trim() || null,
         });
 
-        window.localStorage.setItem("access_token", response.access_token);
-        window.localStorage.setItem("refresh_token", response.refresh_token);
+        storeAuthTokens({
+          accessToken: response.access_token,
+          refreshToken: response.refresh_token,
+          remember: true,
+        });
 
         await authApi.getMe(response.access_token);
 

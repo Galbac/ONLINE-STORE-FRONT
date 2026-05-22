@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BadgeCheck, Headphones, Percent, Truck } from "lucide-react";
 import { ChangePasswordForm } from "@/features/change-password";
 import { ROUTES } from "@/shared/config";
-import { Container } from "@/shared/ui";
+import { AuthGuard, Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 
@@ -31,7 +31,7 @@ const serviceBenefits = [
 
 export const ChangePasswordPage = () => {
   return (
-    <>
+    <AuthGuard>
       <Header />
       <main className="bg-bg-primary min-h-[70vh]">
         <Container className="py-6 md:py-8">
@@ -80,6 +80,6 @@ export const ChangePasswordPage = () => {
         </Container>
       </main>
       <Footer />
-    </>
+    </AuthGuard>
   );
 };

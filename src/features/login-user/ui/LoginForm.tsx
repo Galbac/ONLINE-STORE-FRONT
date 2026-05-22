@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { cn, ROUTES } from "@/shared/config";
+import { storeAuthTokens } from "@/shared/ui";
 
 interface LoginFormValues {
   login: string;
@@ -65,10 +66,11 @@ export const LoginForm = () => {
             token_type: response.token_type,
           }));
 
-        const storage = values.rememberMe ? window.localStorage : window.sessionStorage;
-
-        storage.setItem("access_token", refreshedTokens.access_token);
-        storage.setItem("refresh_token", refreshedTokens.refresh_token);
+        storeAuthTokens({
+          accessToken: refreshedTokens.access_token,
+          refreshToken: refreshedTokens.refresh_token,
+          remember: values.rememberMe,
+        });
 
         await authApi.getMe(refreshedTokens.access_token);
 

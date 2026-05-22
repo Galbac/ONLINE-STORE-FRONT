@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { authApi } from "@/entities/auth";
 import { profileApi, type ProfileSummaryResponse } from "@/entities/profile";
 import { userApi, type UserMeResponse } from "@/entities/user";
 import { isApiErrorStatus } from "@/shared/api";
-import { ROUTES } from "@/shared/config";
-import { Container } from "@/shared/ui";
+import {
+  AuthGuard,
+  clearStoredAuth,
+  Container,
+  getLoginRedirectHref,
+  getStoredAccessToken,
+} from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { ProfileView } from "./ProfileView";
@@ -18,13 +23,9 @@ interface ProfilePageState {
   status: "loading" | "ready" | "unauthorized" | "error";
 }
 
-const getStoredAccessToken = (): string | null => {
-  return (
-    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token")
-  );
-};
-
 export const ProfilePage = () => {
+  const pathname = usePathname();
+  const router = useRouter();
   const [state, setState] = useState<ProfilePageState>({
     profile: null,
     user: null,
@@ -35,7 +36,6 @@ export const ProfilePage = () => {
     const accessToken = getStoredAccessToken();
 
     if (!accessToken) {
-      setState({ profile: null, user: null, status: "unauthorized" });
       return;
     }
 
@@ -59,11 +59,9 @@ export const ProfilePage = () => {
         }
 
         if (isApiErrorStatus(error, 401)) {
-          window.localStorage.removeItem("access_token");
-          window.localStorage.removeItem("refresh_token");
-          window.sessionStorage.removeItem("access_token");
-          window.sessionStorage.removeItem("refresh_token");
+          clearStoredAuth();
           setState({ profile: null, user: null, status: "unauthorized" });
+          router.replace(getLoginRedirectHref(pathname || "/profile"));
           return;
         }
 
@@ -76,7 +74,7 @@ export const ProfilePage = () => {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [pathname, router]);
 
   const content =
     state.status === "ready" && state.profile && state.user ? (
@@ -86,11 +84,11 @@ export const ProfilePage = () => {
     );
 
   return (
-    <>
+    <AuthGuard>
       <Header />
       {content}
       <Footer />
-    </>
+    </AuthGuard>
   );
 };
 
@@ -99,34 +97,22 @@ interface ProfileStateViewProps {
 }
 
 const ProfileStateView = ({ status }: ProfileStateViewProps) => {
-  const title =
-    status === "loading"
-      ? "Загружаем профиль"
-      : status === "unauthorized"
-        ? "Войдите в аккаунт"
-        : "Не удалось загрузить профиль";
-
-  const text =
-    status === "loading"
-      ? "Проверяем авторизацию и получаем данные личного кабинета."
-      : status === "unauthorized"
-        ? "Личный кабинет доступен после входа."
-        : "Попробуйте обновить страницу или войти заново.";
+  if (status === "unauthorized") {
+    return null;
+  }
 
   return (
     <main className="bg-bg-primary min-h-[70vh]">
       <Container className="py-10 md:py-14">
         <section className="border-border max-w-2xl rounded-lg border bg-white p-6 shadow-[0_14px_40px_rgb(20_28_18/0.06)] md:p-9">
-          <h1 className="text-text-primary text-3xl font-bold">{title}</h1>
-          <p className="text-text-secondary mt-4 leading-7">{text}</p>
-          {status === "loading" ? null : (
-            <Link
-              className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-7 inline-flex h-12 items-center justify-center rounded-lg px-5 text-sm font-bold transition"
-              href={ROUTES.LOGIN}
-            >
-              Перейти ко входу
-            </Link>
-          )}
+          <h1 className="text-text-primary text-3xl font-bold">
+            {status === "loading" ? "Загружаем профиль" : "Не удалось загрузить профиль"}
+          </h1>
+          <p className="text-text-secondary mt-4 leading-7">
+            {status === "loading"
+              ? "Проверяем авторизацию и получаем данные личного кабинета."
+              : "Попробуйте обновить страницу или войти заново."}
+          </p>
         </section>
       </Container>
     </main>

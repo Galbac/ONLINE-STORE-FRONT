@@ -1,16 +1,22 @@
-import { profileApi } from "@/entities/profile";
+import type { AddressListResponse } from "@/entities/profile";
+import { AuthGuard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { ProfileAddressesView } from "./ProfileAddressesView";
 
-export const ProfileAddressesPage = async () => {
-  const addresses = await profileApi.getAddresses();
+const emptyAddresses: AddressListResponse = {
+  items: [],
+  total: 0,
+  limit: 100,
+  offset: 0,
+};
 
+export const ProfileAddressesPage = () => {
   return (
-    <>
+    <AuthGuard>
       <Header />
-      <ProfileAddressesView initialAddresses={addresses} />
+      <ProfileAddressesView initialAddresses={emptyAddresses} />
       <Footer />
-    </>
+    </AuthGuard>
   );
 };

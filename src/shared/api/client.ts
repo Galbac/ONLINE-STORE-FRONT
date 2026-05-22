@@ -6,6 +6,17 @@ interface ApiClientConfig {
 
 const API_REQUEST_TIMEOUT_MS = 3000;
 
+const getBrowserAuthHeaders = (): HeadersInit => {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const accessToken =
+    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
+
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+};
+
 export class ApiError extends Error {
   readonly status: number;
   readonly statusText: string;
@@ -45,6 +56,7 @@ class ApiClient {
     const response = await fetch(requestUrl, {
       headers: {
         Accept: "application/json",
+        ...getBrowserAuthHeaders(),
         ...headers,
       },
       next: {
@@ -70,6 +82,7 @@ class ApiClient {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        ...getBrowserAuthHeaders(),
         ...headers,
       },
       signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
@@ -98,6 +111,7 @@ class ApiClient {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        ...getBrowserAuthHeaders(),
         ...headers,
       },
       body: JSON.stringify(data),
@@ -121,6 +135,7 @@ class ApiClient {
       headers: {
         Accept: "application/json",
         ...(data !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...getBrowserAuthHeaders(),
         ...headers,
       },
       signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),

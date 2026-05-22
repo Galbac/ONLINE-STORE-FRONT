@@ -17,6 +17,7 @@ export const ROUTES = {
   PROFILE_NOTIFICATIONS: "/profile/notifications",
   PROFILE_ORDER: (orderId: number | string): string => `/profile/orders/${orderId}`,
   PROFILE_ORDERS: "/profile/orders",
+  PROFILE_UPLOADS: "/profile/uploads",
   REGISTER: "/register",
   RESET_PASSWORD: "/reset-password",
 } as const;

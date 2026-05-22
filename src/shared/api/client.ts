@@ -101,6 +101,29 @@ class ApiClient {
     return (await response.json()) as TResponse;
   }
 
+  async postForm<TResponse>(
+    url: string,
+    data: FormData,
+    headers?: HeadersInit,
+  ): Promise<TResponse> {
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        ...getBrowserAuthHeaders(),
+        ...headers,
+      },
+      body: data,
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      throw new ApiError(response.status, response.statusText);
+    }
+
+    return (await response.json()) as TResponse;
+  }
+
   async patch<TRequest, TResponse>(
     url: string,
     data: TRequest,

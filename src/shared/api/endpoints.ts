@@ -82,4 +82,12 @@ export const API_ENDPOINTS = {
     CANCEL: (paymentId: number): string => `/api/payments/${paymentId}/cancel`,
     CONFIRM: (paymentId: number): string => `/api/payments/${paymentId}/confirm`,
   },
+  NOTIFICATION: {
+    LIST: "/api/notifications",
+    READ_BY_ID: (notificationId: number): string => `/api/notifications/${notificationId}/read`,
+  },
+  UPLOAD: {
+    IMAGE: "/api/uploads/image",
+    BY_ID: (fileId: number): string => `/api/uploads/${fileId}`,
+  },
 } as const;

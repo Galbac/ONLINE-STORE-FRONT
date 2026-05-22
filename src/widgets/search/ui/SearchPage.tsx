@@ -3,10 +3,14 @@ import { Grid2X2, List, RotateCcw, SearchX } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
-import { productApi, type ProductSearchParams } from "@/entities/product";
+import {
+  productApi,
+  type ProductSearchParams,
+  type ProductSearchResponse,
+} from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { ProductSearch } from "@/features/product-search";
-import { fallbackOnUnauthorized } from "@/shared/api";
+import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
@@ -32,6 +36,15 @@ const sortOptions: Array<{ label: string; value: NonNullable<ProductSearchParams
   { label: "По цене: по возрастанию", value: "price_asc" },
   { label: "По цене: по убыванию", value: "price_desc" },
 ];
+
+const getEmptySearchResponse = (query: string, page: number): ProductSearchResponse => ({
+  query,
+  items: [],
+  total: 0,
+  page,
+  limit: 24,
+  pages: 0,
+});
 
 export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const query = searchParams.q?.trim() ?? "";
@@ -59,7 +72,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
 
   const [categories, products, cart, favorites] = await Promise.all([
     categoryApi.getList(),
-    productApi.search(productParams),
+    getSearchProducts(productParams, query, page),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
   ]);
@@ -488,6 +501,26 @@ const toPositiveNumber = (value: string | undefined, fallback: number): number =
   }
 
   return parsed;
+};
+
+const getSearchProducts = async (
+  params: ProductSearchParams,
+  query: string,
+  page: number,
+): Promise<ProductSearchResponse> => {
+  if (!query) {
+    return getEmptySearchResponse(query, page);
+  }
+
+  try {
+    return await productApi.search(params);
+  } catch (error) {
+    if (isApiErrorStatus(error, 400) || isApiErrorStatus(error, 404)) {
+      return getEmptySearchResponse(query, page);
+    }
+
+    throw error;
+  }
 };
 
 const toOptionalNumber = (value: string | undefined): number | undefined => {

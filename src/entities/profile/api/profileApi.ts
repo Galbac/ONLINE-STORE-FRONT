@@ -13,8 +13,12 @@ const getAuthHeaders = (accessToken?: string | null): HeadersInit | undefined =>
 };
 
 export const profileApi = {
-  getSummary: async (): Promise<ProfileSummaryResponse> => {
-    return apiClient.get<ProfileSummaryResponse>(API_ENDPOINTS.PROFILE.SUMMARY);
+  getSummary: async (accessToken?: string | null): Promise<ProfileSummaryResponse> => {
+    return apiClient.get<ProfileSummaryResponse>(
+      API_ENDPOINTS.PROFILE.SUMMARY,
+      undefined,
+      getAuthHeaders(accessToken),
+    );
   },
 
   getAddresses: async (accessToken?: string | null): Promise<AddressListResponse> => {

@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Search, Star } from "lucide-react";
-import { cartApi } from "@/entities/cart";
-import { favoriteApi } from "@/entities/favorite";
+import { cartApi, emptyCartResponse, emptyCartSummaryResponse } from "@/entities/cart";
+import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import {
   productApi,
   type ProductBreadcrumbResponse,
@@ -11,6 +11,7 @@ import {
 } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { ProductPurchaseActions } from "@/features/product-purchase-actions";
+import { fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard } from "@/shared/ui";
@@ -36,9 +37,9 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
       limit: 6,
       in_stock: true,
     }),
-    cartApi.getSummary(),
-    cartApi.get(),
-    favoriteApi.getList(),
+    fallbackOnUnauthorized(cartApi.getSummary(), emptyCartSummaryResponse),
+    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
   ]);
 
   const favoriteProductIds = new Set(favorites.items.map((favoriteProduct) => favoriteProduct.id));

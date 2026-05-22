@@ -6,6 +6,22 @@ interface ApiClientConfig {
 
 const API_REQUEST_TIMEOUT_MS = 3000;
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly statusText: string;
+
+  constructor(status: number, statusText: string) {
+    super(`API request failed: ${status} ${statusText}`);
+    this.name = "ApiError";
+    this.status = status;
+    this.statusText = statusText;
+  }
+}
+
+export const isApiErrorStatus = (error: unknown, status: number): boolean => {
+  return error instanceof ApiError && error.status === status;
+};
+
 class ApiClient {
   private readonly baseUrl: string;
 
@@ -38,7 +54,7 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new ApiError(response.status, response.statusText);
     }
 
     return (await response.json()) as TResponse;
@@ -66,7 +82,7 @@ class ApiClient {
     const response = await fetch(`${this.baseUrl}${url}`, config);
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new ApiError(response.status, response.statusText);
     }
 
     return (await response.json()) as TResponse;
@@ -89,7 +105,7 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new ApiError(response.status, response.statusText);
     }
 
     return (await response.json()) as TResponse;
@@ -117,7 +133,7 @@ class ApiClient {
     const response = await fetch(`${this.baseUrl}${url}`, config);
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new ApiError(response.status, response.statusText);
     }
 
     return (await response.json()) as TResponse;

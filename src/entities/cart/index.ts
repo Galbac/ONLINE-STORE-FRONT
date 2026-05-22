@@ -1,4 +1,5 @@
 export { cartApi } from "./api/cartApi";
+export { emptyCartResponse, emptyCartSummaryResponse } from "./lib/emptyCart";
 export type {
   ApplyPromoCodeRequest,
   CartItemCreateRequest,

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Grid2X2, List, RotateCcw, SearchX } from "lucide-react";
-import { cartApi } from "@/entities/cart";
+import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
-import { favoriteApi } from "@/entities/favorite";
+import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductSearchParams } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { ProductSearch } from "@/features/product-search";
+import { fallbackOnUnauthorized } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
@@ -59,8 +60,8 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const [categories, products, cart, favorites] = await Promise.all([
     categoryApi.getList(),
     productApi.search(productParams),
-    cartApi.get(),
-    favoriteApi.getList(),
+    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
   ]);
 
   const visibleCategories = categories.items;

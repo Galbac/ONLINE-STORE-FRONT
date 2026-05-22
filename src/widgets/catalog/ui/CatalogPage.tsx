@@ -12,11 +12,12 @@ import {
   SprayCan,
   Wheat,
 } from "lucide-react";
-import { cartApi } from "@/entities/cart";
+import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
-import { favoriteApi } from "@/entities/favorite";
+import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductListParams } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
+import { fallbackOnUnauthorized } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { Button, Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
@@ -79,8 +80,8 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     categoryApi.getTree(),
     categoryApi.getList(),
     productApi.getList(productParams),
-    cartApi.get(),
-    favoriteApi.getList(),
+    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
   ]);
 
   const visibleCategories = categories.items.length > 0 ? categories.items : categoryTree.items;

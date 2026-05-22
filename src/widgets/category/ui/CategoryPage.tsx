@@ -2,16 +2,17 @@ import type { CSSProperties, ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Grid2X2, List } from "lucide-react";
-import { cartApi } from "@/entities/cart";
+import { cartApi, emptyCartResponse } from "@/entities/cart";
 import {
   categoryApi,
   type CategoryBreadcrumbResponse,
   type CategoryDetailResponse,
   type CategoryShortResponse,
 } from "@/entities/category";
-import { favoriteApi } from "@/entities/favorite";
+import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductListParams } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
+import { fallbackOnUnauthorized } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
@@ -53,8 +54,8 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
       in_stock: inStock,
       sort,
     }),
-    cartApi.get(),
-    favoriteApi.getList(),
+    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
   ]);
 
   const childCategories = category.children ?? [];

@@ -50,7 +50,10 @@ export const API_ENDPOINTS = {
     UPLOAD_BY_ID: (fileId: number): string => `/api/admin/uploads/${fileId}`,
     UPLOAD_IMAGE: "/api/admin/uploads/image",
     USERS: "/api/admin/users",
+    USER_BLOCK: (userId: number): string => `/api/admin/users/${userId}/block`,
     USER_BY_ID: (userId: number): string => `/api/admin/users/${userId}`,
+    USER_ORDERS: (userId: number): string => `/api/admin/users/${userId}/orders`,
+    USER_UNBLOCK: (userId: number): string => `/api/admin/users/${userId}/unblock`,
   },
   CATEGORY: {
     TREE: "/api/categories/tree",

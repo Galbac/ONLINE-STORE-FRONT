@@ -6,6 +6,7 @@ export const ROUTES = {
   ADMIN_DISCOUNTS: "/admin/discounts",
   ADMIN_LOGIN: "/admin/login",
   ADMIN_NOTIFICATIONS: "/admin/notifications",
+  ADMIN_ORDER: (orderId: number | string): string => `/admin/orders/${orderId}`,
   ADMIN_ORDERS: "/admin/orders",
   ADMIN_PRODUCT_CREATE: "/admin/products/create",
   ADMIN_PRODUCT_EDIT: (productId: number | string): string => `/admin/products/${productId}`,

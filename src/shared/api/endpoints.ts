@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
     DASHBOARD: "/api/admin/dashboard",
     DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
     DASHBOARD_SALES: "/api/admin/dashboard/sales",
+    ORDERS: "/api/admin/orders",
     PRODUCTS: "/api/admin/products",
     PRODUCT_AVAILABILITY: (productId: number): string =>
       `/api/admin/products/${productId}/availability`,

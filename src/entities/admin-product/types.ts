@@ -71,6 +71,60 @@ export interface AdminProductDetailResponse extends AdminProductCreateRequest {
   sync_status?: string | null;
 }
 
+export type AdminProductUpdateRequest = Partial<AdminProductCreateRequest>;
+
+export interface AdminProductUpdateResponse {
+  id: number;
+  name: string;
+  slug: string;
+  price: string;
+  is_active: boolean;
+  is_available: boolean;
+  updated_at: string;
+}
+
+export interface AdminProductStockRequest {
+  low_stock_threshold: string;
+  stock_quantity: string;
+}
+
+export interface ProductStockResponse extends AdminProductStockRequest {
+  id: number;
+  is_available: boolean;
+  stock_display: string;
+  updated_at: string;
+}
+
+export interface AdminProductAvailabilityRequest {
+  is_available: boolean;
+  reason?: string | null;
+}
+
+export interface ProductAvailabilityResponse {
+  id: number;
+  is_available: boolean;
+  reason?: string | null;
+  updated_at: string;
+}
+
+export interface AdminProductImagesSortItem {
+  id: number;
+  is_main?: boolean;
+  sort_order: number;
+}
+
+export interface AdminProductImagesSortRequest {
+  items: AdminProductImagesSortItem[];
+}
+
+export interface AdminProductImagesSortResponse {
+  items: AdminProductImageResponse[];
+}
+
+export interface AdminMessageResponse {
+  message: string;
+}
+
 export type AdminUploadEntityType = "product" | "category" | "banner" | "pickup_point" | "other";
 
 export interface AdminUploadImageRequest {

@@ -196,6 +196,58 @@ class AdminApiClient {
     return (await response.json()) as TResponse;
   }
 
+  async patch<TRequest, TResponse>(
+    url: string,
+    data: TRequest,
+    headers?: HeadersInit,
+  ): Promise<TResponse> {
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...getBrowserAdminAuthHeaders(),
+        ...headers,
+      },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    });
+
+    if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {
+      clearStoredAdminAuth();
+      window.location.assign("/admin/login");
+    }
+
+    if (!response.ok) {
+      throw new AdminApiError(response.status, response.statusText);
+    }
+
+    return (await response.json()) as TResponse;
+  }
+
+  async delete<TResponse>(url: string, headers?: HeadersInit): Promise<TResponse> {
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+        ...getBrowserAdminAuthHeaders(),
+        ...headers,
+      },
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    });
+
+    if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {
+      clearStoredAdminAuth();
+      window.location.assign("/admin/login");
+    }
+
+    if (!response.ok) {
+      throw new AdminApiError(response.status, response.statusText);
+    }
+
+    return (await response.json()) as TResponse;
+  }
+
   private createRequestUrl(url: string): URL {
     const requestUrl = `${this.baseUrl}${url}`;
 

@@ -28,8 +28,17 @@ export const API_ENDPOINTS = {
     DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
     DASHBOARD_SALES: "/api/admin/dashboard/sales",
     PRODUCTS: "/api/admin/products",
+    PRODUCT_AVAILABILITY: (productId: number): string =>
+      `/api/admin/products/${productId}/availability`,
+    PRODUCT_BY_ID: (productId: number): string => `/api/admin/products/${productId}`,
+    PRODUCT_IMAGE_BY_ID: (productId: number, imageId: number): string =>
+      `/api/admin/products/${productId}/images/${imageId}`,
     PRODUCT_IMAGES: (productId: number): string => `/api/admin/products/${productId}/images`,
+    PRODUCT_IMAGES_SORT: (productId: number): string =>
+      `/api/admin/products/${productId}/images/sort`,
+    PRODUCT_STOCK: (productId: number): string => `/api/admin/products/${productId}/stock`,
     ROLES: "/api/admin/roles",
+    UPLOAD_BY_ID: (fileId: number): string => `/api/admin/uploads/${fileId}`,
     UPLOAD_IMAGE: "/api/admin/uploads/image",
   },
   CATEGORY: {

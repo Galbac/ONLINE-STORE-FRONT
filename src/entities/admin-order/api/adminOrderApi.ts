@@ -5,6 +5,7 @@ import type {
   AdminOrderListParams,
   AdminOrderListResponse,
   AdminOrderPayload,
+  AdminOrderPrintResponse,
   AdminOrderStatusResponse,
   AdminOrderSync1CResponse,
   AdminOrderUpdateResponse,
@@ -63,8 +64,8 @@ export const adminOrderApi = {
     orderId: number,
     accessToken?: string | null,
     format = "html",
-  ): Promise<unknown> => {
-    return adminApiClient.get<unknown>(
+  ): Promise<AdminOrderPrintResponse> => {
+    return adminApiClient.get<AdminOrderPrintResponse>(
       API_ENDPOINTS.ADMIN.ORDER_PRINT(orderId),
       { format },
       getAuthHeaders(accessToken),

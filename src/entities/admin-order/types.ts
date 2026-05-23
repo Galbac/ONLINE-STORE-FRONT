@@ -150,3 +150,13 @@ export interface AdminOrderSync1CResponse {
   order_number: string;
   sync_status: string;
 }
+
+export type AdminOrderPrintResponse =
+  | AdminOrderDetailResponse
+  | string
+  | {
+      generated_at?: string | null;
+      html?: string | null;
+      order?: AdminOrderDetailResponse;
+      title?: string | null;
+    };

@@ -20,7 +20,6 @@ type ActionName =
   | "comment"
   | "confirm"
   | "payment-cancel"
-  | "print"
   | "refund"
   | "status"
   | "sync";
@@ -132,13 +131,6 @@ export const AdminOrderDetailsView = ({
     });
   };
 
-  const handlePrint = (): void => {
-    void runAction("print", async () => {
-      await adminOrderApi.getPrint(order.id);
-      setMessage("Печатная версия запрошена.");
-    });
-  };
-
   const handlePaymentCancel = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     const currentPayment = payment ?? order.payment;
@@ -215,15 +207,13 @@ export const AdminOrderDetailsView = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button
+          <Link
             className="border-border hover:bg-bg-hover inline-flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-bold transition disabled:opacity-60"
-            disabled={pendingAction === "print"}
-            onClick={handlePrint}
-            type="button"
+            href={ROUTES.ADMIN_ORDER_PRINT(order.id)}
           >
             <Printer size={17} />
             Печать
-          </button>
+          </Link>
           <button
             className="border-border hover:bg-bg-hover inline-flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-bold transition disabled:opacity-60"
             disabled={pendingAction === "sync"}

@@ -11,6 +11,7 @@ export type {
   AdminOrderPayload,
   AdminOrderPaymentResponse,
   AdminOrderPickupPointResponse,
+  AdminOrderPrintResponse,
   AdminOrderStatusHistoryItemResponse,
   AdminOrderStatusResponse,
   AdminOrderSync1CResponse,

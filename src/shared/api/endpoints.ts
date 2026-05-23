@@ -29,6 +29,12 @@ export const API_ENDPOINTS = {
     DASHBOARD: "/api/admin/dashboard",
     DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
     DASHBOARD_SALES: "/api/admin/dashboard/sales",
+    DELIVERY_PICKUP_POINT_BY_ID: (pointId: number): string =>
+      `/api/admin/delivery/pickup-points/${pointId}`,
+    DELIVERY_PICKUP_POINTS: "/api/admin/delivery/pickup-points",
+    DELIVERY_SETTINGS: "/api/admin/delivery/settings",
+    DELIVERY_ZONE_BY_ID: (zoneId: number): string => `/api/admin/delivery/zones/${zoneId}`,
+    DELIVERY_ZONES: "/api/admin/delivery/zones",
     DISCOUNTS: "/api/admin/discounts",
     DISCOUNT_ACTIVATE: (discountId: number): string =>
       `/api/admin/discounts/${discountId}/activate`,

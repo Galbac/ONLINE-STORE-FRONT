@@ -1,5 +1,6 @@
 export const ROUTES = {
   HOME: "/",
+  ADMIN_CATEGORIES: "/admin/categories",
   ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_DELIVERY: "/admin/delivery",
   ADMIN_DISCOUNTS: "/admin/discounts",

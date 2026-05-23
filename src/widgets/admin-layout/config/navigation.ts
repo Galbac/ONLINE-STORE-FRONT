@@ -2,6 +2,7 @@ import {
   BadgePercent,
   Bell,
   ClipboardList,
+  FolderTree,
   LayoutDashboard,
   Package,
   Settings,
@@ -36,6 +37,12 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Package,
     label: "Товары",
     requiredPermissions: ["admin.products.read", "products.read", "products:view"],
+  },
+  {
+    href: ROUTES.ADMIN_CATEGORIES,
+    icon: FolderTree,
+    label: "Категории",
+    requiredPermissions: ["admin.categories.read", "categories.read", "categories:view"],
   },
   {
     href: ROUTES.ADMIN_DELIVERY,

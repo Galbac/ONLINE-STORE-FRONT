@@ -24,6 +24,8 @@ export const API_ENDPOINTS = {
   },
   ADMIN: {
     CATEGORIES: "/api/admin/categories",
+    CATEGORIES_SORT: "/api/admin/categories/sort",
+    CATEGORY_BY_ID: (categoryId: number): string => `/api/admin/categories/${categoryId}`,
     DASHBOARD: "/api/admin/dashboard",
     DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
     DASHBOARD_SALES: "/api/admin/dashboard/sales",

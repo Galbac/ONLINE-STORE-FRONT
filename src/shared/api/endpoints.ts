@@ -30,6 +30,12 @@ export const API_ENDPOINTS = {
     DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
     DASHBOARD_SALES: "/api/admin/dashboard/sales",
     ORDERS: "/api/admin/orders",
+    ORDER_BY_ID: (orderId: number): string => `/api/admin/orders/${orderId}`,
+    ORDER_CANCEL: (orderId: number): string => `/api/admin/orders/${orderId}/cancel`,
+    ORDER_CONFIRM: (orderId: number): string => `/api/admin/orders/${orderId}/confirm`,
+    ORDER_PRINT: (orderId: number): string => `/api/admin/orders/${orderId}/print`,
+    ORDER_STATUS: (orderId: number): string => `/api/admin/orders/${orderId}/status`,
+    ORDER_SYNC_1C: (orderId: number): string => `/api/admin/orders/${orderId}/sync-1c`,
     PRODUCTS: "/api/admin/products",
     PRODUCT_AVAILABILITY: (productId: number): string =>
       `/api/admin/products/${productId}/availability`,
@@ -109,6 +115,7 @@ export const API_ENDPOINTS = {
     BY_ID: (paymentId: number): string => `/api/payments/${paymentId}`,
     CANCEL: (paymentId: number): string => `/api/payments/${paymentId}/cancel`,
     CONFIRM: (paymentId: number): string => `/api/payments/${paymentId}/confirm`,
+    REFUND: (paymentId: number): string => `/api/payments/${paymentId}/refund`,
   },
   NOTIFICATION: {
     LIST: "/api/notifications",

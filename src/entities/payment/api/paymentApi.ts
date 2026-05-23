@@ -7,6 +7,8 @@ import type {
   PaymentCreateRequest,
   PaymentCreateResponse,
   PaymentDetailResponse,
+  PaymentRefundRequest,
+  PaymentRefundResponse,
 } from "../types";
 
 const getAuthHeaders = (accessToken?: string | null): HeadersInit | undefined => {
@@ -49,6 +51,18 @@ export const paymentApi = {
   ): Promise<PaymentCancelResponse> => {
     return apiClient.post<PaymentCancelRequest, PaymentCancelResponse>(
       API_ENDPOINTS.PAYMENT.CANCEL(paymentId),
+      data,
+      getAuthHeaders(accessToken),
+    );
+  },
+
+  refund: async (
+    paymentId: number,
+    data: PaymentRefundRequest = {},
+    accessToken?: string | null,
+  ): Promise<PaymentRefundResponse> => {
+    return apiClient.post<PaymentRefundRequest, PaymentRefundResponse>(
+      API_ENDPOINTS.PAYMENT.REFUND(paymentId),
       data,
       getAuthHeaders(accessToken),
     );

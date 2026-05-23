@@ -8,4 +8,6 @@ export type {
   PaymentCreateRequest,
   PaymentCreateResponse,
   PaymentDetailResponse,
+  PaymentRefundRequest,
+  PaymentRefundResponse,
 } from "./types";

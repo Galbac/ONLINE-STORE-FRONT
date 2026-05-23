@@ -58,3 +58,22 @@ export interface PaymentCancelResponse {
   message: string;
   payment: PaymentCancelPaymentResponse;
 }
+
+export interface PaymentRefundRequest {
+  amount?: number | string | null;
+  reason?: string | null;
+}
+
+export interface PaymentRefundResponse {
+  message: string;
+  refund: {
+    id: number;
+    payment_id: number;
+    order_id: number;
+    amount: string;
+    currency: string;
+    status: string;
+    reason?: string | null;
+    created_at: string;
+  };
+}

@@ -14,6 +14,9 @@ export const ROUTES = {
   ADMIN_PRODUCT_CREATE: "/admin/products/create",
   ADMIN_PRODUCT_EDIT: (productId: number | string): string => `/admin/products/${productId}`,
   ADMIN_PRODUCTS: "/admin/products",
+  ADMIN_PROMO_CODE_CREATE: "/admin/promo-codes/create",
+  ADMIN_PROMO_CODE_EDIT: (promoCodeId: number | string): string =>
+    `/admin/promo-codes/${promoCodeId}`,
   ADMIN_PROMO_CODES: "/admin/promo-codes",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_STAFF: "/admin/staff",

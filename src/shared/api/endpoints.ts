@@ -42,6 +42,8 @@ export const API_ENDPOINTS = {
     ORDER_PRINT: (orderId: number): string => `/api/admin/orders/${orderId}/print`,
     ORDER_STATUS: (orderId: number): string => `/api/admin/orders/${orderId}/status`,
     ORDER_SYNC_1C: (orderId: number): string => `/api/admin/orders/${orderId}/sync-1c`,
+    PROMO_CODES: "/api/admin/promo-codes",
+    PROMO_CODE_BY_ID: (promoCodeId: number): string => `/api/admin/promo-codes/${promoCodeId}`,
     PRODUCTS: "/api/admin/products",
     PRODUCT_AVAILABILITY: (productId: number): string =>
       `/api/admin/products/${productId}/availability`,

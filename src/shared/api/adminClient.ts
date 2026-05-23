@@ -168,6 +168,34 @@ class AdminApiClient {
     return (await response.json()) as TResponse;
   }
 
+  async postForm<TResponse>(
+    url: string,
+    data: FormData,
+    headers?: HeadersInit,
+  ): Promise<TResponse> {
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        ...getBrowserAdminAuthHeaders(),
+        ...headers,
+      },
+      body: data,
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    });
+
+    if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {
+      clearStoredAdminAuth();
+      window.location.assign("/admin/login");
+    }
+
+    if (!response.ok) {
+      throw new AdminApiError(response.status, response.statusText);
+    }
+
+    return (await response.json()) as TResponse;
+  }
+
   private createRequestUrl(url: string): URL {
     const requestUrl = `${this.baseUrl}${url}`;
 

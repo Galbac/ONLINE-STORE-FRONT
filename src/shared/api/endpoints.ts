@@ -28,7 +28,9 @@ export const API_ENDPOINTS = {
     DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
     DASHBOARD_SALES: "/api/admin/dashboard/sales",
     PRODUCTS: "/api/admin/products",
+    PRODUCT_IMAGES: (productId: number): string => `/api/admin/products/${productId}/images`,
     ROLES: "/api/admin/roles",
+    UPLOAD_IMAGE: "/api/admin/uploads/image",
   },
   CATEGORY: {
     TREE: "/api/categories/tree",

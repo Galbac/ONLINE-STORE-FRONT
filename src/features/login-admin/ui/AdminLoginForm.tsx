@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { adminAuthApi } from "@/entities/admin-auth";
 import { AdminApiError, storeAdminAuthTokens } from "@/shared/api";
@@ -27,7 +27,6 @@ const initialValues: AdminLoginFormValues = {
 
 export const AdminLoginForm = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [values, setValues] = useState<AdminLoginFormValues>(initialValues);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -73,12 +72,7 @@ export const AdminLoginForm = () => {
         setValues(initialValues);
         setSuccessMessage("Доступ подтвержден.");
 
-        const nextPath = getSafeNextPath(searchParams.get("next"));
-
-        if (nextPath) {
-          router.replace(nextPath);
-        }
-
+        router.replace(ROUTES.ADMIN_DASHBOARD);
         router.refresh();
       } catch (error) {
         setSuccessMessage(null);
@@ -208,16 +202,4 @@ const getAuthErrorMessage = (error: unknown): string => {
   }
 
   return "Не удалось войти. Проверьте email, телефон или пароль.";
-};
-
-const getSafeNextPath = (nextPath: string | null): string | null => {
-  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return null;
-  }
-
-  if (!nextPath.startsWith("/admin") || nextPath === ROUTES.ADMIN_LOGIN) {
-    return null;
-  }
-
-  return nextPath;
 };

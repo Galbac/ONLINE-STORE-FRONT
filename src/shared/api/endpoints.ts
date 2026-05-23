@@ -23,6 +23,9 @@ export const API_ENDPOINTS = {
     ME: "/api/admin/auth/me",
   },
   ADMIN: {
+    DASHBOARD: "/api/admin/dashboard",
+    DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
+    DASHBOARD_SALES: "/api/admin/dashboard/sales",
     ROLES: "/api/admin/roles",
   },
   CATEGORY: {

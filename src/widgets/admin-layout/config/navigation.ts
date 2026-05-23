@@ -9,6 +9,7 @@ import {
   Shield,
   TicketPercent,
   Truck,
+  Users,
 } from "lucide-react";
 import { ROUTES } from "@/shared/config";
 
@@ -67,6 +68,12 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Shield,
     label: "Сотрудники",
     requiredPermissions: ["admin.staff.read", "staff.read", "staff:view"],
+  },
+  {
+    href: ROUTES.ADMIN_USERS,
+    icon: Users,
+    label: "Пользователи",
+    requiredPermissions: ["admin.users.read", "users.read", "users:view"],
   },
   {
     href: ROUTES.ADMIN_NOTIFICATIONS,

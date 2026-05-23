@@ -15,6 +15,8 @@ export const ROUTES = {
   ADMIN_PROMO_CODES: "/admin/promo-codes",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_STAFF: "/admin/staff",
+  ADMIN_USER: (userId: number | string): string => `/admin/users/${userId}`,
+  ADMIN_USERS: "/admin/users",
   CATALOG: "/catalog",
   CATEGORY: (slug: string): string => `/catalog/${slug}`,
   PRODUCT: (slug: string): string => `/product/${slug}`,

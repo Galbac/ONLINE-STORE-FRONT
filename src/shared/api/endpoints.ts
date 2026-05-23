@@ -49,6 +49,8 @@ export const API_ENDPOINTS = {
     ROLES: "/api/admin/roles",
     UPLOAD_BY_ID: (fileId: number): string => `/api/admin/uploads/${fileId}`,
     UPLOAD_IMAGE: "/api/admin/uploads/image",
+    USERS: "/api/admin/users",
+    USER_BY_ID: (userId: number): string => `/api/admin/users/${userId}`,
   },
   CATEGORY: {
     TREE: "/api/categories/tree",

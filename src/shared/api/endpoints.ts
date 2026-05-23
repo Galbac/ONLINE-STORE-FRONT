@@ -29,6 +29,12 @@ export const API_ENDPOINTS = {
     DASHBOARD: "/api/admin/dashboard",
     DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
     DASHBOARD_SALES: "/api/admin/dashboard/sales",
+    DISCOUNTS: "/api/admin/discounts",
+    DISCOUNT_ACTIVATE: (discountId: number): string =>
+      `/api/admin/discounts/${discountId}/activate`,
+    DISCOUNT_BY_ID: (discountId: number): string => `/api/admin/discounts/${discountId}`,
+    DISCOUNT_DEACTIVATE: (discountId: number): string =>
+      `/api/admin/discounts/${discountId}/deactivate`,
     ORDERS: "/api/admin/orders",
     ORDER_BY_ID: (orderId: number): string => `/api/admin/orders/${orderId}`,
     ORDER_CANCEL: (orderId: number): string => `/api/admin/orders/${orderId}/cancel`,

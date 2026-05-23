@@ -3,6 +3,8 @@ export const ROUTES = {
   ADMIN_CATEGORIES: "/admin/categories",
   ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_DELIVERY: "/admin/delivery",
+  ADMIN_DISCOUNT_CREATE: "/admin/discounts/create",
+  ADMIN_DISCOUNT_EDIT: (discountId: number | string): string => `/admin/discounts/${discountId}`,
   ADMIN_DISCOUNTS: "/admin/discounts",
   ADMIN_LOGIN: "/admin/login",
   ADMIN_NOTIFICATIONS: "/admin/notifications",

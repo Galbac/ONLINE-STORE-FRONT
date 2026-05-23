@@ -61,6 +61,7 @@ export const API_ENDPOINTS = {
       `/api/admin/products/${productId}/images/sort`,
     PRODUCT_STOCK: (productId: number): string => `/api/admin/products/${productId}/stock`,
     ROLES: "/api/admin/roles",
+    SETTINGS: "/api/admin/settings",
     STAFF: "/api/admin/staff",
     STAFF_BY_ID: (staffId: number): string => `/api/admin/staff/${staffId}`,
     STAFF_ROLE: (staffId: number): string => `/api/admin/staff/${staffId}/role`,

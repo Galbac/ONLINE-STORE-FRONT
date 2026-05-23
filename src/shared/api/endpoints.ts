@@ -17,6 +17,11 @@ export const API_ENDPOINTS = {
     REGISTER: "/api/auth/register",
     RESET_PASSWORD: "/api/auth/reset-password",
   },
+  ADMIN_AUTH: {
+    LOGIN: "/api/admin/auth/login",
+    LOGOUT: "/api/admin/auth/logout",
+    ME: "/api/admin/auth/me",
+  },
   CATEGORY: {
     TREE: "/api/categories/tree",
     LIST: "/api/categories",

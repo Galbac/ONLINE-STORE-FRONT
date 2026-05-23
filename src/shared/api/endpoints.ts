@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
     LOGOUT: "/api/admin/auth/logout",
     ME: "/api/admin/auth/me",
   },
+  ADMIN: {
+    ROLES: "/api/admin/roles",
+  },
   CATEGORY: {
     TREE: "/api/categories/tree",
     LIST: "/api/categories",

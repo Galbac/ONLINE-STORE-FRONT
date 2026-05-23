@@ -38,3 +38,14 @@ export interface AdminAuthResponse {
 export interface AdminMessageResponse {
   message: string;
 }
+
+export interface AdminRoleResponse {
+  code: string;
+  name: string;
+  description: string;
+  permissions: string[];
+}
+
+export interface AdminRoleListResponse {
+  items: AdminRoleResponse[];
+}

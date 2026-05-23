@@ -36,6 +36,17 @@ export const getStoredAdminAccessToken = (): string | null => {
   );
 };
 
+export const getStoredAdminRefreshToken = (): string | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return (
+    window.localStorage.getItem("admin_refresh_token") ??
+    window.sessionStorage.getItem("admin_refresh_token")
+  );
+};
+
 export const storeAdminAuthTokens = ({
   accessToken,
   refreshToken,

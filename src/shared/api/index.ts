@@ -4,6 +4,7 @@ export {
   adminApiClient,
   clearStoredAdminAuth,
   getStoredAdminAccessToken,
+  getStoredAdminRefreshToken,
   storeAdminAuthTokens,
 } from "./adminClient";
 export { fallbackOnUnauthorized } from "./authOptional";

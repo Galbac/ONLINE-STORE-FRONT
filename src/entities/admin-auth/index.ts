@@ -5,6 +5,8 @@ export type {
   AdminLogoutRequest,
   AdminMeResponse,
   AdminMessageResponse,
+  AdminRoleListResponse,
+  AdminRoleResponse,
   AdminUserResponse,
   AdminUserRole,
 } from "./types";

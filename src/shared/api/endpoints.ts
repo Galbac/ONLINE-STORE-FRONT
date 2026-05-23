@@ -134,6 +134,8 @@ export const API_ENDPOINTS = {
   NOTIFICATION: {
     LIST: "/api/notifications",
     READ_BY_ID: (notificationId: number): string => `/api/notifications/${notificationId}/read`,
+    TEST_EMAIL: "/api/notifications/test-email",
+    TEST_TELEGRAM: "/api/notifications/test-telegram",
   },
   UPLOAD: {
     IMAGE: "/api/uploads/image",

@@ -23,3 +23,20 @@ export interface NotificationListResponse {
   limit: number;
   pages: number;
 }
+
+export interface TestEmailNotificationRequest {
+  email: string;
+  message?: string | null;
+  subject?: string | null;
+}
+
+export interface TestTelegramNotificationRequest {
+  chat_id?: string | null;
+  message?: string | null;
+}
+
+export interface TestNotificationResponse {
+  chat_id?: string | null;
+  email?: string | null;
+  message: string;
+}

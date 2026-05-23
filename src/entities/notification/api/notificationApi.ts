@@ -3,6 +3,9 @@ import type {
   NotificationListParams,
   NotificationListResponse,
   NotificationResponse,
+  TestEmailNotificationRequest,
+  TestNotificationResponse,
+  TestTelegramNotificationRequest,
 } from "../types";
 
 const getAuthHeaders = (accessToken?: string | null): HeadersInit | undefined => {
@@ -33,6 +36,28 @@ export const notificationApi = {
     return apiClient.patch<undefined, NotificationResponse>(
       API_ENDPOINTS.NOTIFICATION.READ_BY_ID(notificationId),
       undefined,
+      getAuthHeaders(accessToken),
+    );
+  },
+
+  sendTestEmail: async (
+    data: TestEmailNotificationRequest,
+    accessToken?: string | null,
+  ): Promise<TestNotificationResponse> => {
+    return apiClient.post<TestEmailNotificationRequest, TestNotificationResponse>(
+      API_ENDPOINTS.NOTIFICATION.TEST_EMAIL,
+      data,
+      getAuthHeaders(accessToken),
+    );
+  },
+
+  sendTestTelegram: async (
+    data: TestTelegramNotificationRequest,
+    accessToken?: string | null,
+  ): Promise<TestNotificationResponse> => {
+    return apiClient.post<TestTelegramNotificationRequest, TestNotificationResponse>(
+      API_ENDPOINTS.NOTIFICATION.TEST_TELEGRAM,
+      data,
       getAuthHeaders(accessToken),
     );
   },

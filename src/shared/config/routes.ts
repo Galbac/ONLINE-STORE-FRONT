@@ -36,6 +36,7 @@ export const ROUTES = {
   PROFILE_CHANGE_PASSWORD: "/profile/change-password",
   PROFILE_FAVORITES: "/profile/favorites",
   PROFILE_NOTIFICATIONS: "/profile/notifications",
+  PROFILE_NOTIFICATIONS_TEST: "/profile/notifications/test",
   PROFILE_ORDER: (orderId: number | string): string => `/profile/orders/${orderId}`,
   PROFILE_ORDERS: "/profile/orders",
   PROFILE_UPLOADS: "/profile/uploads",

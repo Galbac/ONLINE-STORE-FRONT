@@ -15,6 +15,8 @@ export const ROUTES = {
   ADMIN_PROMO_CODES: "/admin/promo-codes",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_STAFF: "/admin/staff",
+  ADMIN_STAFF_CREATE: "/admin/staff/create",
+  ADMIN_STAFF_DETAILS: (staffId: number | string): string => `/admin/staff/${staffId}`,
   ADMIN_USER: (userId: number | string): string => `/admin/users/${userId}`,
   ADMIN_USERS: "/admin/users",
   CATALOG: "/catalog",

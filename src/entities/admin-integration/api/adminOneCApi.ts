@@ -1,5 +1,7 @@
 import { adminApiClient, API_ENDPOINTS } from "@/shared/api";
 import type {
+  AdminOneCLogsParams,
+  AdminOneCLogsResponse,
   AdminOneCOrderSyncRequest,
   AdminOneCOrderSyncResponse,
   AdminOneCStatusResponse,
@@ -22,6 +24,17 @@ export const adminOneCApi = {
     return adminApiClient.get<AdminOneCStatusResponse>(
       API_ENDPOINTS.ADMIN.INTEGRATION_1C_STATUS,
       undefined,
+      getAuthHeaders(accessToken),
+    );
+  },
+
+  getLogs: async (
+    params: AdminOneCLogsParams,
+    accessToken?: string | null,
+  ): Promise<AdminOneCLogsResponse> => {
+    return adminApiClient.get<AdminOneCLogsResponse>(
+      API_ENDPOINTS.ADMIN.INTEGRATION_1C_LOGS,
+      toLogsQueryParams(params),
       getAuthHeaders(accessToken),
     );
   },
@@ -62,4 +75,19 @@ const getSyncEndpoint = (kind: Exclude<AdminOneCSyncKind, "orders">): string => 
 
 const getAuthHeaders = (accessToken?: string | null): HeadersInit | undefined => {
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+};
+
+const toLogsQueryParams = (
+  params: AdminOneCLogsParams,
+): Record<string, string | number | boolean | null | undefined> => {
+  return {
+    date_from: params.date_from,
+    date_to: params.date_to,
+    direction: params.direction,
+    entity_type: params.entity_type,
+    limit: params.limit,
+    page: params.page,
+    q: params.q,
+    status: params.status,
+  };
 };

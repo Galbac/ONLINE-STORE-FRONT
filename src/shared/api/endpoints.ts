@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
     DISCOUNT_DEACTIVATE: (discountId: number): string =>
       `/api/admin/discounts/${discountId}/deactivate`,
     INTEGRATION_1C_STATUS: "/api/admin/integration/1c/status",
+    INTEGRATION_1C_LOGS: "/api/admin/integration/1c/logs",
     INTEGRATION_1C_SYNC_ORDERS: "/api/admin/integration/1c/sync/orders",
     INTEGRATION_1C_SYNC_PRICES: "/api/admin/integration/1c/sync/prices",
     INTEGRATION_1C_SYNC_PRODUCTS: "/api/admin/integration/1c/sync/products",

@@ -58,4 +58,47 @@ export interface AdminOneCOrderSyncResponse {
   synced: number;
 }
 
+export type AdminOneCLogDirection = "inbound" | "outbound";
+export type AdminOneCLogEntityType =
+  | "categories"
+  | "images"
+  | "orders"
+  | "prices"
+  | "products"
+  | "stocks";
+export type AdminOneCLogStatus = "error" | "partial" | "started" | "success";
+
+export interface AdminOneCLogItemResponse {
+  created_at: string;
+  created_count: number;
+  direction: AdminOneCLogDirection;
+  entity_type: AdminOneCLogEntityType;
+  error_count: number;
+  id: number;
+  message?: string | null;
+  request_payload?: Record<string, unknown> | null;
+  response_payload?: Record<string, unknown> | null;
+  status: AdminOneCLogStatus;
+  updated_count: number;
+}
+
+export interface AdminOneCLogsResponse {
+  items: AdminOneCLogItemResponse[];
+  limit: number;
+  page: number;
+  pages: number;
+  total: number;
+}
+
+export interface AdminOneCLogsParams {
+  date_from?: string;
+  date_to?: string;
+  direction?: string;
+  entity_type?: string;
+  limit?: string;
+  page?: string;
+  q?: string;
+  status?: string;
+}
+
 export type AdminOneCSyncKind = "orders" | "prices" | "products" | "stocks";

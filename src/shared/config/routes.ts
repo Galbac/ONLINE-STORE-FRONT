@@ -9,6 +9,7 @@ export const ROUTES = {
   ADMIN_DISCOUNT_CREATE: "/admin/discounts/create",
   ADMIN_DISCOUNT_EDIT: (discountId: number | string): string => `/admin/discounts/${discountId}`,
   ADMIN_DISCOUNTS: "/admin/discounts",
+  ADMIN_INTEGRATION_1C: "/admin/integration/1c",
   ADMIN_LOGIN: "/admin/login",
   ADMIN_NOTIFICATIONS: "/admin/notifications/settings",
   ADMIN_NOTIFICATION_SETTINGS: "/admin/notifications/settings",

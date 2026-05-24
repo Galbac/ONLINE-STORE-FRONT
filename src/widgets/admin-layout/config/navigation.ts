@@ -6,6 +6,7 @@ import {
   Images,
   LayoutDashboard,
   Package,
+  RefreshCw,
   Settings,
   Shield,
   TicketPercent,
@@ -87,6 +88,12 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Images,
     label: "Файлы",
     requiredPermissions: ["admin.uploads.read", "uploads.read", "uploads:view"],
+  },
+  {
+    href: ROUTES.ADMIN_INTEGRATION_1C,
+    icon: RefreshCw,
+    label: "1С",
+    requiredPermissions: ["admin.integration.read", "integration.read", "integration:view"],
   },
   {
     href: ROUTES.ADMIN_SETTINGS,

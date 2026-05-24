@@ -41,6 +41,11 @@ export const API_ENDPOINTS = {
     DISCOUNT_BY_ID: (discountId: number): string => `/api/admin/discounts/${discountId}`,
     DISCOUNT_DEACTIVATE: (discountId: number): string =>
       `/api/admin/discounts/${discountId}/deactivate`,
+    INTEGRATION_1C_STATUS: "/api/admin/integration/1c/status",
+    INTEGRATION_1C_SYNC_ORDERS: "/api/admin/integration/1c/sync/orders",
+    INTEGRATION_1C_SYNC_PRICES: "/api/admin/integration/1c/sync/prices",
+    INTEGRATION_1C_SYNC_PRODUCTS: "/api/admin/integration/1c/sync/products",
+    INTEGRATION_1C_SYNC_STOCKS: "/api/admin/integration/1c/sync/stocks",
     ORDERS: "/api/admin/orders",
     ORDER_BY_ID: (orderId: number): string => `/api/admin/orders/${orderId}`,
     ORDER_CANCEL: (orderId: number): string => `/api/admin/orders/${orderId}/cancel`,
@@ -101,6 +106,9 @@ export const API_ENDPOINTS = {
     PICKUP_POINTS: "/api/delivery/pickup-points",
     PICKUP_POINT_BY_ID: (pointId: number): string => `/api/delivery/pickup-points/${pointId}`,
     TIME_SLOTS: "/api/delivery/time-slots",
+  },
+  HEALTH: {
+    ONE_C: "/api/health/1c",
   },
   CART: {
     DETAIL: "/api/cart",

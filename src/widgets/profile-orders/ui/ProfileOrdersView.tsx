@@ -477,6 +477,7 @@ const getPlural = (value: number, variants: [string, string, string]): string =>
 
 const formatDateTime = (value: string): string => {
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     day: "numeric",
     month: "long",
     year: "numeric",

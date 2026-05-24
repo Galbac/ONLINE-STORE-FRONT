@@ -823,8 +823,12 @@ const getDateOptions = (selectedDate: string): Array<{ label: string; value: str
         ? "Сегодня"
         : index === 1
           ? "Завтра"
-          : new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(date);
+          : new Intl.DateTimeFormat("ru-RU", {
+              timeZone: "Europe/Moscow",
+              weekday: "short",
+            }).format(date);
     const dayMonth = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: "Europe/Moscow",
       day: "numeric",
       month: "short",
     }).format(date);

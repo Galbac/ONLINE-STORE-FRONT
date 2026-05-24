@@ -22,7 +22,8 @@ export default async function Page() {
       <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
         <h1 className="text-text-primary text-2xl font-bold">Настройки уведомлений</h1>
         <p className="text-text-secondary mt-3 leading-7">
-          Не удалось загрузить настройки уведомлений. Обновите страницу или войдите заново.
+          Backend вернул 500 для ручки настроек уведомлений. Страница доступна, но данные настроек
+          сейчас не получены.
         </p>
       </section>
     );

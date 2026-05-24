@@ -65,6 +65,14 @@ export const adminOrderApi = {
     accessToken?: string | null,
     format = "html",
   ): Promise<AdminOrderPrintResponse> => {
+    if (format === "html") {
+      return adminApiClient.getText(
+        API_ENDPOINTS.ADMIN.ORDER_PRINT(orderId),
+        { format },
+        getAuthHeaders(accessToken),
+      );
+    }
+
     return adminApiClient.get<AdminOrderPrintResponse>(
       API_ENDPOINTS.ADMIN.ORDER_PRINT(orderId),
       { format },

@@ -4,10 +4,7 @@ const API_PROXY_TARGET = (
   process.env.API_INTERNAL_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8000"
-).replace(
-  /\/$/,
-  "",
-);
+).replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -28,6 +25,10 @@ const nextConfig: NextConfig = {
       {
         source: "/api/:path*",
         destination: `${API_PROXY_TARGET}/api/:path*`,
+      },
+      {
+        source: "/health",
+        destination: `${API_PROXY_TARGET}/health`,
       },
     ];
   },

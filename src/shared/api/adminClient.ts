@@ -134,6 +134,40 @@ class AdminApiClient {
     return (await response.json()) as TResponse;
   }
 
+  async getText(
+    url: string,
+    params?: Record<string, string | number | boolean | null | undefined>,
+    headers?: HeadersInit,
+  ): Promise<string> {
+    const requestUrl = this.createRequestUrl(url);
+
+    Object.entries(params ?? {}).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        requestUrl.searchParams.set(key, String(value));
+      }
+    });
+
+    const response = await fetch(requestUrl, {
+      headers: {
+        Accept: "text/html, text/plain, */*",
+        ...getBrowserAdminAuthHeaders(),
+        ...headers,
+      },
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    });
+
+    if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {
+      clearStoredAdminAuth();
+      window.location.assign("/admin/login");
+    }
+
+    if (!response.ok) {
+      throw new AdminApiError(response.status, response.statusText);
+    }
+
+    return response.text();
+  }
+
   async post<TRequest, TResponse>(
     url: string,
     data?: TRequest,

@@ -34,9 +34,9 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
     : true;
 
   return (
-    <div className="bg-bg-secondary min-h-screen text-text-primary">
+    <div className="bg-bg-secondary text-text-primary min-h-screen overflow-x-hidden">
       <div className="lg:grid lg:min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="border-border bg-bg-primary border-b lg:border-b-0 lg:border-r">
+        <aside className="border-border bg-bg-primary max-w-full overflow-hidden border-b lg:border-r lg:border-b-0">
           <div className="flex h-full flex-col">
             <div className="border-border flex items-center gap-3 border-b px-4 py-4 lg:px-5">
               <Link className="flex min-w-0 items-center gap-3" href={ROUTES.ADMIN_DASHBOARD}>
@@ -50,7 +50,7 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
               </Link>
             </div>
 
-            <nav className="flex gap-2 overflow-x-auto px-4 py-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:px-3 lg:py-4">
+            <nav className="flex w-full max-w-full flex-wrap gap-2 px-4 py-3 lg:flex-1 lg:flex-col lg:flex-nowrap lg:px-3 lg:py-4">
               {visibleNavigationItems.map((item) => {
                 const Icon = item.icon;
 
@@ -80,7 +80,9 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
               <div className="min-w-0">
                 <p className="text-text-muted text-xs font-bold uppercase">Сотрудник</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="truncate text-sm font-bold sm:text-base">{currentUser.name}</span>
+                  <span className="truncate text-sm font-bold sm:text-base">
+                    {currentUser.name}
+                  </span>
                   <span className="border-border bg-bg-secondary text-text-secondary rounded-lg border px-2 py-1 text-xs font-bold">
                     {roleLabel}
                   </span>
@@ -90,7 +92,7 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
             </div>
           </header>
 
-          <main className="px-4 py-5 lg:px-6 lg:py-7">
+          <main className="min-w-0 overflow-x-hidden px-4 py-5 lg:px-6 lg:py-7">
             {canAccessCurrentRoute ? children : <AdminAccessDenied />}
           </main>
         </div>
@@ -101,8 +103,8 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
 
 const AdminAccessDenied = () => {
   return (
-    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
-      <h1 className="text-2xl font-bold text-text-primary">Недостаточно прав</h1>
+    <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
+      <h1 className="text-text-primary text-2xl font-bold">Недостаточно прав</h1>
       <p className="text-text-secondary mt-3 leading-7">
         У текущего сотрудника нет доступа к этому разделу.
       </p>

@@ -455,6 +455,7 @@ const formatDateTime = (value?: string | null): string => {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);

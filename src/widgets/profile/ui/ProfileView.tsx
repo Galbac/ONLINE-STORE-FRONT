@@ -157,8 +157,26 @@ const ProfileCard = ({ email, user }: ProfileCardProps) => {
           <ProfileField label="Телефон" value={user.phone} />
           <ProfileField label="Email" value={email} />
           <ProfileField label="Дата регистрации" value={formatDateTime(user.created_at)} />
+          <ProfileField label="Подтвержден" value={user.is_verified ? "Да" : "Нет"} />
+          <ProfileField label="Статус" value={user.is_active ? "Активен" : "Неактивен"} />
         </div>
       </div>
+
+      {user.permissions && user.permissions.length > 0 ? (
+        <div className="border-border mt-8 rounded-lg border p-4">
+          <p className="text-text-secondary text-sm">Права аккаунта</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {user.permissions.map((permission) => (
+              <span
+                className="bg-bg-hover text-text-secondary rounded-lg px-2.5 py-1 text-xs font-bold"
+                key={permission}
+              >
+                {permission}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <Link
         className="border-accent-primary text-accent-primary hover:bg-bg-hover mt-10 inline-flex h-14 w-full items-center justify-center gap-3 rounded-lg border px-6 text-base font-bold transition"
@@ -284,6 +302,7 @@ const QuickLink = ({ href, icon, text, title }: QuickLinkProps) => {
 
 const formatDateTime = (value: string): string => {
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -294,6 +313,7 @@ const formatDateTime = (value: string): string => {
 
 const formatDate = (value: string): string => {
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     day: "numeric",
     month: "long",
     year: "numeric",

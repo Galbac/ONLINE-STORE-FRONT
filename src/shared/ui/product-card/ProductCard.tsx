@@ -55,7 +55,22 @@ export const ProductCard = ({ cartControl, favoriteControl, product }: ProductCa
         {product.name}
       </Link>
       <span className="text-text-secondary mt-1 text-xs">{product.unit}</span>
-      <span className="text-success mt-3 text-xs font-semibold">{product.stock_display}</span>
+      <div className="text-text-secondary mt-3 space-y-1 text-xs">
+        <span
+          className={
+            product.is_available
+              ? "text-success block font-semibold"
+              : "text-error block font-semibold"
+          }
+        >
+          {product.stock_display}
+        </span>
+        <span className="block">{product.category?.name ?? "Каталог"}</span>
+        <span className="block">{getProductTypeLabel(product.product_type)}</span>
+        {product.created_at ? (
+          <span className="block">Добавлен {formatDate(product.created_at)}</span>
+        ) : null}
+      </div>
 
       <div className="mt-auto flex items-end justify-between gap-3 pt-4">
         <div className="flex items-baseline gap-2">
@@ -78,4 +93,23 @@ export const ProductCard = ({ cartControl, favoriteControl, product }: ProductCa
       </div>
     </article>
   );
+};
+
+const getProductTypeLabel = (productType: string): string => {
+  return productType === "weight" ? "Весовой товар" : "Штучный товар";
+};
+
+const formatDate = (value: string): string => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 };

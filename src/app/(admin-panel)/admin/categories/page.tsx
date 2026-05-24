@@ -18,7 +18,7 @@ export default async function Page() {
     const categories = await adminCategoryApi.getList(
       {
         include_deleted: "false",
-        limit: "200",
+        limit: "100",
         page: "1",
       },
       accessToken,
@@ -27,8 +27,8 @@ export default async function Page() {
     return <AdminCategoriesPage categories={categories.items} />;
   } catch {
     return (
-      <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
-        <h1 className="text-2xl font-bold text-text-primary">Категории</h1>
+      <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
+        <h1 className="text-text-primary text-2xl font-bold">Категории</h1>
         <p className="text-text-secondary mt-3 leading-7">
           Не удалось загрузить категории. Обновите страницу или войдите заново.
         </p>

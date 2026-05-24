@@ -264,6 +264,7 @@ const formatDate = (value: string): string => {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     day: "numeric",
     month: "long",
     year: "numeric",

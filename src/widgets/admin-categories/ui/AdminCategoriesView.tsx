@@ -141,11 +141,15 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
       try {
         const accessToken = getStoredAdminAccessToken();
         await adminCategoryApi.update(editingCategory.id, { image_id: null }, accessToken);
-        await adminCategoryApi.deleteUpload(editingCategory.image?.id ?? 0, accessToken).catch(() => undefined);
+        await adminCategoryApi
+          .deleteUpload(editingCategory.image?.id ?? 0, accessToken)
+          .catch(() => undefined);
         const updatedCategory = { ...editingCategory, image: null, image_url: null };
 
         setEditingCategory(updatedCategory);
-        setCategories((currentCategories) => upsertListCategory(currentCategories, updatedCategory));
+        setCategories((currentCategories) =>
+          upsertListCategory(currentCategories, updatedCategory),
+        );
         router.refresh();
       } catch {
         setErrorMessage("Не удалось удалить изображение.");
@@ -216,7 +220,10 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
 
     startTransition(async () => {
       try {
-        await adminCategoryApi.sort(toSortPayload(normalizedCategories), getStoredAdminAccessToken());
+        await adminCategoryApi.sort(
+          toSortPayload(normalizedCategories),
+          getStoredAdminAccessToken(),
+        );
         setSuccessMessage("Порядок категорий обновлен.");
         router.refresh();
       } catch {
@@ -227,10 +234,10 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
 
   return (
     <div className="space-y-6">
-      <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
+      <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">Категории</h1>
+            <h1 className="text-text-primary text-2xl font-bold sm:text-3xl">Категории</h1>
             <p className="text-text-secondary mt-2">
               Список, дерево, перенос, сортировка и изображения категорий.
             </p>
@@ -245,20 +252,20 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
           </button>
         </div>
         {errorMessage ? (
-          <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-error">{errorMessage}</p>
+          <p className="text-error mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm">{errorMessage}</p>
         ) : null}
         {successMessage ? (
-          <p className="mt-5 rounded-lg bg-green-50 px-4 py-3 text-sm text-success">
+          <p className="text-success mt-5 rounded-lg bg-green-50 px-4 py-3 text-sm">
             {successMessage}
           </p>
         ) : null}
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-6">
-          <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
+      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="min-w-0 space-y-6">
+          <section className="border-border bg-bg-primary shadow-soft min-w-0 rounded-lg border p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-bold text-text-primary">Дерево категорий</h2>
+              <h2 className="text-text-primary text-xl font-bold">Дерево категорий</h2>
               <span className="text-text-secondary text-sm font-bold">{categories.length}</span>
             </div>
             <button
@@ -285,15 +292,15 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
                   />
                 ))
               ) : (
-                <p className="text-text-secondary rounded-lg bg-bg-secondary p-4 text-sm">
+                <p className="text-text-secondary bg-bg-secondary rounded-lg p-4 text-sm">
                   Категории не найдены.
                 </p>
               )}
             </div>
           </section>
 
-          <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
-            <h2 className="text-xl font-bold text-text-primary">Список категорий</h2>
+          <section className="border-border bg-bg-primary shadow-soft min-w-0 rounded-lg border p-5 sm:p-6">
+            <h2 className="text-text-primary text-xl font-bold">Список категорий</h2>
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[720px] border-collapse text-left">
                 <thead className="bg-bg-secondary text-text-muted text-xs uppercase">
@@ -315,8 +322,8 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
                         <span
                           className={
                             category.is_active
-                              ? "rounded-lg bg-green-50 px-2.5 py-1 text-xs font-bold text-success"
-                              : "rounded-lg bg-red-50 px-2.5 py-1 text-xs font-bold text-error"
+                              ? "text-success rounded-lg bg-green-50 px-2.5 py-1 text-xs font-bold"
+                              : "text-error rounded-lg bg-red-50 px-2.5 py-1 text-xs font-bold"
                           }
                         >
                           {category.is_active ? "Активна" : "Неактивна"}
@@ -398,10 +405,18 @@ const CategoryTreeNode = ({
           </span>
         </button>
         <div className="flex gap-2">
-          <IconButton disabled={isPending} label="Выше" onClick={() => onMoveWithinParent(category.id, "up")}>
+          <IconButton
+            disabled={isPending}
+            label="Выше"
+            onClick={() => onMoveWithinParent(category.id, "up")}
+          >
             <ArrowUp size={16} />
           </IconButton>
-          <IconButton disabled={isPending} label="Ниже" onClick={() => onMoveWithinParent(category.id, "down")}>
+          <IconButton
+            disabled={isPending}
+            label="Ниже"
+            onClick={() => onMoveWithinParent(category.id, "down")}
+          >
             <ArrowDown size={16} />
           </IconButton>
         </div>
@@ -449,13 +464,13 @@ const CategoryForm = ({
 }: CategoryFormProps) => {
   return (
     <form
-      className="border-border bg-bg-primary h-fit rounded-lg border p-5 shadow-soft sm:p-6"
+      className="border-border bg-bg-primary shadow-soft h-fit min-w-0 rounded-lg border p-5 sm:p-6"
       key={editingCategory?.id ?? "new-category"}
       onSubmit={onSubmit}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-text-primary">
+          <h2 className="text-text-primary text-xl font-bold">
             {editingCategory ? "Редактирование" : "Создание"}
           </h2>
           <p className="text-text-secondary mt-1 text-sm">
@@ -464,7 +479,7 @@ const CategoryForm = ({
         </div>
         {editingCategory ? (
           <button
-            className="border-border text-error hover:bg-red-50 inline-flex size-10 items-center justify-center rounded-lg border transition"
+            className="border-border text-error inline-flex size-10 items-center justify-center rounded-lg border transition hover:bg-red-50"
             type="button"
             disabled={isPending}
             onClick={onDelete}
@@ -484,7 +499,7 @@ const CategoryForm = ({
         </FormField>
         <FormField label="Родитель">
           <select
-            className="border-border focus:border-accent-primary h-11 w-full rounded-lg border bg-bg-primary px-3 text-sm outline-none transition"
+            className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm transition outline-none"
             defaultValue={editingCategory?.parent_id ?? ""}
             name="parent_id"
           >
@@ -507,12 +522,12 @@ const CategoryForm = ({
         </FormField>
         <FormField label="Описание">
           <textarea
-            className="border-border focus:border-accent-primary min-h-24 w-full rounded-lg border bg-transparent px-3 py-3 text-sm outline-none transition placeholder:text-text-muted"
+            className="border-border focus:border-accent-primary placeholder:text-text-muted min-h-24 w-full rounded-lg border bg-transparent px-3 py-3 text-sm transition outline-none"
             defaultValue={editingCategory?.description ?? ""}
             name="description"
           />
         </FormField>
-        <div className="rounded-lg bg-bg-secondary px-4 py-3">
+        <div className="bg-bg-secondary rounded-lg px-4 py-3">
           <label className="flex items-center justify-between gap-4">
             <span className="font-bold">Активность</span>
             <input
@@ -539,7 +554,7 @@ const CategoryForm = ({
           {editingCategory?.image_url ? (
             <div className="mb-3">
               <div
-                className="h-36 rounded-lg bg-bg-secondary bg-cover bg-center"
+                className="bg-bg-secondary h-36 rounded-lg bg-cover bg-center"
                 style={{ backgroundImage: `url(${editingCategory.image_url})` }}
               />
               <button
@@ -599,7 +614,7 @@ const TextInput = ({ className, type = "text", ...props }: TextInputProps) => {
   return (
     <input
       className={cn(
-        "border-border focus:border-accent-primary h-11 w-full rounded-lg border bg-transparent px-3 text-sm outline-none transition placeholder:text-text-muted",
+        "border-border focus:border-accent-primary placeholder:text-text-muted h-11 w-full rounded-lg border bg-transparent px-3 text-sm transition outline-none",
         className,
       )}
       type={type}

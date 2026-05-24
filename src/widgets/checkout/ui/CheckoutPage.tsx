@@ -72,21 +72,13 @@ export const CheckoutPage = () => {
           addresses.items.find((address) => address.is_default) ?? addresses.items[0];
         const defaultPickupPoint = pickupPoints.items[0];
 
-        const [deliveryCalculation, timeSlots] = await Promise.all([
-          deliveryApi.calculate({
-            delivery_type: "delivery",
-            cart_total: summary.final_price,
-            address_id: defaultAddress?.id ?? null,
-            city: defaultAddress?.city ?? null,
-          }),
-          deliveryApi.getTimeSlots({
-            date: today,
-            delivery_type: "delivery",
-            address_id: defaultAddress?.id ?? null,
-            pickup_point_id: defaultPickupPoint?.id ?? null,
-            city: defaultAddress?.city ?? defaultPickupPoint?.city ?? null,
-          }),
-        ]);
+        const deliveryCalculation = createDeliveryCalculationFallback(summary, deliveryOptions);
+        const timeSlots = await deliveryApi.getTimeSlots({
+          date: today,
+          delivery_type: "delivery",
+          address_id: defaultAddress?.id ?? null,
+          city: defaultAddress?.city ?? defaultPickupPoint?.city ?? null,
+        });
 
         if (isActive) {
           setState({
@@ -184,4 +176,19 @@ const CheckoutPageStateView = ({ status }: CheckoutPageStateViewProps) => {
       </Container>
     </main>
   );
+};
+
+const createDeliveryCalculationFallback = (
+  summary: CartSummaryResponse,
+  deliveryOptions: DeliveryOptionsResponse,
+): DeliveryCalculateResponse => {
+  return {
+    amount_left_for_free_delivery: null,
+    available: deliveryOptions.delivery.enabled,
+    delivery_price: summary.delivery_price ?? deliveryOptions.delivery.base_price ?? null,
+    free_delivery_from: deliveryOptions.delivery.free_from_amount ?? null,
+    message: deliveryOptions.delivery.description ?? deliveryOptions.delivery.title,
+    min_order_amount: deliveryOptions.delivery.min_order_amount ?? null,
+    zone: null,
+  };
 };

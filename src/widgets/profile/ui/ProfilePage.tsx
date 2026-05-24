@@ -43,7 +43,7 @@ export const ProfilePage = () => {
 
     const loadProfile = async (): Promise<void> => {
       try {
-        await authApi.getMe(accessToken);
+        const authUser = await authApi.getMe(accessToken);
 
         const [profile, user] = await Promise.all([
           profileApi.getSummary(accessToken),
@@ -51,7 +51,13 @@ export const ProfilePage = () => {
         ]);
 
         if (isActive) {
-          setState({ profile, user, status: "ready" });
+          const isVerified = authUser.is_verified ?? user.is_verified;
+          const enrichedUser =
+            isVerified === undefined
+              ? { ...user, permissions: authUser.permissions }
+              : { ...user, is_verified: isVerified, permissions: authUser.permissions };
+
+          setState({ profile, status: "ready", user: enrichedUser });
         }
       } catch (error) {
         if (!isActive) {

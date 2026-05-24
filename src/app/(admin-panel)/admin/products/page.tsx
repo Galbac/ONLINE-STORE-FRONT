@@ -26,6 +26,17 @@ export default async function Page({ searchParams }: AdminProductsPageProps) {
 
   const filters = getFilters(await searchParams);
   const selectedCategoryId = Number(filters.category_id);
+  const lowStockParams =
+    filters.category_id && Number.isInteger(selectedCategoryId) && selectedCategoryId > 0
+      ? {
+          category_id: selectedCategoryId,
+          limit: 6,
+          offset: 0,
+        }
+      : {
+          limit: 6,
+          offset: 0,
+        };
 
   try {
     const [products, categories, lowStock] = await Promise.all([
@@ -38,19 +49,7 @@ export default async function Page({ searchParams }: AdminProductsPageProps) {
         },
         accessToken,
       ),
-      adminDashboardApi.getLowStock(
-        Number.isFinite(selectedCategoryId)
-          ? {
-              category_id: selectedCategoryId,
-              limit: 6,
-              offset: 0,
-            }
-          : {
-              limit: 6,
-              offset: 0,
-            },
-        accessToken,
-      ),
+      adminDashboardApi.getLowStock(lowStockParams, accessToken),
     ]);
 
     return (
@@ -63,8 +62,8 @@ export default async function Page({ searchParams }: AdminProductsPageProps) {
     );
   } catch {
     return (
-      <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
-        <h1 className="text-2xl font-bold text-text-primary">Товары</h1>
+      <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
+        <h1 className="text-text-primary text-2xl font-bold">Товары</h1>
         <p className="text-text-secondary mt-3 leading-7">
           Не удалось загрузить список товаров. Обновите страницу или войдите заново.
         </p>

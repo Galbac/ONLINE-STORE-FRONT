@@ -394,6 +394,15 @@ export const AdminOrderDetailsView = ({
                   <DetailRow label="Сумма" value={toPriceFormat(paymentSummary.amount)} />
                   <DetailRow label="Валюта" value={paymentSummary.currency} />
                   <DetailRow label="Провайдер" value={paymentSummary.provider ?? "-"} />
+                  <DetailRow label="Ссылка оплаты" value={getPaymentUrl(paymentSummary)} />
+                  <DetailRow
+                    label="Создан"
+                    value={formatDate(getPaymentCreatedAt(paymentSummary))}
+                  />
+                  <DetailRow
+                    label="Обновлен"
+                    value={formatDate(getPaymentUpdatedAt(paymentSummary))}
+                  />
                   <DetailRow label="Оплачен" value={formatDate(paymentSummary.paid_at)} />
                 </div>
 
@@ -599,12 +608,43 @@ const formatDate = (value?: string | null): string => {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(date);
+};
+
+const getPaymentUrl = (
+  payment: AdminOrderDetailResponse["payment"] | PaymentDetailResponse,
+): string => {
+  if (payment && "payment_url" in payment) {
+    return payment.payment_url ?? "-";
+  }
+
+  return "-";
+};
+
+const getPaymentCreatedAt = (
+  payment: AdminOrderDetailResponse["payment"] | PaymentDetailResponse,
+): string | null => {
+  if (payment && "created_at" in payment) {
+    return payment.created_at;
+  }
+
+  return null;
+};
+
+const getPaymentUpdatedAt = (
+  payment: AdminOrderDetailResponse["payment"] | PaymentDetailResponse,
+): string | null => {
+  if (payment && "updated_at" in payment) {
+    return payment.updated_at;
+  }
+
+  return null;
 };
 
 const formatQuantity = (value: string): string => {

@@ -319,6 +319,7 @@ const formatDate = (value: string): string => {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",

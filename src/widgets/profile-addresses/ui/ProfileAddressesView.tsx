@@ -448,6 +448,10 @@ const AddressCard = ({
               {address.comment}
             </p>
           ) : null}
+          <p className="text-text-muted mt-3 text-xs">
+            Создан {formatDateTime(address.created_at)} · обновлен{" "}
+            {formatDateTime(address.updated_at)}
+          </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[330px]">
@@ -733,6 +737,23 @@ const validateAddress = (values: AddressFormValues): string | null => {
 
 const getAddressTitle = (address: AddressResponse): string => {
   return address.title?.trim() || "Адрес доставки";
+};
+
+const formatDateTime = (value: string): string => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 };
 
 const formatAddressLine = (address: AddressResponse): string => {

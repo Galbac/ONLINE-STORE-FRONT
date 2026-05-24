@@ -39,7 +39,7 @@ export const AdminDashboardView = ({ dashboard, lowStock, sales }: AdminDashboar
       <section>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">Dashboard</h1>
+            <h1 className="text-text-primary text-2xl font-bold sm:text-3xl">Dashboard</h1>
             <p className="text-text-secondary mt-2">
               Продажи, заказы и товары, требующие внимания.
             </p>
@@ -99,11 +99,11 @@ interface MetricCardProps {
 
 const MetricCard = ({ icon: Icon, label, subValue, value }: MetricCardProps) => {
   return (
-    <article className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft">
+    <article className="border-border bg-bg-primary shadow-soft rounded-lg border p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-text-secondary text-sm">{label}</p>
-          <p className="mt-3 truncate text-2xl font-bold text-text-primary">{value}</p>
+          <p className="text-text-primary mt-3 truncate text-2xl font-bold">{value}</p>
         </div>
         <span className="bg-bg-hover text-accent-primary grid size-11 shrink-0 place-items-center rounded-lg">
           <Icon size={22} />
@@ -118,22 +118,22 @@ const SalesChart = ({ sales }: { sales: AdminSalesResponse }) => {
   const maxAmount = Math.max(...sales.series.map((item) => Number(item.amount)), 0);
 
   return (
-    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
+    <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-text-primary">График продаж</h2>
-          <p className="text-text-secondary mt-1 text-sm">Группировка: {getGroupLabel(sales.group_by)}</p>
+          <h2 className="text-text-primary text-xl font-bold">График продаж</h2>
+          <p className="text-text-secondary mt-1 text-sm">
+            Группировка: {getGroupLabel(sales.group_by)}
+          </p>
         </div>
         <span className="text-text-secondary text-sm font-bold">
           {sales.orders_count.toLocaleString("ru-RU")} заказов
         </span>
       </div>
 
-      <div className="mt-6 flex h-64 items-end gap-2 overflow-x-auto border-b border-border pb-3">
+      <div className="border-border mt-6 flex h-64 items-end gap-2 overflow-x-auto border-b pb-3">
         {sales.series.length > 0 ? (
-          sales.series.map((item) => (
-            <ChartBar item={item} key={item.date} maxAmount={maxAmount} />
-          ))
+          sales.series.map((item) => <ChartBar item={item} key={item.date} maxAmount={maxAmount} />)
         ) : (
           <EmptyState text="За выбранный период продаж нет." />
         )}
@@ -155,15 +155,17 @@ const ChartBar = ({ item, maxAmount }: { item: AdminSalesSeriesItem; maxAmount: 
           title={`${formatShortDate(item.date)}: ${toPriceFormat(item.amount)}`}
         />
       </div>
-      <span className="text-text-muted truncate text-center text-xs">{formatShortDate(item.date)}</span>
+      <span className="text-text-muted truncate text-center text-xs">
+        {formatShortDate(item.date)}
+      </span>
     </div>
   );
 };
 
 const QuickActions = () => {
   return (
-    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
-      <h2 className="text-xl font-bold text-text-primary">Быстрые действия</h2>
+    <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
+      <h2 className="text-text-primary text-xl font-bold">Быстрые действия</h2>
       <div className="mt-5 space-y-3">
         {quickActions.map((action) => {
           const Icon = action.icon;
@@ -189,9 +191,9 @@ const QuickActions = () => {
 
 const LowStockList = ({ lowStock }: { lowStock: AdminLowStockResponse }) => {
   return (
-    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
+    <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-text-primary">Товары с низким остатком</h2>
+        <h2 className="text-text-primary text-xl font-bold">Товары с низким остатком</h2>
         <span className="text-text-secondary text-sm font-bold">{lowStock.total}</span>
       </div>
       <div className="mt-5 space-y-3">
@@ -202,13 +204,13 @@ const LowStockList = ({ lowStock }: { lowStock: AdminLowStockResponse }) => {
               key={product.id}
             >
               <div className="min-w-0">
-                <p className="truncate font-bold text-text-primary">{product.name}</p>
+                <p className="text-text-primary truncate font-bold">{product.name}</p>
                 <p className="text-text-muted mt-1 text-sm">
                   {product.sku ? `SKU ${product.sku}` : product.product_type}
                 </p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="font-bold text-error">
+                <p className="text-error font-bold">
                   {formatQuantity(product.stock_quantity)} {product.unit}
                 </p>
                 <p className="text-text-muted mt-1 text-sm">
@@ -227,8 +229,8 @@ const LowStockList = ({ lowStock }: { lowStock: AdminLowStockResponse }) => {
 
 const RecentOrders = ({ dashboard }: { dashboard: AdminDashboardResponse }) => {
   return (
-    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">
-      <h2 className="text-xl font-bold text-text-primary">Новые заказы</h2>
+    <section className="border-border bg-bg-primary shadow-soft rounded-lg border p-5 sm:p-6">
+      <h2 className="text-text-primary text-xl font-bold">Новые заказы</h2>
       <div className="mt-5 space-y-3">
         {dashboard.recent_orders.length > 0 ? (
           dashboard.recent_orders.map((order) => (
@@ -238,11 +240,11 @@ const RecentOrders = ({ dashboard }: { dashboard: AdminDashboardResponse }) => {
               key={order.id}
             >
               <div className="min-w-0">
-                <p className="truncate font-bold text-text-primary">#{order.order_number}</p>
+                <p className="text-text-primary truncate font-bold">#{order.order_number}</p>
                 <p className="text-text-muted mt-1 text-sm">{formatDateTime(order.created_at)}</p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="font-bold text-text-primary">{toPriceFormat(order.final_price)}</p>
+                <p className="text-text-primary font-bold">{toPriceFormat(order.final_price)}</p>
                 <p className="text-text-muted mt-1 text-sm">{order.status}</p>
               </div>
             </Link>
@@ -256,7 +258,7 @@ const RecentOrders = ({ dashboard }: { dashboard: AdminDashboardResponse }) => {
 };
 
 const EmptyState = ({ text }: { text: string }) => {
-  return <p className="text-text-secondary rounded-lg bg-bg-secondary p-4 text-sm">{text}</p>;
+  return <p className="text-text-secondary bg-bg-secondary rounded-lg p-4 text-sm">{text}</p>;
 };
 
 const getGroupLabel = (groupBy: AdminSalesResponse["group_by"]): string => {
@@ -271,6 +273,7 @@ const getGroupLabel = (groupBy: AdminSalesResponse["group_by"]): string => {
 
 const formatShortDate = (date: string): string => {
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     day: "2-digit",
     month: "2-digit",
   }).format(new Date(date));
@@ -282,6 +285,7 @@ const formatDateRange = (dateFrom: string, dateTo: string): string => {
 
 const formatDateTime = (date: string): string => {
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",

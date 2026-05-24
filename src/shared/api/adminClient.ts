@@ -82,12 +82,18 @@ export const clearStoredAdminAuth = (): void => {
 };
 
 export class AdminApiError extends Error {
+  readonly detail: string | null;
   readonly status: number;
   readonly statusText: string;
 
-  constructor(status: number, statusText: string) {
-    super(`Admin API request failed: ${status} ${statusText}`);
+  constructor(status: number, statusText: string, detail: string | null = null) {
+    super(
+      detail
+        ? `Admin API request failed: ${status} ${detail}`
+        : `Admin API request failed: ${status} ${statusText}`,
+    );
     this.name = "AdminApiError";
+    this.detail = detail;
     this.status = status;
     this.statusText = statusText;
   }
@@ -128,7 +134,7 @@ class AdminApiClient {
     }
 
     if (!response.ok) {
-      throw new AdminApiError(response.status, response.statusText);
+      throw await this.createError(response);
     }
 
     return (await response.json()) as TResponse;
@@ -162,7 +168,7 @@ class AdminApiClient {
     }
 
     if (!response.ok) {
-      throw new AdminApiError(response.status, response.statusText);
+      throw await this.createError(response);
     }
 
     return response.text();
@@ -196,7 +202,7 @@ class AdminApiClient {
     }
 
     if (!response.ok) {
-      throw new AdminApiError(response.status, response.statusText);
+      throw await this.createError(response);
     }
 
     return (await response.json()) as TResponse;
@@ -224,7 +230,7 @@ class AdminApiClient {
     }
 
     if (!response.ok) {
-      throw new AdminApiError(response.status, response.statusText);
+      throw await this.createError(response);
     }
 
     return (await response.json()) as TResponse;
@@ -253,7 +259,7 @@ class AdminApiClient {
     }
 
     if (!response.ok) {
-      throw new AdminApiError(response.status, response.statusText);
+      throw await this.createError(response);
     }
 
     return (await response.json()) as TResponse;
@@ -276,7 +282,7 @@ class AdminApiClient {
     }
 
     if (!response.ok) {
-      throw new AdminApiError(response.status, response.statusText);
+      throw await this.createError(response);
     }
 
     return (await response.json()) as TResponse;
@@ -299,6 +305,32 @@ class AdminApiClient {
   private isLoginRequest(url: string): boolean {
     return url === API_ENDPOINTS.ADMIN_AUTH.LOGIN;
   }
+
+  private async createError(response: Response): Promise<AdminApiError> {
+    return new AdminApiError(
+      response.status,
+      response.statusText,
+      await this.readErrorDetail(response),
+    );
+  }
+
+  private async readErrorDetail(response: Response): Promise<string | null> {
+    try {
+      const data: unknown = await response.json();
+
+      if (isRecord(data) && typeof data.detail === "string") {
+        return data.detail;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  }
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
 
 export const adminApiClient = new AdminApiClient({ baseUrl: API_BASE_URL });

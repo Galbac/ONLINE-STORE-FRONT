@@ -2,7 +2,13 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Save } from "lucide-react";
-import { adminSettingsApi, type AdminSettingsResponse } from "@/entities/admin-settings";
+
+import {
+  adminSettingsApi,
+  type AdminSettingsPayload,
+  type AdminSettingsResponse,
+} from "@/entities/admin-settings";
+import { AdminApiError } from "@/shared/api";
 
 interface AdminSettingsViewProps {
   settings: AdminSettingsResponse;
@@ -21,28 +27,22 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
     setMessage(null);
     setError(null);
 
+    const payload = getSettingsPayload(formData, settings);
+
+    if (Object.keys(payload).length === 0) {
+      setIsPending(false);
+      setMessage("Нет изменений для сохранения.");
+      return;
+    }
+
     void adminSettingsApi
-      .update({
-        address: getNullableFormValue(formData, "address"),
-        currency: getRequiredFormValue(formData, "currency"),
-        default_city: getNullableFormValue(formData, "default_city"),
-        delivery_enabled: getBooleanFormValue(formData, "delivery_enabled"),
-        email: getNullableFormValue(formData, "email"),
-        maintenance_mode: getBooleanFormValue(formData, "maintenance_mode"),
-        min_order_amount: getRequiredFormValue(formData, "min_order_amount"),
-        online_payment_enabled: getBooleanFormValue(formData, "online_payment_enabled"),
-        pay_on_delivery_enabled: getBooleanFormValue(formData, "pay_on_delivery_enabled"),
-        phone: getNullableFormValue(formData, "phone"),
-        pickup_enabled: getBooleanFormValue(formData, "pickup_enabled"),
-        shop_name: getRequiredFormValue(formData, "shop_name"),
-        working_hours: getNullableFormValue(formData, "working_hours"),
-      })
+      .update(payload)
       .then((response) => {
         setSettings(response);
         setMessage("Общие настройки сохранены.");
       })
-      .catch(() => {
-        setError("Не удалось сохранить настройки. Проверьте данные или войдите заново.");
+      .catch((updateError: unknown) => {
+        setError(getSettingsErrorMessage(updateError));
       })
       .finally(() => {
         setIsPending(false);
@@ -254,4 +254,101 @@ const getNullableFormValue = (formData: FormData, name: string): string | null =
 
 const getBooleanFormValue = (formData: FormData, name: string): boolean => {
   return formData.get(name) === "true";
+};
+
+const getSettingsPayload = (
+  formData: FormData,
+  currentSettings: AdminSettingsResponse,
+): AdminSettingsPayload => {
+  const nextSettings = {
+    address: getNullableFormValue(formData, "address"),
+    currency: getRequiredFormValue(formData, "currency"),
+    default_city: getNullableFormValue(formData, "default_city"),
+    delivery_enabled: getBooleanFormValue(formData, "delivery_enabled"),
+    email: getNullableFormValue(formData, "email"),
+    maintenance_mode: getBooleanFormValue(formData, "maintenance_mode"),
+    min_order_amount: getRequiredFormValue(formData, "min_order_amount"),
+    online_payment_enabled: getBooleanFormValue(formData, "online_payment_enabled"),
+    pay_on_delivery_enabled: getBooleanFormValue(formData, "pay_on_delivery_enabled"),
+    phone: getNullableFormValue(formData, "phone"),
+    pickup_enabled: getBooleanFormValue(formData, "pickup_enabled"),
+    shop_name: getRequiredFormValue(formData, "shop_name"),
+    working_hours: getNullableFormValue(formData, "working_hours"),
+  };
+  const payload: AdminSettingsPayload = {};
+
+  addChangedField(payload, "address", nextSettings.address, currentSettings.address ?? null);
+  addChangedField(payload, "currency", nextSettings.currency, currentSettings.currency);
+  addChangedField(
+    payload,
+    "default_city",
+    nextSettings.default_city,
+    currentSettings.default_city ?? null,
+  );
+  addChangedField(
+    payload,
+    "delivery_enabled",
+    nextSettings.delivery_enabled,
+    currentSettings.delivery_enabled,
+  );
+  addChangedField(payload, "email", nextSettings.email, currentSettings.email ?? null);
+  addChangedField(
+    payload,
+    "maintenance_mode",
+    nextSettings.maintenance_mode,
+    currentSettings.maintenance_mode,
+  );
+  addChangedField(
+    payload,
+    "min_order_amount",
+    nextSettings.min_order_amount,
+    currentSettings.min_order_amount,
+  );
+  addChangedField(
+    payload,
+    "online_payment_enabled",
+    nextSettings.online_payment_enabled,
+    currentSettings.online_payment_enabled,
+  );
+  addChangedField(
+    payload,
+    "pay_on_delivery_enabled",
+    nextSettings.pay_on_delivery_enabled,
+    currentSettings.pay_on_delivery_enabled,
+  );
+  addChangedField(payload, "phone", nextSettings.phone, currentSettings.phone ?? null);
+  addChangedField(
+    payload,
+    "pickup_enabled",
+    nextSettings.pickup_enabled,
+    currentSettings.pickup_enabled,
+  );
+  addChangedField(payload, "shop_name", nextSettings.shop_name, currentSettings.shop_name);
+  addChangedField(
+    payload,
+    "working_hours",
+    nextSettings.working_hours,
+    currentSettings.working_hours ?? null,
+  );
+
+  return payload;
+};
+
+const addChangedField = (
+  payload: AdminSettingsPayload,
+  field: string,
+  nextValue: boolean | string | null,
+  currentValue: boolean | string | null,
+): void => {
+  if (nextValue !== currentValue) {
+    payload[field] = nextValue;
+  }
+};
+
+const getSettingsErrorMessage = (error: unknown): string => {
+  if (error instanceof AdminApiError && error.detail) {
+    return error.detail;
+  }
+
+  return "Не удалось сохранить настройки. Проверьте данные или войдите заново.";
 };

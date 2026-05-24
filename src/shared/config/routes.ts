@@ -28,6 +28,7 @@ export const ROUTES = {
   ADMIN_STAFF: "/admin/staff",
   ADMIN_STAFF_CREATE: "/admin/staff/create",
   ADMIN_STAFF_DETAILS: (staffId: number | string): string => `/admin/staff/${staffId}`,
+  ADMIN_SYSTEM_HEALTH: "/admin/system/health",
   ADMIN_UPLOADS: "/admin/uploads",
   ADMIN_USER: (userId: number | string): string => `/admin/users/${userId}`,
   ADMIN_USERS: "/admin/users",

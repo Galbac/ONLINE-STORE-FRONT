@@ -1,5 +1,6 @@
 import {
   BadgePercent,
+  Activity,
   Bell,
   ClipboardList,
   FolderTree,
@@ -94,6 +95,12 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: RefreshCw,
     label: "1С",
     requiredPermissions: ["admin.integration.read", "integration.read", "integration:view"],
+  },
+  {
+    href: ROUTES.ADMIN_SYSTEM_HEALTH,
+    icon: Activity,
+    label: "Health",
+    requiredPermissions: ["admin.system.health.read", "system.health.read", "system-health:view"],
   },
   {
     href: ROUTES.ADMIN_SETTINGS,

@@ -109,7 +109,11 @@ export const API_ENDPOINTS = {
     TIME_SLOTS: "/api/delivery/time-slots",
   },
   HEALTH: {
+    API: "/api/health",
+    DB: "/api/health/db",
     ONE_C: "/api/health/1c",
+    ROOT: "/health",
+    STORAGE: "/api/health/storage",
   },
   CART: {
     DETAIL: "/api/cart",

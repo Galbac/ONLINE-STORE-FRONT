@@ -2,7 +2,9 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+
 import { ROUTES } from "@/shared/config";
+import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -25,9 +27,19 @@ export const getStoredAccessToken = (): string | null => {
     return null;
   }
 
-  return (
-    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token")
-  );
+  const accessToken =
+    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
+
+  if (!accessToken) {
+    return null;
+  }
+
+  if (!isAccessTokenValid(accessToken)) {
+    clearStoredAuth();
+    return null;
+  }
+
+  return accessToken;
 };
 
 export const clearStoredAuth = (): void => {

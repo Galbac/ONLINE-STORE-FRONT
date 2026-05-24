@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { isAccessTokenValid } from "@/shared/lib/auth-token";
+
 const protectedPathPrefixes = ["/profile", "/cart", "/checkout"] as const;
 const protectedAdminPathPrefix = "/admin";
 const adminLoginPath = "/admin/login";
@@ -20,7 +22,7 @@ export const middleware = (request: NextRequest) => {
   if (isProtectedAdminPath) {
     const adminAccessToken = request.cookies.get("admin_access_token")?.value;
 
-    if (adminAccessToken) {
+    if (adminAccessToken && isAccessTokenValid(adminAccessToken)) {
       return NextResponse.next();
     }
 
@@ -28,12 +30,15 @@ export const middleware = (request: NextRequest) => {
     adminLoginUrl.pathname = adminLoginPath;
     adminLoginUrl.searchParams.set("next", pathname);
 
-    return NextResponse.redirect(adminLoginUrl);
+    const response = NextResponse.redirect(adminLoginUrl);
+    response.cookies.delete("admin_access_token");
+
+    return response;
   }
 
   const accessToken = request.cookies.get("access_token")?.value;
 
-  if (accessToken) {
+  if (accessToken && isAccessTokenValid(accessToken)) {
     return NextResponse.next();
   }
 
@@ -41,9 +46,12 @@ export const middleware = (request: NextRequest) => {
   loginUrl.pathname = "/login";
   loginUrl.searchParams.set("next", pathname);
 
-  return NextResponse.redirect(loginUrl);
+  const response = NextResponse.redirect(loginUrl);
+  response.cookies.delete("access_token");
+
+  return response;
 };
 
 export const config = {
-  matcher: ["/profile/:path*", "/cart", "/checkout/:path*", "/admin/:path*"],
+  matcher: ["/profile/:path*", "/cart/:path*", "/checkout/:path*", "/admin/:path*"],
 };

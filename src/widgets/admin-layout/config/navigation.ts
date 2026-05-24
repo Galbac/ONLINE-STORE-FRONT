@@ -3,6 +3,7 @@ import {
   Bell,
   ClipboardList,
   FolderTree,
+  Images,
   LayoutDashboard,
   Package,
   Settings,
@@ -80,6 +81,12 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Bell,
     label: "Уведомления",
     requiredPermissions: ["admin.notifications.read", "notifications.read", "notifications:view"],
+  },
+  {
+    href: ROUTES.ADMIN_UPLOADS,
+    icon: Images,
+    label: "Файлы",
+    requiredPermissions: ["admin.uploads.read", "uploads.read", "uploads:view"],
   },
   {
     href: ROUTES.ADMIN_SETTINGS,

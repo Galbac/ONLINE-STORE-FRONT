@@ -23,7 +23,7 @@ export const HomePage = async () => {
     categoryApi.getTree(),
     categoryApi.getList(),
     productApi.getPopular(),
-    productApi.getDiscounted(),
+    discountApi.getProducts(),
     productApi.getNew(),
     discountApi.getActive(),
     deliveryApi.getOptions(),

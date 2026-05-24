@@ -1,3 +1,5 @@
+import type { ProductShortResponse } from "@/entities/product";
+
 export interface DiscountShortResponse {
   id: number;
   name: string;
@@ -14,4 +16,20 @@ export interface ActiveDiscountsResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface DiscountProductsParams {
+  page?: number;
+  limit?: number;
+  category_id?: number;
+  in_stock?: boolean;
+  sort?: "discount_desc" | "price_asc" | "price_desc" | "newest";
+}
+
+export interface DiscountProductsResponse {
+  items: ProductShortResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
 }

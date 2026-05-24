@@ -100,6 +100,7 @@ export const API_ENDPOINTS = {
   },
   DISCOUNT: {
     ACTIVE: "/api/discounts/active",
+    PRODUCTS: "/api/discounts/products",
   },
   DELIVERY: {
     OPTIONS: "/api/delivery/options",

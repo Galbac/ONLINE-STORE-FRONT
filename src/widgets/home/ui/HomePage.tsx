@@ -1,9 +1,14 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { ArrowRight, Clock, MapPinned, ShieldCheck, Truck } from "lucide-react";
+import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
 import { deliveryApi } from "@/entities/delivery";
 import { discountApi, type DiscountShortResponse } from "@/entities/discount";
+import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductShortResponse } from "@/entities/product";
+import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
+import { fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard, Section } from "@/shared/ui";
@@ -11,6 +16,7 @@ import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 
 export const HomePage = async () => {
+  const accessToken = await getAccessToken();
   const [
     categoryTree,
     categories,
@@ -19,6 +25,8 @@ export const HomePage = async () => {
     newProducts,
     discounts,
     delivery,
+    cart,
+    favorites,
   ] = await Promise.all([
     categoryApi.getTree(),
     categoryApi.getList(),
@@ -27,10 +35,17 @@ export const HomePage = async () => {
     productApi.getNew(),
     discountApi.getActive(),
     deliveryApi.getOptions(),
+    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    fallbackOnUnauthorized(
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      emptyFavoritesResponse,
+    ),
   ]);
 
   const visibleCategories: CategoryShortResponse[] =
     categories.items.length > 0 ? categories.items : categoryTree.items;
+  const cartProductIds = new Set(cart.items.map((item) => item.product_id));
+  const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
 
   return (
     <>
@@ -41,11 +56,15 @@ export const HomePage = async () => {
           <CategorySection categories={visibleCategories.slice(0, 6)} />
           <PromoStrip discounts={discounts.items} />
           <ProductSection
+            cartProductIds={cartProductIds}
+            favoriteProductIds={favoriteProductIds}
             products={popularProducts.items}
             title="Популярные товары"
             href={ROUTES.CATALOG}
           />
           <ProductSection
+            cartProductIds={cartProductIds}
+            favoriteProductIds={favoriteProductIds}
             products={discountedProducts.items}
             title="Товары со скидкой"
             href="/catalog?has_discount=true"
@@ -59,6 +78,8 @@ export const HomePage = async () => {
             pickupDescription={delivery.pickup.description}
           />
           <ProductSection
+            cartProductIds={cartProductIds}
+            favoriteProductIds={favoriteProductIds}
             products={newProducts.items}
             title="Новинки"
             href="/catalog?sort=newest"
@@ -161,18 +182,49 @@ interface ProductSectionProps {
   title: string;
   href: string;
   products: ProductShortResponse[];
+  cartProductIds: Set<number>;
+  favoriteProductIds: Set<number>;
 }
 
-const ProductSection = ({ title, href, products }: ProductSectionProps) => {
+const ProductSection = ({
+  cartProductIds,
+  favoriteProductIds,
+  href,
+  products,
+  title,
+}: ProductSectionProps) => {
   return (
     <Section href={href} title={title}>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {products.slice(0, 8).map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            cartControl={
+              <CatalogCartButton
+                initialInCart={cartProductIds.has(product.id)}
+                productId={product.id}
+                productName={product.name}
+              />
+            }
+            favoriteControl={
+              <CatalogFavoriteButton
+                initialFavorite={favoriteProductIds.has(product.id)}
+                productId={product.id}
+                productName={product.name}
+              />
+            }
+          />
         ))}
       </div>
     </Section>
   );
+};
+
+const getAccessToken = async (): Promise<string | undefined> => {
+  const cookieStore = await cookies();
+
+  return cookieStore.get("access_token")?.value;
 };
 
 interface DeliveryBlockProps {

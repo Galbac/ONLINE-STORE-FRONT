@@ -71,8 +71,17 @@ export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewP
           product_id: product.id,
           quantity: 1,
         });
+        await favoriteApi.remove(product.id, getAccessToken());
         notifyCartChanged({ itemsCount: response.cart.items_count });
         setCartProductIds((currentIds) => new Set(currentIds).add(product.id));
+        setProducts((currentProducts) => {
+          const nextProducts = currentProducts.filter(
+            (currentProduct) => currentProduct.id !== product.id,
+          );
+          notifyFavoritesChanged({ itemsCount: nextProducts.length });
+
+          return nextProducts;
+        });
         setMessage(`${product.name} добавлен в корзину.`);
       } catch {
         setMessage(null);

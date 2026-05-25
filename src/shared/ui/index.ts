@@ -5,6 +5,7 @@ export {
   getStoredAccessToken,
   storeAuthTokens,
 } from "./auth-guard";
+export { AutoSubmitSelect } from "./auto-submit-select";
 export { Button } from "./button";
 export { Container } from "./container";
 export { CookieBanner } from "./cookie-banner";

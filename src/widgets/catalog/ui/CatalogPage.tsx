@@ -19,7 +19,7 @@ import { productApi, type ProductListParams, type ProductListResponse } from "@/
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { Container, ProductCard } from "@/shared/ui";
+import { AutoSubmitSelect, Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
@@ -359,7 +359,7 @@ interface CatalogToolbarProps {
   inStock: boolean;
   minPrice?: string | undefined;
   maxPrice?: string | undefined;
-  sort: ProductListParams["sort"];
+  sort: NonNullable<ProductListParams["sort"]>;
 }
 
 const CatalogToolbar = ({
@@ -392,37 +392,20 @@ const CatalogToolbar = ({
           </div>
         </div>
         <div className="flex max-w-full flex-wrap items-center gap-4">
-          <form
-            className="border-border bg-bg-primary flex h-12 min-w-0 items-center gap-3 rounded-lg border px-4"
+          <AutoSubmitSelect
             action={ROUTES.CATALOG}
-          >
-            <span className="text-text-secondary hidden text-sm sm:inline">Сортировать:</span>
-            <select
-              className="min-w-0 bg-transparent text-sm outline-none"
-              name="sort"
-              defaultValue={sort}
-            >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {currentParams.category_id ? (
-              <input name="category_id" type="hidden" value={currentParams.category_id} />
-            ) : null}
-            {currentParams.in_stock ? (
-              <input name="in_stock" type="hidden" value={currentParams.in_stock} />
-            ) : null}
-            {currentParams.has_discount ? (
-              <input name="has_discount" type="hidden" value={currentParams.has_discount} />
-            ) : null}
-            {minPrice ? <input name="min_price" type="hidden" value={minPrice} /> : null}
-            {maxPrice ? <input name="max_price" type="hidden" value={maxPrice} /> : null}
-            <button className="sr-only" type="submit">
-              Сортировать
-            </button>
-          </form>
+            defaultValue={sort}
+            hiddenFields={getCatalogSortHiddenFields({
+              category_id: currentParams.category_id,
+              has_discount: currentParams.has_discount,
+              in_stock: currentParams.in_stock,
+              max_price: maxPrice,
+              min_price: minPrice,
+            })}
+            label="Сортировать:"
+            name="sort"
+            options={sortOptions}
+          />
           <div className="border-border bg-bg-primary flex h-12 items-center gap-2 rounded-lg border px-3">
             <Grid2X2 className="text-accent-primary" size={22} />
             <List className="text-text-muted" size={22} />
@@ -648,6 +631,17 @@ const setCatalogUrlParam = (
   if (value) {
     params[key] = value;
   }
+};
+
+const getCatalogSortHiddenFields = (
+  params: Pick<
+    CatalogUrlParams,
+    "category_id" | "has_discount" | "in_stock" | "max_price" | "min_price"
+  >,
+): Array<{ name: string; value: string }> => {
+  return Object.entries(params).flatMap(([name, value]) => {
+    return value ? [{ name, value }] : [];
+  });
 };
 
 const getPriceSliderMax = (

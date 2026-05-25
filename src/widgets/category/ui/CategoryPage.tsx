@@ -14,7 +14,7 @@ import { productApi, type ProductListParams } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { fallbackOnUnauthorized } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { Container, ProductCard } from "@/shared/ui";
+import { AutoSubmitSelect, Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 
@@ -230,7 +230,7 @@ interface CategoryToolbarProps {
   category: CategoryDetailResponse;
   productsTotal: number;
   inStock: boolean;
-  sort: ProductListParams["sort"];
+  sort: NonNullable<ProductListParams["sort"]>;
 }
 
 const CategoryToolbar = ({ category, inStock, productsTotal, sort }: CategoryToolbarProps) => {
@@ -267,27 +267,14 @@ const CategoryToolbar = ({ category, inStock, productsTotal, sort }: CategoryToo
       </div>
 
       <div className="flex max-w-full flex-wrap items-center gap-4">
-        <form
-          className="border-border bg-bg-primary flex h-12 min-w-0 items-center gap-3 rounded-lg border px-4"
+        <AutoSubmitSelect
           action={ROUTES.CATEGORY(category.slug)}
-        >
-          <span className="text-text-secondary hidden text-sm sm:inline">Сортировать:</span>
-          <select
-            className="min-w-0 bg-transparent text-sm outline-none"
-            name="sort"
-            defaultValue={sort}
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <input name="in_stock" type="hidden" value={String(inStock)} />
-          <button className="sr-only" type="submit">
-            Сортировать
-          </button>
-        </form>
+          defaultValue={sort}
+          hiddenFields={[{ name: "in_stock", value: String(inStock) }]}
+          label="Сортировать:"
+          name="sort"
+          options={sortOptions}
+        />
         <div className="border-border bg-bg-primary flex h-12 items-center gap-2 rounded-lg border px-3">
           <Grid2X2 className="text-accent-primary" size={22} />
           <List className="text-text-muted" size={22} />

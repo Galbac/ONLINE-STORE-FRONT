@@ -305,6 +305,36 @@ const CatalogFilters = ({
         </div>
       </FilterPanel>
 
+      <FilterPanel>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold">Акции</h2>
+            <p className="text-text-muted mt-2 text-xs leading-5">
+              Показывать только товары со скидкой
+            </p>
+          </div>
+          <Link
+            aria-label="Переключить фильтр акций"
+            className={cn(
+              "relative h-8 w-14 shrink-0 rounded-full transition",
+              hasDiscount ? "bg-accent-primary" : "bg-border",
+            )}
+            href={buildCatalogHref({
+              ...currentParams,
+              has_discount: hasDiscount ? undefined : "true",
+              page: undefined,
+            })}
+          >
+            <span
+              className={cn(
+                "absolute top-1 grid size-6 place-items-center rounded-full bg-white transition",
+                hasDiscount ? "right-1" : "left-1",
+              )}
+            />
+          </Link>
+        </div>
+      </FilterPanel>
+
       <FilterPanel title="Цена, ₽">
         <CatalogPriceFilter
           currentParams={currentParams}

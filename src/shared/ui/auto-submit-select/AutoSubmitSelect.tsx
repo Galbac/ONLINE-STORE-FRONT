@@ -16,7 +16,7 @@ interface AutoSubmitSelectProps {
   hiddenFields?: AutoSubmitSelectHiddenField[];
   label: string;
   name: string;
-  options: AutoSubmitSelectOption[];
+  options: ReadonlyArray<AutoSubmitSelectOption>;
 }
 
 export const AutoSubmitSelect = ({

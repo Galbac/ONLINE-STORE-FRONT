@@ -32,6 +32,7 @@ interface CatalogPageProps {
 
 interface CatalogSearchParams {
   page?: string;
+  limit?: string;
   category_id?: string;
   in_stock?: string;
   has_discount?: string;
@@ -48,8 +49,15 @@ const sortOptions: Array<{ label: string; value: NonNullable<ProductListParams["
   { label: "По названию", value: "name_asc" },
 ];
 
+const pageSizeOptions = [
+  { label: "24", value: "24" },
+  { label: "48", value: "48" },
+  { label: "96", value: "96" },
+] as const;
+
 export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const page = toPositiveNumber(searchParams.page, 1);
+  const pageSize = toPageSize(searchParams.limit);
   const categoryId = toOptionalNumber(searchParams.category_id);
   const inStock = searchParams.in_stock !== "false";
   const hasDiscount = searchParams.has_discount === "true";
@@ -60,7 +68,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
   const productParams: ProductListParams = {
     page,
-    limit: 24,
+    limit: pageSize,
     sort,
   };
 
@@ -105,13 +113,13 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const [categoryTree, categories, products, cart, favorites, priceBounds] = await Promise.all([
     categoryApi.getTree(),
     categoryApi.getList(),
-    getCatalogProducts(productParams, page),
+    getCatalogProducts(productParams, page, pageSize),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
       emptyFavoritesResponse,
     ),
-    getCatalogProducts(priceBoundsParams, 1),
+    getCatalogProducts(priceBoundsParams, 1, 1),
   ]);
 
   const visibleCategories = categories.items.length > 0 ? categories.items : categoryTree.items;
@@ -185,6 +193,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
                   <CatalogPagination
                     currentPage={products.page || page}
+                    pageSize={pageSize}
                     totalPages={products.pages}
                     searchParams={searchParams}
                   />
@@ -410,6 +419,7 @@ const CatalogToolbar = ({
               category_id: currentParams.category_id,
               has_discount: currentParams.has_discount,
               in_stock: currentParams.in_stock,
+              limit: currentParams.limit,
               max_price: maxPrice,
               min_price: minPrice,
             })}
@@ -458,11 +468,17 @@ const CatalogEmptyState = () => {
 
 interface CatalogPaginationProps {
   currentPage: number;
+  pageSize: number;
   totalPages: number;
   searchParams: CatalogSearchParams;
 }
 
-const CatalogPagination = ({ currentPage, searchParams, totalPages }: CatalogPaginationProps) => {
+const CatalogPagination = ({
+  currentPage,
+  pageSize,
+  searchParams,
+  totalPages,
+}: CatalogPaginationProps) => {
   const pages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => index + 1);
 
   return (
@@ -496,13 +512,21 @@ const CatalogPagination = ({ currentPage, searchParams, totalPages }: CatalogPag
         </PageLink>
       </div>
       <div className="text-text-secondary flex items-center gap-3 text-sm">
-        Показать по:
-        <select
-          className="border-border bg-bg-primary h-11 rounded-lg border px-4 outline-none"
-          defaultValue="24"
-        >
-          <option>24</option>
-        </select>
+        <AutoSubmitSelect
+          action={ROUTES.CATALOG}
+          defaultValue={String(pageSize)}
+          hiddenFields={getCatalogSortHiddenFields({
+            category_id: searchParams.category_id,
+            has_discount: searchParams.has_discount,
+            in_stock: searchParams.in_stock,
+            max_price: searchParams.max_price,
+            min_price: searchParams.min_price,
+            sort: searchParams.sort,
+          })}
+          label="Показать по:"
+          name="limit"
+          options={pageSizeOptions}
+        />
       </div>
     </div>
   );
@@ -550,6 +574,12 @@ const toPositiveNumber = (value: string | undefined, fallback: number): number =
   return parsed;
 };
 
+const toPageSize = (value: string | undefined): number => {
+  const parsed = Number(value);
+
+  return pageSizeOptions.some((option) => Number(option.value) === parsed) ? parsed : 24;
+};
+
 const toOptionalNumber = (value: string | undefined): number | undefined => {
   const parsed = Number(value);
 
@@ -584,23 +614,24 @@ const toCatalogSort = (
   return option?.value ?? "popular";
 };
 
-const getEmptyProductListResponse = (page: number): ProductListResponse => ({
+const getEmptyProductListResponse = (page: number, limit: number): ProductListResponse => ({
   items: [],
   total: 0,
   page,
-  limit: 24,
+  limit,
   pages: 0,
 });
 
 const getCatalogProducts = async (
   params: ProductListParams,
   page: number,
+  limit: number,
 ): Promise<ProductListResponse> => {
   try {
     return await productApi.getList(params);
   } catch (error) {
     if (isApiErrorStatus(error, 400) || isApiErrorStatus(error, 404)) {
-      return getEmptyProductListResponse(page);
+      return getEmptyProductListResponse(page, limit);
     }
 
     throw error;
@@ -632,6 +663,7 @@ const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams
   setCatalogUrlParam(params, "category_id", searchParams.category_id);
   setCatalogUrlParam(params, "has_discount", searchParams.has_discount);
   setCatalogUrlParam(params, "in_stock", searchParams.in_stock);
+  setCatalogUrlParam(params, "limit", searchParams.limit);
   setCatalogUrlParam(params, "max_price", searchParams.max_price);
   setCatalogUrlParam(params, "min_price", searchParams.min_price);
   setCatalogUrlParam(params, "page", searchParams.page);
@@ -651,9 +683,11 @@ const setCatalogUrlParam = (
 };
 
 const getCatalogSortHiddenFields = (
-  params: Pick<
-    CatalogUrlParams,
-    "category_id" | "has_discount" | "in_stock" | "max_price" | "min_price"
+  params: Partial<
+    Pick<
+      CatalogUrlParams,
+      "category_id" | "has_discount" | "in_stock" | "limit" | "max_price" | "min_price" | "sort"
+    >
   >,
 ): Array<{ name: string; value: string }> => {
   return Object.entries(params).flatMap(([name, value]) => {

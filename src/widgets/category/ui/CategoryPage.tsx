@@ -26,6 +26,7 @@ interface CategoryPageProps {
 
 interface CategorySearchParams {
   page?: string;
+  limit?: string;
   in_stock?: string;
   sort?: ProductListParams["sort"];
 }
@@ -38,8 +39,15 @@ const sortOptions: Array<{ label: string; value: NonNullable<ProductListParams["
   { label: "По названию", value: "name_asc" },
 ];
 
+const pageSizeOptions = [
+  { label: "24", value: "24" },
+  { label: "48", value: "48" },
+  { label: "96", value: "96" },
+] as const;
+
 export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) => {
   const page = toPositiveNumber(searchParams.page, 1);
+  const pageSize = toPageSize(searchParams.limit);
   const inStock = searchParams.in_stock !== "false";
   const sort = toCategorySort(searchParams.sort);
   const accessToken = await getAccessToken();
@@ -49,7 +57,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
 
   const productParams: ProductListParams = {
     page,
-    limit: 24,
+    limit: pageSize,
     category_id: category.id,
     category_slug: category.slug,
     sort,
@@ -96,6 +104,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
               category={category}
               inStock={inStock}
               productsTotal={products.total}
+              searchParams={searchParams}
               sort={sort}
             />
 
@@ -124,6 +133,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
 
             <CategoryPagination
               currentPage={products.page || page}
+              pageSize={pageSize}
               searchParams={searchParams}
               slug={category.slug}
               totalPages={products.pages}
@@ -240,10 +250,17 @@ interface CategoryToolbarProps {
   category: CategoryDetailResponse;
   productsTotal: number;
   inStock: boolean;
+  searchParams: CategorySearchParams;
   sort: NonNullable<ProductListParams["sort"]>;
 }
 
-const CategoryToolbar = ({ category, inStock, productsTotal, sort }: CategoryToolbarProps) => {
+const CategoryToolbar = ({
+  category,
+  inStock,
+  productsTotal,
+  searchParams,
+  sort,
+}: CategoryToolbarProps) => {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex flex-wrap items-center gap-4">
@@ -254,6 +271,7 @@ const CategoryToolbar = ({ category, inStock, productsTotal, sort }: CategoryToo
           )}
           href={buildCategoryHref(category.slug, {
             in_stock: inStock ? "false" : "true",
+            limit: searchParams.limit,
             page: undefined,
             sort,
           })}
@@ -280,7 +298,10 @@ const CategoryToolbar = ({ category, inStock, productsTotal, sort }: CategoryToo
         <AutoSubmitSelect
           action={ROUTES.CATEGORY(category.slug)}
           defaultValue={sort}
-          hiddenFields={[{ name: "in_stock", value: String(inStock) }]}
+          hiddenFields={getCategoryHiddenFields({
+            in_stock: String(inStock),
+            limit: searchParams.limit,
+          })}
           label="Сортировать:"
           name="sort"
           options={sortOptions}
@@ -296,6 +317,7 @@ const CategoryToolbar = ({ category, inStock, productsTotal, sort }: CategoryToo
 
 interface CategoryPaginationProps {
   currentPage: number;
+  pageSize: number;
   totalPages: number;
   slug: string;
   searchParams: CategorySearchParams;
@@ -303,6 +325,7 @@ interface CategoryPaginationProps {
 
 const CategoryPagination = ({
   currentPage,
+  pageSize,
   searchParams,
   slug,
   totalPages,
@@ -347,13 +370,17 @@ const CategoryPagination = ({
         </PageLink>
       </div>
       <div className="text-text-secondary flex items-center gap-3 text-sm">
-        Показать по:
-        <select
-          className="border-border bg-bg-primary h-11 rounded-lg border px-4 outline-none"
-          defaultValue="24"
-        >
-          <option>24</option>
-        </select>
+        <AutoSubmitSelect
+          action={ROUTES.CATEGORY(slug)}
+          defaultValue={String(pageSize)}
+          hiddenFields={getCategoryHiddenFields({
+            in_stock: searchParams.in_stock,
+            sort: searchParams.sort,
+          })}
+          label="Показать по:"
+          name="limit"
+          options={pageSizeOptions}
+        />
       </div>
     </div>
   );
@@ -402,12 +429,26 @@ const toPositiveNumber = (value: string | undefined, fallback: number): number =
   return parsed;
 };
 
+const toPageSize = (value: string | undefined): number => {
+  const parsed = Number(value);
+
+  return pageSizeOptions.some((option) => Number(option.value) === parsed) ? parsed : 24;
+};
+
 const toCategorySort = (
   value: ProductListParams["sort"] | undefined,
 ): NonNullable<ProductListParams["sort"]> => {
   const option = sortOptions.find((sortOption) => sortOption.value === value);
 
   return option?.value ?? "popular";
+};
+
+const getCategoryHiddenFields = (
+  params: Record<string, string | undefined>,
+): Array<{ name: string; value: string }> => {
+  return Object.entries(params).flatMap(([name, value]) => {
+    return value ? [{ name, value }] : [];
+  });
 };
 
 const getAccessToken = async (): Promise<string | undefined> => {

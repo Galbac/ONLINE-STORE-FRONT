@@ -8,6 +8,7 @@ interface PageProps {
   }>;
   searchParams: Promise<{
     page?: string;
+    limit?: string;
     in_stock?: string;
     sort?: "price_asc" | "price_desc" | "newest" | "popular" | "name_asc" | "name_desc";
   }>;

@@ -6,6 +6,7 @@ interface PageProps {
   searchParams: Promise<{
     q?: string;
     page?: string;
+    limit?: string;
     category_id?: string;
     in_stock?: string;
     has_discount?: string;

@@ -2,6 +2,7 @@ import { ROUTES } from "@/shared/config";
 
 export interface CatalogUrlParams {
   page?: string | undefined;
+  limit?: string | undefined;
   category_id?: string | undefined;
   in_stock?: string | undefined;
   has_discount?: string | undefined;

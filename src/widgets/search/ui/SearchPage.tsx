@@ -13,7 +13,7 @@ import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-pro
 import { ProductSearch } from "@/features/product-search";
 import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { Container, ProductCard } from "@/shared/ui";
+import { AutoSubmitSelect, Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 
@@ -24,6 +24,7 @@ interface SearchPageProps {
 interface SearchPageParams {
   q?: string;
   page?: string;
+  limit?: string;
   category_id?: string;
   in_stock?: string;
   has_discount?: string;
@@ -33,6 +34,7 @@ interface SearchPageParams {
 interface SearchUrlParams {
   q?: string | undefined;
   page?: string | undefined;
+  limit?: string | undefined;
   category_id?: string | undefined;
   in_stock?: string | undefined;
   has_discount?: string | undefined;
@@ -47,18 +49,29 @@ const sortOptions: Array<{ label: string; value: NonNullable<ProductSearchParams
   { label: "По цене: по убыванию", value: "price_desc" },
 ];
 
-const getEmptySearchResponse = (query: string, page: number): ProductSearchResponse => ({
+const pageSizeOptions = [
+  { label: "24", value: "24" },
+  { label: "48", value: "48" },
+  { label: "96", value: "96" },
+] as const;
+
+const getEmptySearchResponse = (
+  query: string,
+  page: number,
+  limit: number,
+): ProductSearchResponse => ({
   query,
   items: [],
   total: 0,
   page,
-  limit: 24,
+  limit,
   pages: 0,
 });
 
 export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const query = searchParams.q?.trim() ?? "";
   const page = toPositiveNumber(searchParams.page, 1);
+  const pageSize = toPageSize(searchParams.limit);
   const categoryId = toOptionalNumber(searchParams.category_id);
   const inStock = searchParams.in_stock !== "false";
   const hasDiscount = searchParams.has_discount === "true";
@@ -68,7 +81,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const productParams: ProductSearchParams = {
     q: query,
     page,
-    limit: 24,
+    limit: pageSize,
     sort,
   };
 
@@ -86,7 +99,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
 
   const [categories, products, cart, favorites] = await Promise.all([
     categoryApi.getList(),
-    getSearchProducts(productParams, query, page),
+    getSearchProducts(productParams, query, page, pageSize),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
@@ -145,6 +158,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
                 inStock={inStock}
                 productsTotal={products.total}
                 query={query}
+                searchParams={searchParams}
                 selectedCategoryName={selectedCategory?.name}
                 sort={sort}
               />
@@ -176,6 +190,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
 
                   <SearchPagination
                     currentPage={products.page || page}
+                    pageSize={pageSize}
                     searchParams={searchParams}
                     totalPages={products.pages}
                   />
@@ -342,6 +357,7 @@ interface SearchToolbarProps {
   selectedCategoryName?: string | undefined;
   hasDiscount: boolean;
   inStock: boolean;
+  searchParams: SearchPageParams;
   sort: ProductSearchParams["sort"];
 }
 
@@ -351,6 +367,7 @@ const SearchToolbar = ({
   inStock,
   productsTotal,
   query,
+  searchParams,
   selectedCategoryName,
   sort,
 }: SearchToolbarProps) => {
@@ -374,6 +391,9 @@ const SearchToolbar = ({
             <input name="category_id" type="hidden" value={currentCategoryId} />
           ) : null}
           {!inStock ? <input name="in_stock" type="hidden" value="false" /> : null}
+          {searchParams.limit ? (
+            <input name="limit" type="hidden" value={searchParams.limit} />
+          ) : null}
           {hasDiscount ? <input name="has_discount" type="hidden" value="true" /> : null}
           <span className="text-text-secondary hidden text-sm sm:inline">Сортировать:</span>
           <select
@@ -440,11 +460,17 @@ const SearchEmptyState = ({ query }: SearchEmptyStateProps) => {
 
 interface SearchPaginationProps {
   currentPage: number;
+  pageSize: number;
   totalPages: number;
   searchParams: SearchPageParams;
 }
 
-const SearchPagination = ({ currentPage, searchParams, totalPages }: SearchPaginationProps) => {
+const SearchPagination = ({
+  currentPage,
+  pageSize,
+  searchParams,
+  totalPages,
+}: SearchPaginationProps) => {
   if (totalPages <= 1) {
     return null;
   }
@@ -480,6 +506,22 @@ const SearchPagination = ({ currentPage, searchParams, totalPages }: SearchPagin
         >
           ›
         </PageLink>
+      </div>
+      <div className="text-text-secondary flex items-center gap-3 text-sm">
+        <AutoSubmitSelect
+          action={ROUTES.SEARCH}
+          defaultValue={String(pageSize)}
+          hiddenFields={getSearchHiddenFields({
+            category_id: searchParams.category_id,
+            has_discount: searchParams.has_discount,
+            in_stock: searchParams.in_stock,
+            q: searchParams.q,
+            sort: searchParams.sort,
+          })}
+          label="Показать по:"
+          name="limit"
+          options={pageSizeOptions}
+        />
       </div>
     </div>
   );
@@ -527,20 +569,27 @@ const toPositiveNumber = (value: string | undefined, fallback: number): number =
   return parsed;
 };
 
+const toPageSize = (value: string | undefined): number => {
+  const parsed = Number(value);
+
+  return pageSizeOptions.some((option) => Number(option.value) === parsed) ? parsed : 24;
+};
+
 const getSearchProducts = async (
   params: ProductSearchParams,
   query: string,
   page: number,
+  limit: number,
 ): Promise<ProductSearchResponse> => {
   if (!query) {
-    return getEmptySearchResponse(query, page);
+    return getEmptySearchResponse(query, page, limit);
   }
 
   try {
     return await productApi.search(params);
   } catch (error) {
     if (isApiErrorStatus(error, 400) || isApiErrorStatus(error, 404)) {
-      return getEmptySearchResponse(query, page);
+      return getEmptySearchResponse(query, page, limit);
     }
 
     throw error;
@@ -577,6 +626,7 @@ const toSearchUrlParams = (searchParams: SearchPageParams): SearchUrlParams => {
   setSearchUrlParam(params, "category_id", searchParams.category_id);
   setSearchUrlParam(params, "has_discount", searchParams.has_discount);
   setSearchUrlParam(params, "in_stock", searchParams.in_stock);
+  setSearchUrlParam(params, "limit", searchParams.limit);
   setSearchUrlParam(params, "page", searchParams.page);
   setSearchUrlParam(params, "q", searchParams.q);
   setSearchUrlParam(params, "sort", searchParams.sort);
@@ -606,6 +656,16 @@ const buildSearchHref = (params: SearchUrlParams): string => {
   const queryString = query.toString();
 
   return queryString ? `${ROUTES.SEARCH}?${queryString}` : ROUTES.SEARCH;
+};
+
+const getSearchHiddenFields = (
+  params: Partial<
+    Pick<SearchUrlParams, "category_id" | "has_discount" | "in_stock" | "q" | "sort">
+  >,
+): Array<{ name: string; value: string }> => {
+  return Object.entries(params).flatMap(([name, value]) => {
+    return value ? [{ name, value }] : [];
+  });
 };
 
 const getProductCountLabel = (count: number): string => {

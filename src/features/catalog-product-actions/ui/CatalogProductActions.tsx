@@ -6,6 +6,7 @@ import { cartApi } from "@/entities/cart";
 import { favoriteApi } from "@/entities/favorite";
 import { cn } from "@/shared/config";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
+import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 
 interface CatalogCartButtonProps {
   productId: number;
@@ -78,6 +79,7 @@ export const CatalogFavoriteButton = ({
           await favoriteApi.remove(productId);
         }
         setIsFavorite(nextValue);
+        notifyFavoritesChanged();
       } catch {
         setIsFavorite(isFavorite);
       }

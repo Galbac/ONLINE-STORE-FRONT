@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Heart, MapPin, Menu, Phone, UserRound } from "lucide-react";
+import { MapPin, Menu, Phone, UserRound } from "lucide-react";
 
 import { ProductSearch } from "@/features/product-search";
 import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, Logo } from "@/shared/ui";
 
 import { HeaderCartLink } from "./HeaderCartLink";
+import { HeaderFavoritesLink } from "./HeaderFavoritesLink";
 
 const navItems = [
   {
@@ -76,13 +77,7 @@ export const Header = () => {
               <UserRound className="mx-auto mb-1" size={22} />
               Профиль
             </Link>
-            <Link
-              className="hidden text-center text-sm font-semibold md:block"
-              href={ROUTES.FAVORITES}
-            >
-              <Heart className="mx-auto mb-1" size={22} />
-              Избранное
-            </Link>
+            <HeaderFavoritesLink />
             <HeaderCartLink />
           </div>
         </div>

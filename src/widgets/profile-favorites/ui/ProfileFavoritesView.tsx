@@ -13,6 +13,7 @@ import {
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
+import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 import { Button, Container } from "@/shared/ui";
 
 interface ProfileFavoritesViewProps {
@@ -91,9 +92,14 @@ export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewP
         setErrorMessage(null);
         const response = await favoriteApi.remove(product.id, accessToken);
 
-        setProducts((currentProducts) =>
-          currentProducts.filter((currentProduct) => currentProduct.id !== response.product_id),
-        );
+        setProducts((currentProducts) => {
+          const nextProducts = currentProducts.filter(
+            (currentProduct) => currentProduct.id !== response.product_id,
+          );
+          notifyFavoritesChanged({ itemsCount: nextProducts.length });
+
+          return nextProducts;
+        });
         setMessage(`${product.name} удален из избранного.`);
       } catch {
         setMessage(null);
@@ -116,6 +122,7 @@ export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewP
           currentProducts.map((product) => favoriteApi.remove(product.id, accessToken)),
         );
         setProducts([]);
+        notifyFavoritesChanged({ itemsCount: 0 });
         setMessage("Избранное очищено.");
       } catch {
         setMessage(null);

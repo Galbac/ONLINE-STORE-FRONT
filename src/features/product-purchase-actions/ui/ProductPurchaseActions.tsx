@@ -8,6 +8,7 @@ import { favoriteApi } from "@/entities/favorite";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
+import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 
 interface ProductPurchaseActionsProps {
   productId: number;
@@ -116,6 +117,7 @@ export const ProductPurchaseActions = ({
       }
 
       setIsFavorite(nextValue);
+      notifyFavoritesChanged();
     });
   };
 

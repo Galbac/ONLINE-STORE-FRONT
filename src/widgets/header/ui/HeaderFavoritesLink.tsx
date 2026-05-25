@@ -65,9 +65,11 @@ export const HeaderFavoritesLink = () => {
     <Link className="hidden text-center text-sm font-semibold md:block" href={ROUTES.FAVORITES}>
       <span className="relative mx-auto mb-1 block w-fit">
         <Heart size={22} />
-        <span className="bg-accent-primary text-accent-contrast absolute -top-2 -right-3 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] leading-none font-bold">
-          {formatFavoritesCount(itemsCount)}
-        </span>
+        {itemsCount > 0 ? (
+          <span className="bg-accent-primary text-accent-contrast absolute -top-2 -right-3 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] leading-none font-bold">
+            {formatFavoritesCount(itemsCount)}
+          </span>
+        ) : null}
       </span>
       Избранное
     </Link>

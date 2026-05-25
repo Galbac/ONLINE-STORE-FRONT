@@ -62,9 +62,11 @@ export const HeaderCartLink = () => {
     <Link className="relative text-center text-sm font-semibold" href={ROUTES.CART}>
       <span className="relative mx-auto mb-1 block w-fit">
         <ShoppingCart size={22} />
-        <span className="bg-accent-primary text-accent-contrast absolute -top-2 -right-3 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] leading-none font-bold">
-          {formatCartCount(itemsCount)}
-        </span>
+        {itemsCount > 0 ? (
+          <span className="bg-accent-primary text-accent-contrast absolute -top-2 -right-3 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] leading-none font-bold">
+            {formatCartCount(itemsCount)}
+          </span>
+        ) : null}
       </span>
       Корзина
     </Link>

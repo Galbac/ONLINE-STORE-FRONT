@@ -5,10 +5,11 @@ import Link from "next/link";
 import { ChevronDown, Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { cartApi, type CartSummaryResponse } from "@/entities/cart";
 import { favoriteApi } from "@/entities/favorite";
+import { isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
+import { toPriceFormat } from "@/shared/lib/format";
 
 interface ProductPurchaseActionsProps {
   productId: number;
@@ -111,7 +112,13 @@ export const ProductPurchaseActions = ({
       const nextValue = !isFavorite;
 
       if (nextValue) {
-        await favoriteApi.add(productId);
+        await favoriteApi.add(productId).catch((error: unknown) => {
+          if (isApiErrorStatus(error, 409)) {
+            return;
+          }
+
+          throw error;
+        });
       } else {
         await favoriteApi.remove(productId);
       }

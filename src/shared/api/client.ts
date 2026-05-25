@@ -18,9 +18,25 @@ const getBrowserAuthHeaders = (): HeadersInit => {
   }
 
   const accessToken =
-    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
+    window.localStorage.getItem("access_token") ??
+    window.sessionStorage.getItem("access_token") ??
+    getBrowserCookieValue("access_token");
 
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+};
+
+const getBrowserCookieValue = (name: string): string | null => {
+  const cookie = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(`${encodeURIComponent(name)}=`));
+
+  if (!cookie) {
+    return null;
+  }
+
+  const [, value] = cookie.split("=");
+
+  return value ? decodeURIComponent(value) : null;
 };
 
 const getStoredRefreshToken = (): StoredRefreshToken | null => {

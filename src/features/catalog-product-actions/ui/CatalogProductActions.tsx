@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Heart, ShoppingCart } from "lucide-react";
 import { cartApi } from "@/entities/cart";
 import { favoriteApi } from "@/entities/favorite";
+import { isApiErrorStatus } from "@/shared/api";
 import { cn } from "@/shared/config";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
@@ -80,7 +81,13 @@ export const CatalogFavoriteButton = ({
         }
         setIsFavorite(nextValue);
         notifyFavoritesChanged();
-      } catch {
+      } catch (error) {
+        if (nextValue && isApiErrorStatus(error, 409)) {
+          setIsFavorite(true);
+          notifyFavoritesChanged();
+          return;
+        }
+
         setIsFavorite(isFavorite);
       }
     });

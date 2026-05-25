@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import {
   Apple,
@@ -55,6 +56,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const minPrice = toOptionalPrice(searchParams.min_price);
   const maxPrice = toOptionalPrice(searchParams.max_price);
   const sort = toCatalogSort(searchParams.sort);
+  const accessToken = await getAccessToken();
 
   const productParams: ProductListParams = {
     page,
@@ -99,7 +101,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     categoryApi.getList(),
     getCatalogProducts(productParams, page),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
-    fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
+    fallbackOnUnauthorized(
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      emptyFavoritesResponse,
+    ),
     getCatalogProducts(priceBoundsParams, 1),
   ]);
 
@@ -594,6 +599,12 @@ const getCatalogProducts = async (
 
     throw error;
   }
+};
+
+const getAccessToken = async (): Promise<string | undefined> => {
+  const cookieStore = await cookies();
+
+  return cookieStore.get("access_token")?.value;
 };
 
 const getCategoryIcon = (categoryName: string): typeof Apple => {

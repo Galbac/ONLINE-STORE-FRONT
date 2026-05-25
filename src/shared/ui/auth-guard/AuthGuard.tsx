@@ -2,7 +2,6 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-
 import { ROUTES } from "@/shared/config";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
@@ -28,7 +27,9 @@ export const getStoredAccessToken = (): string | null => {
   }
 
   const accessToken =
-    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
+    window.localStorage.getItem("access_token") ??
+    window.sessionStorage.getItem("access_token") ??
+    getCookieValue("access_token");
 
   if (!accessToken) {
     return null;
@@ -60,6 +61,20 @@ export const storeAuthTokens = ({ accessToken, refreshToken, remember }: AuthTok
   storage.setItem("access_token", accessToken);
   storage.setItem("refresh_token", refreshToken);
   document.cookie = `access_token=${encodeURIComponent(accessToken)}; path=/; samesite=lax${cookieMaxAge}`;
+};
+
+const getCookieValue = (name: string): string | null => {
+  const cookie = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(`${encodeURIComponent(name)}=`));
+
+  if (!cookie) {
+    return null;
+  }
+
+  const [, value] = cookie.split("=");
+
+  return value ? decodeURIComponent(value) : null;
 };
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {

@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { Grid2X2, List, RotateCcw, SearchX } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
@@ -62,6 +63,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const inStock = searchParams.in_stock !== "false";
   const hasDiscount = searchParams.has_discount === "true";
   const sort = toSearchSort(searchParams.sort);
+  const accessToken = await getAccessToken();
 
   const productParams: ProductSearchParams = {
     q: query,
@@ -83,7 +85,10 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
     categoryApi.getList(),
     getSearchProducts(productParams, query, page),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
-    fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
+    fallbackOnUnauthorized(
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      emptyFavoritesResponse,
+    ),
   ]);
 
   const visibleCategories = categories.items;
@@ -555,6 +560,12 @@ const toSearchSort = (
   const option = sortOptions.find((sortOption) => sortOption.value === value);
 
   return option?.value ?? "relevance";
+};
+
+const getAccessToken = async (): Promise<string | undefined> => {
+  const cookieStore = await cookies();
+
+  return cookieStore.get("access_token")?.value;
 };
 
 const toSearchUrlParams = (searchParams: SearchPageParams): SearchUrlParams => {

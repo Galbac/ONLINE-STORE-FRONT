@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react";
@@ -23,6 +24,7 @@ interface ProductPageProps {
 }
 
 export const ProductPage = async ({ slug }: ProductPageProps) => {
+  const accessToken = await getAccessToken();
   const productBySlug = await productApi.getBySlug(slug, {
     with_breadcrumbs: true,
     with_similar: false,
@@ -39,7 +41,10 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
     }),
     fallbackOnUnauthorized(cartApi.getSummary(), emptyCartSummaryResponse),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
-    fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
+    fallbackOnUnauthorized(
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      emptyFavoritesResponse,
+    ),
   ]);
 
   const favoriteProductIds = new Set(favorites.items.map((favoriteProduct) => favoriteProduct.id));
@@ -335,6 +340,12 @@ const isLowStock = (stockQuantity: string): boolean => {
   const stock = Number(stockQuantity);
 
   return Number.isFinite(stock) && stock > 0 && stock <= 6;
+};
+
+const getAccessToken = async (): Promise<string | undefined> => {
+  const cookieStore = await cookies();
+
+  return cookieStore.get("access_token")?.value;
 };
 
 const formatQuantity = (value: string): string => {

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Grid2X2, List } from "lucide-react";
@@ -41,6 +42,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   const page = toPositiveNumber(searchParams.page, 1);
   const inStock = searchParams.in_stock !== "false";
   const sort = toCategorySort(searchParams.sort);
+  const accessToken = await getAccessToken();
 
   const categoryBySlug = await categoryApi.getBySlug(slug);
   const category = await categoryApi.getById(categoryBySlug.id);
@@ -55,7 +57,10 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
       sort,
     }),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
-    fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
+    fallbackOnUnauthorized(
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      emptyFavoritesResponse,
+    ),
   ]);
 
   const childCategories = category.children ?? [];
@@ -398,6 +403,12 @@ const toCategorySort = (
   const option = sortOptions.find((sortOption) => sortOption.value === value);
 
   return option?.value ?? "popular";
+};
+
+const getAccessToken = async (): Promise<string | undefined> => {
+  const cookieStore = await cookies();
+
+  return cookieStore.get("access_token")?.value;
 };
 
 const buildCategoryHref = (slug: string, params: Record<string, string | undefined>): string => {

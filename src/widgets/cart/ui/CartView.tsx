@@ -289,16 +289,16 @@ const CartItem = ({ disabled, isPending, item, onDelete, onQuantityChange }: Car
       )}
     >
       <Link
-        className="bg-bg-primary grid h-32 w-full place-items-center rounded-lg md:h-36 md:w-40"
+        className="bg-bg-primary relative grid h-32 w-full place-items-center overflow-hidden rounded-lg md:h-36 md:w-40"
         href={item.slug ? ROUTES.PRODUCT(item.slug) : ROUTES.CATALOG}
       >
         {item.preview_image_url ? (
           <Image
             alt={item.name}
-            className="h-full w-full object-contain"
-            height={150}
+            className="object-contain"
+            fill
+            sizes="(max-width: 768px) 324px, 160px"
             src={item.preview_image_url}
-            width={170}
           />
         ) : (
           <ShoppingBag className="text-accent-primary" size={42} />
@@ -482,7 +482,7 @@ const PromoPanel = ({
         className="grid gap-4 lg:grid-cols-[minmax(0,360px)_118px_minmax(240px,1fr)_auto]"
         onSubmit={onApply}
       >
-        <div className="flex gap-2 lg:contents">
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] lg:contents">
           <input
             className="border-border bg-bg-primary focus:border-accent-primary h-12 min-w-0 flex-1 rounded-lg border px-4 text-sm transition outline-none"
             maxLength={50}

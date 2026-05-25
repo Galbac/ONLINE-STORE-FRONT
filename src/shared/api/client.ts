@@ -142,6 +142,15 @@ class ApiClient {
     headers?: HeadersInit,
   ): Promise<TResponse> {
     const requestUrl = this.createRequestUrl(url);
+    const requestHeaders = {
+      Accept: "application/json",
+      ...this.headersToRecord(getBrowserAuthHeaders()),
+      ...this.headersToRecord(headers),
+    };
+    const requestConfig: RequestInit = {
+      headers: requestHeaders,
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    };
 
     Object.entries(params ?? {}).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
@@ -149,17 +158,15 @@ class ApiClient {
       }
     });
 
-    const response = await this.fetchWithAuth(requestUrl, {
-      headers: {
-        Accept: "application/json",
-        ...getBrowserAuthHeaders(),
-        ...headers,
-      },
-      next: {
+    if (this.hasAuthorizationHeader(requestHeaders)) {
+      requestConfig.cache = "no-store";
+    } else {
+      requestConfig.next = {
         revalidate: 60,
-      },
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
-    });
+      };
+    }
+
+    const response = await this.fetchWithAuth(requestUrl, requestConfig);
 
     if (!response.ok) {
       throw new ApiError(response.status, response.statusText);
@@ -359,6 +366,10 @@ class ApiClient {
     }
 
     return headers;
+  }
+
+  private hasAuthorizationHeader(headers: Record<string, string>): boolean {
+    return Object.keys(headers).some((key) => key.toLowerCase() === "authorization");
   }
 
   private createRequestUrl(url: string): URL {

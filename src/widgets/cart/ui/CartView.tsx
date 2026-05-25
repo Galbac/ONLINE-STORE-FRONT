@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -61,7 +61,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
     startTransition(async () => {
       try {
         const result = await mutation();
-        setCart(result.cart);
+        setCart((currentCart) => preserveCartItemsOrder(result.cart, currentCart.items));
         setSummary(result.summary);
         setPromoCode(result.summary.promo_code ?? result.cart.promo_code?.code ?? "");
         notifyCartChanged({ itemsCount: result.summary.items_count });
@@ -344,8 +344,10 @@ const CartItem = ({ disabled, isPending, item, onDelete, onQuantityChange }: Car
         <QuantityControl
           disabled={disabled}
           quantity={safeQuantity}
+          quantityStep={quantityStep}
           onDecrease={() => onQuantityChange(item, nextMinusQuantity)}
           onIncrease={() => onQuantityChange(item, nextPlusQuantity)}
+          onManualChange={(quantity) => onQuantityChange(item, quantity)}
         />
         <p className="text-text-muted text-center text-xs">{item.unit}</p>
       </div>
@@ -370,11 +372,42 @@ const CartItem = ({ disabled, isPending, item, onDelete, onQuantityChange }: Car
 interface QuantityControlProps {
   disabled: boolean;
   quantity: number;
+  quantityStep: number;
   onDecrease: () => void;
   onIncrease: () => void;
+  onManualChange: (quantity: number) => void;
 }
 
-const QuantityControl = ({ disabled, onDecrease, onIncrease, quantity }: QuantityControlProps) => {
+const QuantityControl = ({
+  disabled,
+  onDecrease,
+  onIncrease,
+  onManualChange,
+  quantity,
+  quantityStep,
+}: QuantityControlProps) => {
+  const [inputValue, setInputValue] = useState(formatQuantity(quantity));
+
+  useEffect(() => {
+    setInputValue(formatQuantity(quantity));
+  }, [quantity]);
+
+  const commitInputValue = (): void => {
+    const nextQuantity = normalizeManualQuantity(inputValue, quantityStep);
+
+    if (nextQuantity === null) {
+      setInputValue(formatQuantity(quantity));
+      return;
+    }
+
+    if (nextQuantity !== quantity) {
+      onManualChange(nextQuantity);
+      return;
+    }
+
+    setInputValue(formatQuantity(quantity));
+  };
+
   return (
     <div className="border-border grid h-12 grid-cols-[44px_minmax(66px,1fr)_44px] overflow-hidden rounded-lg border">
       <button
@@ -386,9 +419,25 @@ const QuantityControl = ({ disabled, onDecrease, onIncrease, quantity }: Quantit
       >
         <Minus size={16} />
       </button>
-      <span className="border-border grid min-w-0 place-items-center border-x px-3 text-sm font-bold">
-        {formatQuantity(quantity)}
-      </span>
+      <input
+        className="border-border min-w-0 border-x px-2 text-center text-sm font-bold outline-none focus:bg-bg-hover disabled:bg-bg-secondary"
+        aria-label="Количество товара"
+        disabled={disabled}
+        inputMode="decimal"
+        min={quantityStep}
+        step={quantityStep}
+        type="number"
+        value={inputValue}
+        onBlur={commitInputValue}
+        onChange={(event) => setInputValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commitInputValue();
+            event.currentTarget.blur();
+          }
+        }}
+      />
       <button
         className="hover:bg-bg-hover grid place-items-center transition disabled:opacity-50"
         type="button"
@@ -660,8 +709,38 @@ const roundQuantity = (value: number): number => {
   return Math.round(value * 10) / 10;
 };
 
+const preserveCartItemsOrder = (
+  nextCart: CartResponse,
+  currentItems: CartItemResponse[],
+): CartResponse => {
+  const orderById = new Map(currentItems.map((item, index) => [item.id, index]));
+
+  return {
+    ...nextCart,
+    items: nextCart.items
+      .slice()
+      .sort((leftItem, rightItem) => getItemOrder(leftItem, orderById) - getItemOrder(rightItem, orderById)),
+  };
+};
+
+const getItemOrder = (item: CartItemResponse, orderById: Map<number, number>): number => {
+  return orderById.get(item.id) ?? Number.MAX_SAFE_INTEGER;
+};
+
 const normalizeQuantity = (value: number): number | string => {
   return Number.isInteger(value) ? value : value.toFixed(1);
+};
+
+const normalizeManualQuantity = (value: string, step: number): number | null => {
+  const parsedValue = Number(value.replace(",", "."));
+
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return null;
+  }
+
+  const roundedToStep = Math.round(parsedValue / step) * step;
+
+  return roundQuantity(Math.max(step, roundedToStep));
 };
 
 const formatQuantity = (value: number | string): string => {

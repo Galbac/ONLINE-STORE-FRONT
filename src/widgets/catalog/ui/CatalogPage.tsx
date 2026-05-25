@@ -19,9 +19,11 @@ import { productApi, type ProductListParams, type ProductListResponse } from "@/
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { Button, Container, ProductCard } from "@/shared/ui";
+import { Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
+import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
+import { CatalogPriceFilter } from "./CatalogPriceFilter";
 
 interface CatalogPageProps {
   searchParams: CatalogSearchParams;
@@ -103,12 +105,15 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
             <CatalogFilters
               categories={visibleCategories}
               currentCategoryId={categoryId}
+              currentParams={toCatalogUrlParams(searchParams)}
               inStock={inStock}
               maxPrice={maxPrice}
               minPrice={minPrice}
+              sliderMax={getPriceSliderMax(products.items, minPrice, maxPrice)}
             />
             <section>
               <CatalogToolbar
+                currentParams={toCatalogUrlParams(searchParams)}
                 selectedCategoryName={selectedCategory?.name}
                 productsTotal={products.total}
                 inStock={inStock}
@@ -163,17 +168,21 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 interface CatalogFiltersProps {
   categories: CategoryShortResponse[];
   currentCategoryId?: number | undefined;
+  currentParams: CatalogUrlParams;
   inStock: boolean;
   minPrice?: string | undefined;
   maxPrice?: string | undefined;
+  sliderMax: number;
 }
 
 const CatalogFilters = ({
   categories,
   currentCategoryId,
+  currentParams,
   inStock,
   maxPrice,
   minPrice,
+  sliderMax,
 }: CatalogFiltersProps) => {
   return (
     <aside className="min-w-0 space-y-4">
@@ -191,7 +200,11 @@ const CatalogFilters = ({
                       ? "text-accent-primary"
                       : "text-text-primary hover:text-accent-primary",
                   )}
-                  href={buildCatalogHref({ category_id: String(category.id), page: undefined })}
+                  href={buildCatalogHref({
+                    ...currentParams,
+                    category_id: String(category.id),
+                    page: undefined,
+                  })}
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <Icon className="shrink-0" size={18} />
@@ -218,7 +231,11 @@ const CatalogFilters = ({
               "relative h-8 w-14 shrink-0 rounded-full transition",
               inStock ? "bg-accent-primary" : "bg-border",
             )}
-            href={buildCatalogHref({ in_stock: inStock ? "false" : "true", page: undefined })}
+            href={buildCatalogHref({
+              ...currentParams,
+              in_stock: inStock ? "false" : "true",
+              page: undefined,
+            })}
             aria-label="Переключить фильтр наличия"
           >
             <span
@@ -232,35 +249,12 @@ const CatalogFilters = ({
       </FilterPanel>
 
       <FilterPanel title="Цена, ₽">
-        <form className="space-y-4" action={ROUTES.CATALOG}>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              className="border-border focus:border-accent-primary h-12 min-w-0 rounded-lg border px-4 text-sm outline-none"
-              name="min_price"
-              placeholder="от 0"
-              defaultValue={minPrice}
-            />
-            <input
-              className="border-border focus:border-accent-primary h-12 min-w-0 rounded-lg border px-4 text-sm outline-none"
-              name="max_price"
-              placeholder="до 1000"
-              defaultValue={maxPrice}
-            />
-          </div>
-          <div className="bg-border relative h-1 rounded-full">
-            <span className="bg-accent-primary absolute inset-y-0 left-0 w-full rounded-full" />
-            <span className="border-accent-primary absolute top-1/2 left-0 size-5 -translate-y-1/2 rounded-full border-4 bg-white" />
-            <span className="border-accent-primary absolute top-1/2 right-0 size-5 -translate-y-1/2 rounded-full border-4 bg-white" />
-          </div>
-          <div className="text-text-muted flex justify-between text-xs">
-            <span>0</span>
-            <span>500</span>
-            <span>1000</span>
-          </div>
-          <Button className="h-10 w-full" type="submit">
-            Применить
-          </Button>
-        </form>
+        <CatalogPriceFilter
+          currentParams={currentParams}
+          maxPrice={maxPrice}
+          minPrice={minPrice}
+          sliderMax={sliderMax}
+        />
       </FilterPanel>
 
       <FilterPanel title="Сортировка">
@@ -269,7 +263,7 @@ const CatalogFilters = ({
             <li key={option.value}>
               <Link
                 className="flex items-center gap-2"
-                href={buildCatalogHref({ sort: option.value, page: undefined })}
+                href={buildCatalogHref({ ...currentParams, sort: option.value, page: undefined })}
               >
                 <span
                   className={cn(
@@ -314,6 +308,7 @@ const FilterPanel = ({ children, title }: FilterPanelProps) => {
 };
 
 interface CatalogToolbarProps {
+  currentParams: CatalogUrlParams;
   productsTotal: number;
   selectedCategoryName?: string | undefined;
   inStock: boolean;
@@ -323,6 +318,7 @@ interface CatalogToolbarProps {
 }
 
 const CatalogToolbar = ({
+  currentParams,
   inStock,
   maxPrice,
   minPrice,
@@ -365,6 +361,14 @@ const CatalogToolbar = ({
                 </option>
               ))}
             </select>
+            {currentParams.category_id ? (
+              <input name="category_id" type="hidden" value={currentParams.category_id} />
+            ) : null}
+            {currentParams.in_stock ? (
+              <input name="in_stock" type="hidden" value={currentParams.in_stock} />
+            ) : null}
+            {minPrice ? <input name="min_price" type="hidden" value={minPrice} /> : null}
+            {maxPrice ? <input name="max_price" type="hidden" value={maxPrice} /> : null}
             <button className="sr-only" type="submit">
               Сортировать
             </button>
@@ -559,20 +563,6 @@ const getCatalogProducts = async (
   }
 };
 
-const buildCatalogHref = (params: Record<string, string | undefined>): string => {
-  const query = new URLSearchParams();
-
-  Object.entries(params).forEach(([key, value]) => {
-    if (value) {
-      query.set(key, value);
-    }
-  });
-
-  const queryString = query.toString();
-
-  return queryString ? `${ROUTES.CATALOG}?${queryString}` : ROUTES.CATALOG;
-};
-
 const getCategoryIcon = (categoryName: string): typeof Apple => {
   if (categoryName.includes("Фрукты")) return Apple;
   if (categoryName.includes("Овощи")) return Leaf;
@@ -584,4 +574,39 @@ const getCategoryIcon = (categoryName: string): typeof Apple => {
   if (categoryName.includes("химия")) return SprayCan;
 
   return Package;
+};
+
+const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams => {
+  const params: CatalogUrlParams = {};
+
+  setCatalogUrlParam(params, "category_id", searchParams.category_id);
+  setCatalogUrlParam(params, "in_stock", searchParams.in_stock);
+  setCatalogUrlParam(params, "max_price", searchParams.max_price);
+  setCatalogUrlParam(params, "min_price", searchParams.min_price);
+  setCatalogUrlParam(params, "page", searchParams.page);
+  setCatalogUrlParam(params, "sort", searchParams.sort);
+
+  return params;
+};
+
+const setCatalogUrlParam = (
+  params: CatalogUrlParams,
+  key: keyof CatalogUrlParams,
+  value: string | undefined,
+): void => {
+  if (value) {
+    params[key] = value;
+  }
+};
+
+const getPriceSliderMax = (
+  products: ProductListResponse["items"],
+  minPrice: string | undefined,
+  maxPrice: string | undefined,
+): number => {
+  const prices = products.map((product) => Number(product.price)).filter(Number.isFinite);
+  const selectedPrices = [Number(minPrice), Number(maxPrice)].filter(Number.isFinite);
+  const maxProductPrice = Math.max(1000, ...prices, ...selectedPrices);
+
+  return Math.ceil(maxProductPrice / 100) * 100;
 };

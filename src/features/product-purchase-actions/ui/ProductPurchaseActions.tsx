@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronDown, Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { cartApi, type CartSummaryResponse } from "@/entities/cart";
@@ -39,6 +39,32 @@ export const ProductPurchaseActions = ({
   const [summary, setSummary] = useState(cartSummary);
   const [isCartPending, startCartTransition] = useTransition();
   const [isFavoritePending, startFavoriteTransition] = useTransition();
+
+  useEffect(() => {
+    if (!hasStoredAccessToken()) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const refreshCartSummary = async (): Promise<void> => {
+      try {
+        const nextSummary = await cartApi.getSummary();
+
+        if (isMounted) {
+          setSummary(nextSummary);
+        }
+      } catch {
+        // Auth refresh and redirects are handled by apiClient.
+      }
+    };
+
+    void refreshCartSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const canDecrease = quantity - step >= min;
   const canIncrease = stock === 0 || quantity + step <= stock;
@@ -165,6 +191,17 @@ export const ProductPurchaseActions = ({
         <ChevronDown size={18} />
       </Link>
     </div>
+  );
+};
+
+const hasStoredAccessToken = (): boolean => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return (
+    window.localStorage.getItem("access_token") !== null ||
+    window.sessionStorage.getItem("access_token") !== null
   );
 };
 

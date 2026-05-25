@@ -12,6 +12,7 @@ import {
 } from "@/entities/favorite";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
+import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { Button, Container } from "@/shared/ui";
 
 interface ProfileFavoritesViewProps {
@@ -65,10 +66,11 @@ export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewP
       try {
         setPendingProductId(product.id);
         setErrorMessage(null);
-        await cartApi.addItem({
+        const response = await cartApi.addItem({
           product_id: product.id,
           quantity: 1,
         });
+        notifyCartChanged({ itemsCount: response.cart.items_count });
         setCartProductIds((currentIds) => new Set(currentIds).add(product.id));
         setMessage(`${product.name} добавлен в корзину.`);
       } catch {

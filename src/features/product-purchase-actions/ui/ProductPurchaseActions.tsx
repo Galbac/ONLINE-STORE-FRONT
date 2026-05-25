@@ -7,6 +7,7 @@ import { cartApi, type CartSummaryResponse } from "@/entities/cart";
 import { favoriteApi } from "@/entities/favorite";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
+import { notifyCartChanged } from "@/shared/lib/cart-events";
 
 interface ProductPurchaseActionsProps {
   productId: number;
@@ -100,6 +101,7 @@ export const ProductPurchaseActions = ({
         warnings_count: response.cart.warnings.length,
         promo_code: null,
       });
+      notifyCartChanged({ itemsCount: response.cart.items_count });
     });
   };
 

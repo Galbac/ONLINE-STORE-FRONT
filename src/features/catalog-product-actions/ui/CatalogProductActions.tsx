@@ -5,6 +5,7 @@ import { Heart, ShoppingCart } from "lucide-react";
 import { cartApi } from "@/entities/cart";
 import { favoriteApi } from "@/entities/favorite";
 import { cn } from "@/shared/config";
+import { notifyCartChanged } from "@/shared/lib/cart-events";
 
 interface CatalogCartButtonProps {
   productId: number;
@@ -23,10 +24,11 @@ export const CatalogCartButton = ({
   const handleAddToCart = (): void => {
     startTransition(async () => {
       try {
-        await cartApi.addItem({
+        const response = await cartApi.addItem({
           product_id: productId,
           quantity: 1,
         });
+        notifyCartChanged({ itemsCount: response.cart.items_count });
         setIsInCart(true);
       } catch {
         setIsInCart(false);

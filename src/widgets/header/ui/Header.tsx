@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { Heart, MapPin, Menu, Phone, ShoppingCart, UserRound } from "lucide-react";
+import { Heart, MapPin, Menu, Phone, UserRound } from "lucide-react";
 
 import { ProductSearch } from "@/features/product-search";
 import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, Logo } from "@/shared/ui";
+
+import { HeaderCartLink } from "./HeaderCartLink";
 
 const navItems = [
   {
@@ -81,10 +83,7 @@ export const Header = () => {
               <Heart className="mx-auto mb-1" size={22} />
               Избранное
             </Link>
-            <Link className="relative text-center text-sm font-semibold" href={ROUTES.CART}>
-              <ShoppingCart className="mx-auto mb-1" size={22} />
-              Корзина
-            </Link>
+            <HeaderCartLink />
           </div>
         </div>
       </Container>

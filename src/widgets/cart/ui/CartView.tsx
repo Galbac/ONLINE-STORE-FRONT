@@ -26,6 +26,7 @@ import {
 } from "@/entities/cart";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
+import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { Button, Container } from "@/shared/ui";
 
 interface CartViewProps {
@@ -63,6 +64,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
         setCart(result.cart);
         setSummary(result.summary);
         setPromoCode(result.summary.promo_code ?? result.cart.promo_code?.code ?? "");
+        notifyCartChanged({ itemsCount: result.summary.items_count });
       } catch {
         setErrorMessage("Не удалось обновить корзину. Попробуйте еще раз.");
       } finally {

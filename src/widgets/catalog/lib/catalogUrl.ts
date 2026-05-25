@@ -4,6 +4,7 @@ export interface CatalogUrlParams {
   page?: string | undefined;
   category_id?: string | undefined;
   in_stock?: string | undefined;
+  has_discount?: string | undefined;
   min_price?: string | undefined;
   max_price?: string | undefined;
   sort?: string | undefined;

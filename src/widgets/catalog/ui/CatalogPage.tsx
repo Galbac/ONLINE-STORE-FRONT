@@ -33,6 +33,7 @@ interface CatalogSearchParams {
   page?: string;
   category_id?: string;
   in_stock?: string;
+  has_discount?: string;
   min_price?: string;
   max_price?: string;
   sort?: ProductListParams["sort"];
@@ -50,6 +51,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const page = toPositiveNumber(searchParams.page, 1);
   const categoryId = toOptionalNumber(searchParams.category_id);
   const inStock = searchParams.in_stock !== "false";
+  const hasDiscount = searchParams.has_discount === "true";
   const minPrice = toOptionalPrice(searchParams.min_price);
   const maxPrice = toOptionalPrice(searchParams.max_price);
   const sort = toCatalogSort(searchParams.sort);
@@ -69,6 +71,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     productParams.category_id = categoryId;
   }
 
+  if (hasDiscount) {
+    productParams.has_discount = true;
+  }
+
   if (minPrice !== undefined) {
     productParams.min_price = minPrice;
   }
@@ -82,6 +88,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
   if (categoryId !== undefined) {
     priceBoundsParams.category_id = categoryId;
+  }
+
+  if (hasDiscount) {
+    priceBoundsParams.has_discount = true;
   }
 
   const [categoryTree, categories, products, cart, favorites, priceBounds] = await Promise.all([
@@ -118,14 +128,17 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
               categories={visibleCategories}
               currentCategoryId={categoryId}
               currentParams={toCatalogUrlParams(searchParams)}
+              hasDiscount={hasDiscount}
               inStock={inStock}
               maxPrice={maxPrice}
               minPrice={minPrice}
               sliderMax={getPriceSliderMax(priceBounds.items, minPrice, maxPrice)}
+              sort={sort}
             />
             <section>
               <CatalogToolbar
                 currentParams={toCatalogUrlParams(searchParams)}
+                hasDiscount={hasDiscount}
                 selectedCategoryName={selectedCategory?.name}
                 productsTotal={products.total}
                 inStock={inStock}
@@ -181,20 +194,24 @@ interface CatalogFiltersProps {
   categories: CategoryShortResponse[];
   currentCategoryId?: number | undefined;
   currentParams: CatalogUrlParams;
+  hasDiscount: boolean;
   inStock: boolean;
   minPrice?: string | undefined;
   maxPrice?: string | undefined;
   sliderMax: number;
+  sort: NonNullable<ProductListParams["sort"]>;
 }
 
 const CatalogFilters = ({
   categories,
   currentCategoryId,
   currentParams,
+  hasDiscount,
   inStock,
   maxPrice,
   minPrice,
   sliderMax,
+  sort,
 }: CatalogFiltersProps) => {
   return (
     <aside className="min-w-0 space-y-4">
@@ -276,14 +293,15 @@ const CatalogFilters = ({
               <Link
                 className="flex items-center gap-2"
                 href={buildCatalogHref({ ...currentParams, sort: option.value, page: undefined })}
+                aria-current={option.value === sort ? "true" : undefined}
               >
                 <span
                   className={cn(
                     "grid size-4 place-items-center rounded-full border",
-                    option.value === "popular" ? "border-accent-primary" : "border-text-muted",
+                    option.value === sort ? "border-accent-primary" : "border-text-muted",
                   )}
                 >
-                  {option.value === "popular" ? (
+                  {option.value === sort ? (
                     <span className="bg-accent-primary size-2 rounded-full" />
                   ) : null}
                 </span>
@@ -293,6 +311,20 @@ const CatalogFilters = ({
           ))}
         </ul>
       </FilterPanel>
+
+      {hasDiscount ? (
+        <Link
+          className="border-border text-text-secondary hover:bg-bg-hover flex h-12 items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition"
+          href={buildCatalogHref({
+            ...currentParams,
+            has_discount: undefined,
+            page: undefined,
+          })}
+        >
+          <RotateCcw size={16} />
+          Убрать скидки
+        </Link>
+      ) : null}
 
       <Link
         className="border-border text-text-secondary hover:bg-bg-hover flex h-12 items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition"
@@ -321,6 +353,7 @@ const FilterPanel = ({ children, title }: FilterPanelProps) => {
 
 interface CatalogToolbarProps {
   currentParams: CatalogUrlParams;
+  hasDiscount: boolean;
   productsTotal: number;
   selectedCategoryName?: string | undefined;
   inStock: boolean;
@@ -331,6 +364,7 @@ interface CatalogToolbarProps {
 
 const CatalogToolbar = ({
   currentParams,
+  hasDiscount,
   inStock,
   maxPrice,
   minPrice,
@@ -346,6 +380,7 @@ const CatalogToolbar = ({
           <div className="mt-3 flex flex-wrap gap-2">
             {selectedCategoryName ? <FilterChip label={selectedCategoryName} /> : null}
             {inStock ? <FilterChip label="В наличии" /> : null}
+            {hasDiscount ? <FilterChip label="Со скидкой" /> : null}
             {maxPrice ? <FilterChip label={`Цена: до ${maxPrice} ₽`} /> : null}
             {minPrice ? <FilterChip label={`Цена: от ${minPrice} ₽`} /> : null}
             <Link
@@ -378,6 +413,9 @@ const CatalogToolbar = ({
             ) : null}
             {currentParams.in_stock ? (
               <input name="in_stock" type="hidden" value={currentParams.in_stock} />
+            ) : null}
+            {currentParams.has_discount ? (
+              <input name="has_discount" type="hidden" value={currentParams.has_discount} />
             ) : null}
             {minPrice ? <input name="min_price" type="hidden" value={minPrice} /> : null}
             {maxPrice ? <input name="max_price" type="hidden" value={maxPrice} /> : null}
@@ -592,6 +630,7 @@ const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams
   const params: CatalogUrlParams = {};
 
   setCatalogUrlParam(params, "category_id", searchParams.category_id);
+  setCatalogUrlParam(params, "has_discount", searchParams.has_discount);
   setCatalogUrlParam(params, "in_stock", searchParams.in_stock);
   setCatalogUrlParam(params, "max_price", searchParams.max_price);
   setCatalogUrlParam(params, "min_price", searchParams.min_price);

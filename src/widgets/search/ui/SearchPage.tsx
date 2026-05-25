@@ -29,6 +29,15 @@ interface SearchPageParams {
   sort?: ProductSearchParams["sort"];
 }
 
+interface SearchUrlParams {
+  q?: string | undefined;
+  page?: string | undefined;
+  category_id?: string | undefined;
+  in_stock?: string | undefined;
+  has_discount?: string | undefined;
+  sort?: string | undefined;
+}
+
 const sortOptions: Array<{ label: string; value: NonNullable<ProductSearchParams["sort"]> }> = [
   { label: "По релевантности", value: "relevance" },
   { label: "По популярности", value: "popular" },
@@ -52,7 +61,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const categoryId = toOptionalNumber(searchParams.category_id);
   const inStock = searchParams.in_stock !== "false";
   const hasDiscount = searchParams.has_discount === "true";
-  const sort = searchParams.sort ?? "relevance";
+  const sort = toSearchSort(searchParams.sort);
 
   const productParams: ProductSearchParams = {
     q: query,
@@ -115,6 +124,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
           <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
             <SearchFilters
               categories={visibleCategories}
+              currentParams={toSearchUrlParams(searchParams)}
               currentCategoryId={categoryId}
               hasDiscount={hasDiscount}
               inStock={inStock}
@@ -176,6 +186,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
 
 interface SearchFiltersProps {
   categories: CategoryShortResponse[];
+  currentParams: SearchUrlParams;
   currentCategoryId?: number | undefined;
   hasDiscount: boolean;
   inStock: boolean;
@@ -184,6 +195,7 @@ interface SearchFiltersProps {
 
 const SearchFilters = ({
   categories,
+  currentParams,
   currentCategoryId,
   hasDiscount,
   inStock,
@@ -201,7 +213,11 @@ const SearchFilters = ({
                   ? "text-accent-primary"
                   : "text-text-primary hover:text-accent-primary",
               )}
-              href={buildSearchHref({ q: query, category_id: undefined, page: undefined })}
+              href={buildSearchHref({
+                ...currentParams,
+                category_id: undefined,
+                page: undefined,
+              })}
             >
               <span className="flex items-center gap-3">
                 <span className="border-border size-4 rounded border" />
@@ -219,7 +235,7 @@ const SearchFilters = ({
                     : "text-text-primary hover:text-accent-primary",
                 )}
                 href={buildSearchHref({
-                  q: query,
+                  ...currentParams,
                   category_id: String(category.id),
                   page: undefined,
                 })}
@@ -239,7 +255,7 @@ const SearchFilters = ({
         <ToggleFilter
           active={inStock}
           href={buildSearchHref({
-            q: query,
+            ...currentParams,
             in_stock: inStock ? "false" : "true",
             page: undefined,
           })}
@@ -251,7 +267,7 @@ const SearchFilters = ({
         <ToggleFilter
           active={hasDiscount}
           href={buildSearchHref({
-            q: query,
+            ...currentParams,
             has_discount: hasDiscount ? undefined : "true",
             page: undefined,
           })}
@@ -533,7 +549,38 @@ const toOptionalNumber = (value: string | undefined): number | undefined => {
   return parsed;
 };
 
-const buildSearchHref = (params: Record<string, string | undefined>): string => {
+const toSearchSort = (
+  value: ProductSearchParams["sort"] | undefined,
+): NonNullable<ProductSearchParams["sort"]> => {
+  const option = sortOptions.find((sortOption) => sortOption.value === value);
+
+  return option?.value ?? "relevance";
+};
+
+const toSearchUrlParams = (searchParams: SearchPageParams): SearchUrlParams => {
+  const params: SearchUrlParams = {};
+
+  setSearchUrlParam(params, "category_id", searchParams.category_id);
+  setSearchUrlParam(params, "has_discount", searchParams.has_discount);
+  setSearchUrlParam(params, "in_stock", searchParams.in_stock);
+  setSearchUrlParam(params, "page", searchParams.page);
+  setSearchUrlParam(params, "q", searchParams.q);
+  setSearchUrlParam(params, "sort", searchParams.sort);
+
+  return params;
+};
+
+const setSearchUrlParam = (
+  params: SearchUrlParams,
+  key: keyof SearchUrlParams,
+  value: string | undefined,
+): void => {
+  if (value) {
+    params[key] = value;
+  }
+};
+
+const buildSearchHref = (params: SearchUrlParams): string => {
   const query = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {

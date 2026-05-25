@@ -73,6 +73,9 @@ export const CatalogPriceFilter = ({
       {currentParams.in_stock ? (
         <input name="in_stock" type="hidden" value={currentParams.in_stock} />
       ) : null}
+      {currentParams.has_discount ? (
+        <input name="has_discount" type="hidden" value={currentParams.has_discount} />
+      ) : null}
       {currentParams.sort ? <input name="sort" type="hidden" value={currentParams.sort} /> : null}
 
       <div className="bg-bg-hover rounded-lg px-4 py-3">

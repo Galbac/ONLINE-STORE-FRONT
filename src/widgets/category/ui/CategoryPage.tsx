@@ -40,7 +40,7 @@ const sortOptions: Array<{ label: string; value: NonNullable<ProductListParams["
 export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) => {
   const page = toPositiveNumber(searchParams.page, 1);
   const inStock = searchParams.in_stock !== "false";
-  const sort = searchParams.sort ?? "popular";
+  const sort = toCategorySort(searchParams.sort);
 
   const categoryBySlug = await categoryApi.getBySlug(slug);
   const category = await categoryApi.getById(categoryBySlug.id);
@@ -403,6 +403,14 @@ const toPositiveNumber = (value: string | undefined, fallback: number): number =
   }
 
   return parsed;
+};
+
+const toCategorySort = (
+  value: ProductListParams["sort"] | undefined,
+): NonNullable<ProductListParams["sort"]> => {
+  const option = sortOptions.find((sortOption) => sortOption.value === value);
+
+  return option?.value ?? "popular";
 };
 
 const buildCategoryHref = (slug: string, params: Record<string, string | undefined>): string => {

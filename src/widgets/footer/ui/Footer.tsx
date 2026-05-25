@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
-import { ROUTES } from "@/shared/config";
+
+import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, Logo } from "@/shared/ui";
 
 interface FooterLink {
@@ -77,23 +78,28 @@ export const Footer = () => {
             <div className="text-text-secondary space-y-3 text-sm">
               <a
                 className="text-text-primary flex items-center gap-2 font-bold"
-                href="tel:88005555555"
+                href={STORE_INFO.phoneHref}
               >
-                <Phone size={17} className="text-accent-primary" />8 (800) 555-55-55
+                <Phone size={17} className="text-accent-primary" />
+                {STORE_INFO.phone}
               </a>
-              <a className="flex items-center gap-2" href="mailto:info@supermarket.ru">
+              <a className="flex items-center gap-2" href={`mailto:${STORE_INFO.email}`}>
                 <Mail size={17} className="text-accent-primary" />
-                info@supermarket.ru
+                {STORE_INFO.email}
               </a>
               <span className="flex items-center gap-2">
                 <MapPin size={17} className="text-accent-primary" />
-                Адрес магазина
+                {STORE_INFO.address}
+              </span>
+              <span className="flex items-center gap-2">
+                <MapPin size={17} className="text-accent-primary" />
+                {STORE_INFO.workingHours}
               </span>
             </div>
           </div>
         </div>
         <div className="border-border text-text-muted mt-8 flex items-center justify-between border-t pt-5 text-sm">
-          <span>© 2026 СуперМаркет. Все права защищены.</span>
+          <span>© 2026 {STORE_INFO.name}. Все права защищены.</span>
           <span className="text-accent-primary font-bold">МИР · VISA · Mastercard</span>
         </div>
       </Container>

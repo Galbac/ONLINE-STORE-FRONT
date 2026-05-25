@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Heart, MapPin, Menu, Phone, ShoppingCart, UserRound } from "lucide-react";
+
 import { ProductSearch } from "@/features/product-search";
-import { ROUTES } from "@/shared/config";
+import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, Logo } from "@/shared/ui";
 
 const navItems = [
@@ -34,7 +35,7 @@ export const Header = () => {
         <div className="mb-4 flex items-center justify-between gap-6 text-sm">
           <span className="text-text-secondary inline-flex items-center gap-2">
             <MapPin size={16} className="text-accent-primary" />
-            Москва и область
+            {STORE_INFO.city}
           </span>
           <nav className="text-text-primary hidden items-center gap-8 lg:flex">
             {navItems.map((item) => (
@@ -47,8 +48,9 @@ export const Header = () => {
               </Link>
             ))}
           </nav>
-          <a className="inline-flex items-center gap-2 font-bold" href="tel:88005555555">
-            <Phone size={16} className="text-accent-primary" />8 (800) 555-55-55
+          <a className="inline-flex items-center gap-2 font-bold" href={STORE_INFO.phoneHref}>
+            <Phone size={16} className="text-accent-primary" />
+            {STORE_INFO.phone}
           </a>
         </div>
 

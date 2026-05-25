@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Store } from "lucide-react";
+
 import type { AdminMeResponse, AdminRoleResponse } from "@/entities/admin-auth";
 import { AdminLogoutButton } from "@/features/logout-admin";
-import { cn, ROUTES } from "@/shared/config";
+import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { adminNavigationItems } from "../config/navigation";
 import {
   canAccessAdminItem,
@@ -45,7 +46,7 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-base font-bold">Админ-панель</span>
-                  <span className="text-text-muted block truncate text-xs">СуперМаркет</span>
+                  <span className="text-text-muted block truncate text-xs">{STORE_INFO.name}</span>
                 </span>
               </Link>
             </div>

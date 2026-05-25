@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+
+import { STORE_INFO } from "@/shared/config";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "СуперМаркет - свежесть каждый день",
+  title: `${STORE_INFO.name} - свежесть каждый день`,
   description: "Онлайн-магазин свежих продуктов с доставкой и самовывозом.",
   icons: {
     icon: "/favicon.svg",

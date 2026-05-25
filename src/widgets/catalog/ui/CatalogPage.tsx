@@ -73,12 +73,24 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     productParams.min_price = minPrice;
   }
 
-  const [categoryTree, categories, products, cart, favorites] = await Promise.all([
+  const priceBoundsParams: ProductListParams = {
+    limit: 1,
+    page: 1,
+    in_stock: inStock,
+    sort: "price_desc",
+  };
+
+  if (categoryId !== undefined) {
+    priceBoundsParams.category_id = categoryId;
+  }
+
+  const [categoryTree, categories, products, cart, favorites, priceBounds] = await Promise.all([
     categoryApi.getTree(),
     categoryApi.getList(),
     getCatalogProducts(productParams, page),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(favoriteApi.getList(), emptyFavoritesResponse),
+    getCatalogProducts(priceBoundsParams, 1),
   ]);
 
   const visibleCategories = categories.items.length > 0 ? categories.items : categoryTree.items;
@@ -109,7 +121,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
               inStock={inStock}
               maxPrice={maxPrice}
               minPrice={minPrice}
-              sliderMax={getPriceSliderMax(products.items, minPrice, maxPrice)}
+              sliderMax={getPriceSliderMax(priceBounds.items, minPrice, maxPrice)}
             />
             <section>
               <CatalogToolbar
@@ -606,7 +618,7 @@ const getPriceSliderMax = (
 ): number => {
   const prices = products.map((product) => Number(product.price)).filter(Number.isFinite);
   const selectedPrices = [Number(minPrice), Number(maxPrice)].filter(Number.isFinite);
-  const maxProductPrice = Math.max(1000, ...prices, ...selectedPrices);
+  const maxProductPrice = Math.max(100, ...prices, ...selectedPrices);
 
   return Math.ceil(maxProductPrice / 100) * 100;
 };

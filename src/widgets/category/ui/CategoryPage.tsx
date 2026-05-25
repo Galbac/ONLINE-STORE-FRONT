@@ -47,15 +47,20 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   const categoryBySlug = await categoryApi.getBySlug(slug);
   const category = await categoryApi.getById(categoryBySlug.id);
 
+  const productParams: ProductListParams = {
+    page,
+    limit: 24,
+    category_id: category.id,
+    category_slug: category.slug,
+    sort,
+  };
+
+  if (inStock) {
+    productParams.in_stock = true;
+  }
+
   const [products, cart, favorites] = await Promise.all([
-    productApi.getList({
-      page,
-      limit: 24,
-      category_id: category.id,
-      category_slug: category.slug,
-      in_stock: inStock,
-      sort,
-    }),
+    productApi.getList(productParams),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),

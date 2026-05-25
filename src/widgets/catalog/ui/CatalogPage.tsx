@@ -61,9 +61,12 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const productParams: ProductListParams = {
     page,
     limit: 24,
-    in_stock: inStock,
     sort,
   };
+
+  if (inStock) {
+    productParams.in_stock = true;
+  }
 
   if (maxPrice !== undefined) {
     productParams.max_price = maxPrice;
@@ -84,9 +87,12 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const priceBoundsParams: ProductListParams = {
     limit: 1,
     page: 1,
-    in_stock: inStock,
     sort: "price_desc",
   };
+
+  if (inStock) {
+    priceBoundsParams.in_stock = true;
+  }
 
   if (categoryId !== undefined) {
     priceBoundsParams.category_id = categoryId;

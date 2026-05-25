@@ -69,9 +69,12 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
     q: query,
     page,
     limit: 24,
-    in_stock: inStock,
     sort,
   };
+
+  if (inStock) {
+    productParams.in_stock = true;
+  }
 
   if (categoryId !== undefined) {
     productParams.category_id = categoryId;

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { Grid2X2, List, RotateCcw, SearchX } from "lucide-react";
+import { RotateCcw, SearchX } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
@@ -13,7 +13,8 @@ import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-pro
 import { ProductSearch } from "@/features/product-search";
 import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { AutoSubmitSelect, Container, ProductCard } from "@/shared/ui";
+import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shared/ui";
+import type { ProductViewMode } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 
@@ -29,6 +30,7 @@ interface SearchPageParams {
   in_stock?: string;
   has_discount?: string;
   sort?: ProductSearchParams["sort"];
+  view?: ProductViewMode;
 }
 
 interface SearchUrlParams {
@@ -39,6 +41,7 @@ interface SearchUrlParams {
   in_stock?: string | undefined;
   has_discount?: string | undefined;
   sort?: string | undefined;
+  view?: string | undefined;
 }
 
 const sortOptions: Array<{ label: string; value: NonNullable<ProductSearchParams["sort"]> }> = [
@@ -76,6 +79,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const inStock = searchParams.in_stock !== "false";
   const hasDiscount = searchParams.has_discount === "true";
   const sort = toSearchSort(searchParams.sort);
+  const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
 
   const productParams: ProductSearchParams = {
@@ -161,15 +165,22 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
                 searchParams={searchParams}
                 selectedCategoryName={selectedCategory?.name}
                 sort={sort}
+                viewMode={viewMode}
               />
 
               {products.items.length > 0 ? (
                 <>
-                  <div className="mt-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
+                  <div
+                    className={cn(
+                      "mt-5 grid gap-4",
+                      viewMode === "grid" ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-1",
+                    )}
+                  >
                     {products.items.map((product) => (
                       <ProductCard
                         key={product.id}
                         product={product}
+                        variant={viewMode}
                         cartControl={
                           <CatalogCartButton
                             initialInCart={cartProductIds.has(product.id)}
@@ -359,6 +370,7 @@ interface SearchToolbarProps {
   inStock: boolean;
   searchParams: SearchPageParams;
   sort: ProductSearchParams["sort"];
+  viewMode: ProductViewMode;
 }
 
 const SearchToolbar = ({
@@ -370,6 +382,7 @@ const SearchToolbar = ({
   searchParams,
   selectedCategoryName,
   sort,
+  viewMode,
 }: SearchToolbarProps) => {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -395,6 +408,7 @@ const SearchToolbar = ({
             <input name="limit" type="hidden" value={searchParams.limit} />
           ) : null}
           {hasDiscount ? <input name="has_discount" type="hidden" value="true" /> : null}
+          {viewMode === "list" ? <input name="view" type="hidden" value={viewMode} /> : null}
           <span className="text-text-secondary hidden text-sm sm:inline">Сортировать:</span>
           <select
             className="min-w-0 bg-transparent text-sm outline-none"
@@ -411,10 +425,11 @@ const SearchToolbar = ({
             Сортировать
           </button>
         </form>
-        <div className="border-border bg-bg-primary flex h-12 items-center gap-2 rounded-lg border px-3">
-          <Grid2X2 className="text-accent-primary" size={22} />
-          <List className="text-text-muted" size={22} />
-        </div>
+        <ViewModeToggle
+          gridHref={buildSearchHref({ ...searchParams, page: undefined, view: undefined })}
+          listHref={buildSearchHref({ ...searchParams, page: undefined, view: "list" })}
+          viewMode={viewMode}
+        />
       </div>
     </div>
   );
@@ -517,6 +532,7 @@ const SearchPagination = ({
             in_stock: searchParams.in_stock,
             q: searchParams.q,
             sort: searchParams.sort,
+            view: searchParams.view,
           })}
           label="Показать по:"
           name="limit"
@@ -614,6 +630,10 @@ const toSearchSort = (
   return option?.value ?? "relevance";
 };
 
+const toViewMode = (value: ProductViewMode | undefined): ProductViewMode => {
+  return value === "list" ? "list" : "grid";
+};
+
 const getAccessToken = async (): Promise<string | undefined> => {
   const cookieStore = await cookies();
 
@@ -630,6 +650,7 @@ const toSearchUrlParams = (searchParams: SearchPageParams): SearchUrlParams => {
   setSearchUrlParam(params, "page", searchParams.page);
   setSearchUrlParam(params, "q", searchParams.q);
   setSearchUrlParam(params, "sort", searchParams.sort);
+  setSearchUrlParam(params, "view", searchParams.view);
 
   return params;
 };
@@ -660,7 +681,7 @@ const buildSearchHref = (params: SearchUrlParams): string => {
 
 const getSearchHiddenFields = (
   params: Partial<
-    Pick<SearchUrlParams, "category_id" | "has_discount" | "in_stock" | "q" | "sort">
+    Pick<SearchUrlParams, "category_id" | "has_discount" | "in_stock" | "q" | "sort" | "view">
   >,
 ): Array<{ name: string; value: string }> => {
   return Object.entries(params).flatMap(([name, value]) => {

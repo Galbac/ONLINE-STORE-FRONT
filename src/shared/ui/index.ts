@@ -12,3 +12,5 @@ export { CookieBanner } from "./cookie-banner";
 export { Logo } from "./logo";
 export { ProductCard } from "./product-card";
 export { Section } from "./section";
+export { ViewModeToggle } from "./view-mode-toggle";
+export type { ProductViewMode } from "./view-mode-toggle";

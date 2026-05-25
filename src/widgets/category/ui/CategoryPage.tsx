@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Grid2X2, List } from "lucide-react";
+import { ChevronRight, Grid2X2 } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import {
   categoryApi,
@@ -15,7 +15,8 @@ import { productApi, type ProductListParams } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { fallbackOnUnauthorized } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { AutoSubmitSelect, Container, ProductCard } from "@/shared/ui";
+import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shared/ui";
+import type { ProductViewMode } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 
@@ -29,6 +30,7 @@ interface CategorySearchParams {
   limit?: string;
   in_stock?: string;
   sort?: ProductListParams["sort"];
+  view?: ProductViewMode;
 }
 
 const sortOptions: Array<{ label: string; value: NonNullable<ProductListParams["sort"]> }> = [
@@ -50,6 +52,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   const pageSize = toPageSize(searchParams.limit);
   const inStock = searchParams.in_stock !== "false";
   const sort = toCategorySort(searchParams.sort);
+  const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
 
   const categoryBySlug = await categoryApi.getBySlug(slug);
@@ -106,13 +109,22 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
               productsTotal={products.total}
               searchParams={searchParams}
               sort={sort}
+              viewMode={viewMode}
             />
 
-            <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
+            <div
+              className={cn(
+                "mt-5 grid gap-4",
+                viewMode === "grid"
+                  ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
+                  : "grid-cols-1",
+              )}
+            >
               {products.items.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
+                  variant={viewMode}
                   cartControl={
                     <CatalogCartButton
                       initialInCart={cartProductIds.has(product.id)}
@@ -252,6 +264,7 @@ interface CategoryToolbarProps {
   inStock: boolean;
   searchParams: CategorySearchParams;
   sort: NonNullable<ProductListParams["sort"]>;
+  viewMode: ProductViewMode;
 }
 
 const CategoryToolbar = ({
@@ -260,6 +273,7 @@ const CategoryToolbar = ({
   productsTotal,
   searchParams,
   sort,
+  viewMode,
 }: CategoryToolbarProps) => {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -274,6 +288,7 @@ const CategoryToolbar = ({
             limit: searchParams.limit,
             page: undefined,
             sort,
+            view: viewMode === "list" ? viewMode : undefined,
           })}
         >
           Только в наличии
@@ -301,15 +316,25 @@ const CategoryToolbar = ({
           hiddenFields={getCategoryHiddenFields({
             in_stock: String(inStock),
             limit: searchParams.limit,
+            view: viewMode === "list" ? viewMode : undefined,
           })}
           label="Сортировать:"
           name="sort"
           options={sortOptions}
         />
-        <div className="border-border bg-bg-primary flex h-12 items-center gap-2 rounded-lg border px-3">
-          <Grid2X2 className="text-accent-primary" size={22} />
-          <List className="text-text-muted" size={22} />
-        </div>
+        <ViewModeToggle
+          gridHref={buildCategoryHref(category.slug, {
+            ...searchParams,
+            page: undefined,
+            view: undefined,
+          })}
+          listHref={buildCategoryHref(category.slug, {
+            ...searchParams,
+            page: undefined,
+            view: "list",
+          })}
+          viewMode={viewMode}
+        />
       </div>
     </div>
   );
@@ -376,6 +401,7 @@ const CategoryPagination = ({
           hiddenFields={getCategoryHiddenFields({
             in_stock: searchParams.in_stock,
             sort: searchParams.sort,
+            view: searchParams.view,
           })}
           label="Показать по:"
           name="limit"
@@ -441,6 +467,10 @@ const toCategorySort = (
   const option = sortOptions.find((sortOption) => sortOption.value === value);
 
   return option?.value ?? "popular";
+};
+
+const toViewMode = (value: ProductViewMode | undefined): ProductViewMode => {
+  return value === "list" ? "list" : "grid";
 };
 
 const getCategoryHiddenFields = (

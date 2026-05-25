@@ -4,9 +4,7 @@ import {
   Apple,
   Beef,
   Cookie,
-  Grid2X2,
   Leaf,
-  List,
   Milk,
   Package,
   RotateCcw,
@@ -20,7 +18,8 @@ import { productApi, type ProductListParams, type ProductListResponse } from "@/
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { AutoSubmitSelect, Container, ProductCard } from "@/shared/ui";
+import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shared/ui";
+import type { ProductViewMode } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
@@ -39,6 +38,7 @@ interface CatalogSearchParams {
   min_price?: string;
   max_price?: string;
   sort?: ProductListParams["sort"];
+  view?: ProductViewMode;
 }
 
 const sortOptions: Array<{ label: string; value: NonNullable<ProductListParams["sort"]> }> = [
@@ -64,6 +64,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const minPrice = toOptionalPrice(searchParams.min_price);
   const maxPrice = toOptionalPrice(searchParams.max_price);
   const sort = toCatalogSort(searchParams.sort);
+  const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
 
   const productParams: ProductListParams = {
@@ -164,15 +165,22 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 minPrice={minPrice}
                 maxPrice={maxPrice}
                 sort={sort}
+                viewMode={viewMode}
               />
 
               {products.items.length > 0 ? (
                 <>
-                  <div className="mt-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
+                  <div
+                    className={cn(
+                      "mt-5 grid gap-4",
+                      viewMode === "grid" ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-1",
+                    )}
+                  >
                     {products.items.map((product) => (
                       <ProductCard
                         key={product.id}
                         product={product}
+                        variant={viewMode}
                         cartControl={
                           <CatalogCartButton
                             initialInCart={cartProductIds.has(product.id)}
@@ -380,6 +388,7 @@ interface CatalogToolbarProps {
   minPrice?: string | undefined;
   maxPrice?: string | undefined;
   sort: NonNullable<ProductListParams["sort"]>;
+  viewMode: ProductViewMode;
 }
 
 const CatalogToolbar = ({
@@ -391,6 +400,7 @@ const CatalogToolbar = ({
   productsTotal,
   selectedCategoryName,
   sort,
+  viewMode,
 }: CatalogToolbarProps) => {
   return (
     <div className="space-y-4">
@@ -422,15 +432,17 @@ const CatalogToolbar = ({
               limit: currentParams.limit,
               max_price: maxPrice,
               min_price: minPrice,
+              view: viewMode === "list" ? viewMode : undefined,
             })}
             label="Сортировать:"
             name="sort"
             options={sortOptions}
           />
-          <div className="border-border bg-bg-primary flex h-12 items-center gap-2 rounded-lg border px-3">
-            <Grid2X2 className="text-accent-primary" size={22} />
-            <List className="text-text-muted" size={22} />
-          </div>
+          <ViewModeToggle
+            gridHref={buildCatalogHref({ ...currentParams, page: undefined, view: undefined })}
+            listHref={buildCatalogHref({ ...currentParams, page: undefined, view: "list" })}
+            viewMode={viewMode}
+          />
         </div>
       </div>
     </div>
@@ -522,6 +534,7 @@ const CatalogPagination = ({
             max_price: searchParams.max_price,
             min_price: searchParams.min_price,
             sort: searchParams.sort,
+            view: searchParams.view,
           })}
           label="Показать по:"
           name="limit"
@@ -614,6 +627,10 @@ const toCatalogSort = (
   return option?.value ?? "popular";
 };
 
+const toViewMode = (value: ProductViewMode | undefined): ProductViewMode => {
+  return value === "list" ? "list" : "grid";
+};
+
 const getEmptyProductListResponse = (page: number, limit: number): ProductListResponse => ({
   items: [],
   total: 0,
@@ -668,6 +685,7 @@ const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams
   setCatalogUrlParam(params, "min_price", searchParams.min_price);
   setCatalogUrlParam(params, "page", searchParams.page);
   setCatalogUrlParam(params, "sort", searchParams.sort);
+  setCatalogUrlParam(params, "view", searchParams.view);
 
   return params;
 };
@@ -686,7 +704,14 @@ const getCatalogSortHiddenFields = (
   params: Partial<
     Pick<
       CatalogUrlParams,
-      "category_id" | "has_discount" | "in_stock" | "limit" | "max_price" | "min_price" | "sort"
+      | "category_id"
+      | "has_discount"
+      | "in_stock"
+      | "limit"
+      | "max_price"
+      | "min_price"
+      | "sort"
+      | "view"
     >
   >,
 ): Array<{ name: string; value: string }> => {

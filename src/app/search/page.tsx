@@ -11,6 +11,7 @@ interface PageProps {
     in_stock?: string;
     has_discount?: string;
     sort?: "relevance" | "price_asc" | "price_desc" | "newest" | "popular";
+    view?: "grid" | "list";
   }>;
 }
 

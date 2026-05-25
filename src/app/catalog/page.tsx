@@ -12,6 +12,7 @@ interface PageProps {
     min_price?: string;
     max_price?: string;
     sort?: "price_asc" | "price_desc" | "newest" | "popular" | "name_asc" | "name_desc";
+    view?: "grid" | "list";
   }>;
 }
 

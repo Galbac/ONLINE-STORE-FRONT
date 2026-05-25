@@ -87,6 +87,7 @@ export const CheckoutView = ({
   );
   const [selectedDate, setSelectedDate] = useState(timeSlots.date);
   const [selectedSlotId, setSelectedSlotId] = useState(firstAvailableSlot?.id ?? null);
+  const [personalDataAgreement, setPersonalDataAgreement] = useState(false);
   const [order, setOrder] = useState<OrderCreateResponse | null>(null);
   const [payment, setPayment] = useState<PaymentCreateResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -122,6 +123,11 @@ export const CheckoutView = ({
   const handleCreateOrder = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     setErrorMessage(null);
+
+    if (!personalDataAgreement) {
+      setErrorMessage("Подтвердите согласие на обработку персональных данных.");
+      return;
+    }
 
     const request: OrderCreateRequest = {
       delivery_type: deliveryType,
@@ -320,10 +326,12 @@ export const CheckoutView = ({
               cart={cart}
               deliveryCalculation={deliveryCalculation}
               deliveryPrice={deliveryPrice}
+              personalDataAgreement={personalDataAgreement}
               isPending={isPending}
               order={order}
               payment={payment}
               summary={summary}
+              onPersonalDataAgreementChange={setPersonalDataAgreement}
             />
             <CheckoutBenefits />
           </aside>
@@ -601,18 +609,22 @@ interface OrderSummaryProps {
   cart: CartResponse;
   deliveryCalculation: DeliveryCalculateResponse;
   deliveryPrice: string;
+  personalDataAgreement: boolean;
   isPending: boolean;
   order: OrderCreateResponse | null;
   payment: PaymentCreateResponse | null;
   summary: CartSummaryResponse;
+  onPersonalDataAgreementChange: (checked: boolean) => void;
 }
 
 const OrderSummary = ({
   cart,
   deliveryCalculation,
   deliveryPrice,
+  personalDataAgreement,
   isPending,
   order,
+  onPersonalDataAgreementChange,
   payment,
   summary,
 }: OrderSummaryProps) => {
@@ -667,10 +679,33 @@ const OrderSummary = ({
         <span className="text-3xl font-bold">{toPriceFormat(finalWithDelivery)}</span>
       </div>
 
+      <label className="mt-6 flex items-start gap-3 text-sm leading-6">
+        <input
+          className="border-border mt-1 size-5 rounded accent-[var(--color-accent-primary)]"
+          checked={personalDataAgreement}
+          type="checkbox"
+          onChange={(event) => onPersonalDataAgreementChange(event.target.checked)}
+        />
+        <span className="text-text-secondary">
+          Я даю{" "}
+          <Link className="text-accent-primary font-semibold" href={ROUTES.PERSONAL_DATA_CONSENT}>
+            согласие на обработку персональных данных
+          </Link>
+          , принимаю{" "}
+          <Link className="text-accent-primary font-semibold" href={ROUTES.PRIVACY}>
+            политику обработки персональных данных
+          </Link>{" "}
+          и{" "}
+          <Link className="text-accent-primary font-semibold" href={ROUTES.OFFER}>
+            публичную оферту
+          </Link>
+        </span>
+      </label>
+
       <Button
-        className="mt-6 h-14 w-full text-base"
+        className="mt-4 h-14 w-full text-base"
         type="submit"
-        disabled={isPending || cart.items.length === 0}
+        disabled={isPending || cart.items.length === 0 || !personalDataAgreement}
       >
         {order ? "Заказ создан" : "Создать заказ"}
       </Button>

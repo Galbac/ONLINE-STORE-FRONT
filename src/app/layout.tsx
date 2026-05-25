@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { STORE_INFO } from "@/shared/config";
+import { CookieBanner } from "@/shared/ui";
 
 import "./globals.css";
 
@@ -19,7 +20,10 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        {children}
+        <CookieBanner />
+      </body>
     </html>
   );
 }

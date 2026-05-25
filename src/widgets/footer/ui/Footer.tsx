@@ -58,11 +58,30 @@ const helpLinks: FooterLink[] = [
   },
 ];
 
+const legalLinks: FooterLink[] = [
+  {
+    href: ROUTES.PRIVACY,
+    label: "Политика персональных данных",
+  },
+  {
+    href: ROUTES.PERSONAL_DATA_CONSENT,
+    label: "Согласие на обработку данных",
+  },
+  {
+    href: ROUTES.COOKIE_POLICY,
+    label: "Cookies",
+  },
+  {
+    href: ROUTES.OFFER,
+    label: "Публичная оферта",
+  },
+];
+
 export const Footer = () => {
   return (
     <footer className="border-border bg-bg-secondary mt-10 border-t">
       <Container className="py-8">
-        <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr_1.2fr_1.2fr]">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.1fr_1.2fr_1.2fr]">
           <div>
             <Logo />
             <p className="text-text-secondary mt-4 max-w-xs text-sm leading-6">
@@ -73,6 +92,7 @@ export const Footer = () => {
           <FooterColumn links={buyerLinks} title="Покупателям" />
           <FooterColumn links={companyLinks} title="Компания" />
           <FooterColumn links={helpLinks} title="Помощь" />
+          <FooterColumn links={legalLinks} title="Документы" />
           <div>
             <h3 className="mb-4 text-sm font-bold">Контакты</h3>
             <div className="text-text-secondary space-y-3 text-sm">

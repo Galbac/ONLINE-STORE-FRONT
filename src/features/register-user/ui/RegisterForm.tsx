@@ -152,7 +152,18 @@ export const RegisterForm = () => {
           onChange={(event) => handleChange("agreement", event.target.checked)}
         />
         <span>
-          Я согласен с правилами обработки персональных данных и пользовательским соглашением
+          Я даю{" "}
+          <Link className="text-accent-primary font-semibold" href={ROUTES.PERSONAL_DATA_CONSENT}>
+            согласие на обработку персональных данных
+          </Link>
+          , принимаю{" "}
+          <Link className="text-accent-primary font-semibold" href={ROUTES.PRIVACY}>
+            политику обработки персональных данных
+          </Link>{" "}
+          и{" "}
+          <Link className="text-accent-primary font-semibold" href={ROUTES.OFFER}>
+            публичную оферту
+          </Link>
         </span>
       </label>
 
@@ -304,7 +315,7 @@ const validateForm = (values: RegisterFormValues): string | null => {
   }
 
   if (!values.agreement) {
-    return "Подтвердите согласие с правилами.";
+    return "Подтвердите согласие на обработку персональных данных.";
   }
 
   return null;

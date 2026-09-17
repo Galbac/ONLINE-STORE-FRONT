@@ -71,6 +71,7 @@ export const API_ENDPOINTS = {
     PRODUCT_STOCK: (productId: number): string => `/api/admin/products/${productId}/stock`,
     ROLES: "/api/admin/roles",
     SETTINGS: "/api/admin/settings",
+    PUBLIC_SETTINGS: "/api/settings",
     STAFF: "/api/admin/staff",
     STAFF_BY_ID: (staffId: number): string => `/api/admin/staff/${staffId}`,
     STAFF_ROLE: (staffId: number): string => `/api/admin/staff/${staffId}/role`,

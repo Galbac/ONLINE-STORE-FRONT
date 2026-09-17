@@ -4,7 +4,9 @@ interface ApiClientConfig {
   baseUrl: string;
 }
 
-const API_REQUEST_TIMEOUT_MS = 3000;
+const DEFAULT_API_TIMEOUT_MS = 10000;
+const UPLOAD_API_TIMEOUT_MS = 60000;
+let ongoingRefreshPromise: Promise<TokenPairResponse | null> | null = null;
 const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 interface StoredRefreshToken {
@@ -149,7 +151,7 @@ class ApiClient {
     };
     const requestConfig: RequestInit = {
       headers: requestHeaders,
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS),
     };
 
     Object.entries(params ?? {}).forEach(([key, value]) => {
@@ -188,7 +190,7 @@ class ApiClient {
         ...getBrowserAuthHeaders(),
         ...headers,
       },
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS),
     };
 
     if (data !== undefined) {
@@ -217,7 +219,7 @@ class ApiClient {
         ...headers,
       },
       body: data,
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(UPLOAD_API_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -241,7 +243,7 @@ class ApiClient {
         ...headers,
       },
       body: JSON.stringify(data),
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -264,7 +266,7 @@ class ApiClient {
         ...getBrowserAuthHeaders(),
         ...headers,
       },
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS),
     };
 
     if (data !== undefined) {
@@ -309,6 +311,10 @@ class ApiClient {
   }
 
   private async refreshBrowserTokens(): Promise<TokenPairResponse | null> {
+    if (ongoingRefreshPromise) {
+      return ongoingRefreshPromise;
+    }
+
     const storedRefreshToken = getStoredRefreshToken();
 
     if (!storedRefreshToken) {
@@ -317,39 +323,45 @@ class ApiClient {
       return null;
     }
 
-    try {
-      const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.AUTH.REFRESH}`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          refresh_token: storedRefreshToken.token,
-        }),
-        signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
-      });
+    ongoingRefreshPromise = (async () => {
+      try {
+        const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.AUTH.REFRESH}`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            refresh_token: storedRefreshToken.token,
+          }),
+          signal: AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS),
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
+          clearBrowserAuth();
+          redirectToLogin();
+          return null;
+        }
+
+        const tokens = (await response.json()) as TokenPairResponse;
+
+        storeBrowserAuthTokens({
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          remember: storedRefreshToken.remember,
+        });
+
+        return tokens;
+      } catch {
         clearBrowserAuth();
         redirectToLogin();
         return null;
+      } finally {
+        ongoingRefreshPromise = null;
       }
+    })();
 
-      const tokens = (await response.json()) as TokenPairResponse;
-
-      storeBrowserAuthTokens({
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        remember: storedRefreshToken.remember,
-      });
-
-      return tokens;
-    } catch {
-      clearBrowserAuth();
-      redirectToLogin();
-      return null;
-    }
+    return ongoingRefreshPromise;
   }
 
   private headersToRecord(headers: HeadersInit | undefined): Record<string, string> {

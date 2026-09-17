@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
         source: "/health",
         destination: `${API_PROXY_TARGET}/health`,
       },
+      {
+        source: "/media/:path*",
+        destination: `${API_PROXY_TARGET}/media/:path*`,
+      },
     ];
   },
 };

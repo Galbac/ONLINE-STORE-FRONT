@@ -57,28 +57,30 @@ export const Header = () => {
           </a>
         </div>
 
-        <div className="grid grid-cols-[auto_auto_minmax(260px,1fr)_auto] items-center gap-5 max-lg:grid-cols-[1fr_auto]">
+        <div className="grid grid-cols-[auto_auto_minmax(260px,1fr)_auto] items-center gap-3 lg:gap-5 max-lg:grid-cols-[1fr_auto]">
           <Logo />
           <Link
-            className="bg-accent-primary text-accent-contrast hover:bg-accent-hover inline-flex h-12 items-center justify-center gap-2 rounded-lg px-6 text-sm font-bold transition max-lg:order-3 max-lg:w-full"
+            className="bg-accent-primary text-accent-contrast hover:bg-accent-hover hidden lg:inline-flex h-12 items-center justify-center gap-2 rounded-lg px-6 text-sm font-bold transition"
             href={ROUTES.CATALOG}
           >
             <Menu size={20} />
             Каталог
           </Link>
-          <div className="max-lg:order-4 max-lg:col-span-2">
+          <div className="max-lg:col-span-2 max-lg:order-3">
             <ProductSearch />
           </div>
-          <div className="flex items-center gap-4 max-lg:justify-end">
+          <div className="flex items-center gap-2 lg:gap-4 max-lg:justify-end">
             <Link
-              className="hidden text-center text-sm font-semibold md:block"
+              className="hidden text-center text-sm font-semibold lg:block"
               href={ROUTES.PROFILE}
             >
               <UserRound className="mx-auto mb-1" size={22} />
               Профиль
             </Link>
-            <HeaderFavoritesLink />
-            <HeaderCartLink />
+            <div className="hidden lg:flex items-center gap-4">
+              <HeaderFavoritesLink />
+              <HeaderCartLink />
+            </div>
           </div>
         </div>
       </Container>

@@ -126,6 +126,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
                       initialInCart={cartProductIds.has(similarProduct.id)}
                       productId={similarProduct.id}
                       productName={similarProduct.name}
+                      minQuantity={similarProduct.min_quantity}
                     />
                   }
                   favoriteControl={

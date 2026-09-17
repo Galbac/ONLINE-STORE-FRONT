@@ -10,7 +10,8 @@ interface AdminAuthTokens {
   remember: boolean;
 }
 
-const API_REQUEST_TIMEOUT_MS = 3000;
+const DEFAULT_ADMIN_TIMEOUT_MS = 15000;
+const UPLOAD_ADMIN_TIMEOUT_MS = 60000;
 const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 const getBrowserAdminAuthHeaders = (): HeadersInit => {
@@ -125,7 +126,7 @@ class AdminApiClient {
         ...getBrowserAdminAuthHeaders(),
         ...headers,
       },
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_ADMIN_TIMEOUT_MS),
     });
 
     if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {
@@ -159,7 +160,7 @@ class AdminApiClient {
         ...getBrowserAdminAuthHeaders(),
         ...headers,
       },
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_ADMIN_TIMEOUT_MS),
     });
 
     if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {
@@ -187,7 +188,7 @@ class AdminApiClient {
         ...getBrowserAdminAuthHeaders(),
         ...headers,
       },
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_ADMIN_TIMEOUT_MS),
     };
 
     if (data !== undefined) {
@@ -221,7 +222,7 @@ class AdminApiClient {
         ...headers,
       },
       body: data,
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(UPLOAD_ADMIN_TIMEOUT_MS),
     });
 
     if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {
@@ -250,7 +251,7 @@ class AdminApiClient {
         ...headers,
       },
       body: JSON.stringify(data),
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_ADMIN_TIMEOUT_MS),
     });
 
     if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {
@@ -273,7 +274,7 @@ class AdminApiClient {
         ...getBrowserAdminAuthHeaders(),
         ...headers,
       },
-      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(DEFAULT_ADMIN_TIMEOUT_MS),
     });
 
     if (response.status === 401 && !this.isLoginRequest(url) && typeof window !== "undefined") {

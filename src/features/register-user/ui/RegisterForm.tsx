@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
+import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { cn, ROUTES } from "@/shared/config";
 import { storeAuthTokens } from "@/shared/ui";
 
@@ -58,7 +59,7 @@ export const RegisterForm = () => {
 
         const response = await authApi.register({
           name: values.name.trim(),
-          phone: values.phone.trim(),
+          phone: normalizePhoneNumber(values.phone),
           password: values.password,
           email: values.email.trim() || null,
         });

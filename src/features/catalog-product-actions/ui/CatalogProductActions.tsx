@@ -13,22 +13,27 @@ interface CatalogCartButtonProps {
   productId: number;
   productName: string;
   initialInCart: boolean;
+  minQuantity?: number | string | null | undefined;
 }
 
 export const CatalogCartButton = ({
   initialInCart,
   productId,
   productName,
+  minQuantity,
 }: CatalogCartButtonProps) => {
   const [isInCart, setIsInCart] = useState(initialInCart);
   const [isPending, startTransition] = useTransition();
 
   const handleAddToCart = (): void => {
+    const qty = minQuantity ? Number(minQuantity) : 1;
+    const finalQuantity = Number.isFinite(qty) && qty > 0 ? (Number.isInteger(qty) ? qty : qty.toFixed(1)) : 1;
+
     startTransition(async () => {
       try {
         const response = await cartApi.addItem({
           product_id: productId,
-          quantity: 1,
+          quantity: finalQuantity,
         });
         notifyCartChanged({ itemsCount: response.cart.items_count });
         setIsInCart(true);
@@ -41,8 +46,8 @@ export const CatalogCartButton = ({
   return (
     <button
       className={cn(
-        "grid size-10 place-items-center rounded-lg text-white transition",
-        isInCart ? "bg-accent-hover" : "bg-accent-primary hover:bg-accent-hover",
+        "grid size-11 place-items-center rounded-lg text-white transition-all duration-150 active:scale-90 select-none",
+        isInCart ? "bg-accent-hover shadow-xs" : "bg-accent-primary hover:bg-accent-hover shadow-soft",
         isPending && "cursor-wait opacity-70",
       )}
       type="button"

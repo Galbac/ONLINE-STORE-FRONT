@@ -210,6 +210,23 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
 
         {hasItems ? (
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
+            {/* Плавающая плашка оформления заказа для мобильных устройств */}
+            <div className="fixed bottom-[calc(56px+var(--sab,0px))] left-0 right-0 z-40 bg-bg-primary/95 supports-[backdrop-filter]:bg-bg-primary/80 backdrop-blur-md border-t border-border px-4 py-2.5 shadow-md flex items-center justify-between gap-3 xl:hidden">
+              <div className="min-w-0">
+                <p className="text-[11px] text-text-muted leading-tight">Итого:</p>
+                <p className="text-lg font-extrabold text-text-primary leading-tight truncate">{toPriceFormat(summary.final_price)}</p>
+              </div>
+              <Link
+                className={cn(
+                  "bg-accent-primary text-accent-contrast hover:bg-accent-hover h-11 px-5 inline-flex items-center justify-center rounded-lg text-sm font-bold transition shadow-xs shrink-0",
+                  (isBusy || !hasItems) && "pointer-events-none opacity-60",
+                )}
+                href="/checkout"
+              >
+                Оформить заказ
+              </Link>
+            </div>
+
             <div className="min-w-0 space-y-6">
               <section className="space-y-5">
                 {cart.items.map((item) => (
@@ -277,7 +294,10 @@ interface CartItemProps {
 const CartItem = ({ disabled, isPending, item, onDelete, onQuantityChange }: CartItemProps) => {
   const quantity = Number(item.quantity);
   const safeQuantity = Number.isFinite(quantity) ? quantity : 1;
-  const quantityStep = quantityStepByType[item.product_type ?? ""] ?? 1;
+  const rawStep = item.quantity_step ? Number(item.quantity_step) : null;
+  const quantityStep = (rawStep && Number.isFinite(rawStep) && rawStep > 0)
+    ? rawStep
+    : (quantityStepByType[item.product_type ?? ""] ?? 1);
   const nextMinusQuantity = roundQuantity(safeQuantity - quantityStep);
   const nextPlusQuantity = roundQuantity(safeQuantity + quantityStep);
 

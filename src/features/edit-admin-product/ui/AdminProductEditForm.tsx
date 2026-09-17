@@ -73,27 +73,23 @@ export const AdminProductEditForm = ({ categories, product }: AdminProductEditFo
           accessToken,
         );
 
-        const uploadedImages = await Promise.all(
-          selectedFiles.map(async (file, index) => {
-            await adminProductApi.uploadImage(
-              {
-                entity_type: "product",
-                file,
-              },
-              accessToken,
-            );
-
-            return adminProductApi.addImage(
-              product.id,
-              {
-                file,
-                is_main: images.length === 0 && index === 0,
-                sort_order: images.length + index,
-              },
-              accessToken,
-            );
-          }),
-        );
+        const uploadedImages: typeof images = [];
+        for (let index = 0; index < selectedFiles.length; index += 1) {
+          const file = selectedFiles[index];
+          if (!file) {
+            continue;
+          }
+          const uploaded = await adminProductApi.addImage(
+            product.id,
+            {
+              file,
+              is_main: images.length === 0 && index === 0,
+              sort_order: images.length + index,
+            },
+            accessToken,
+          );
+          uploadedImages.push(uploaded);
+        }
 
         if (uploadedImages.length > 0) {
           setImages(sortImages([...images, ...uploadedImages]));

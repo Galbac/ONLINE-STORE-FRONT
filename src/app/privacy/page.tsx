@@ -4,15 +4,16 @@ import { STORE_INFO } from "@/shared/config";
 import { LegalDocumentPage, type LegalSection } from "@/widgets/legal-docs";
 
 export const metadata: Metadata = {
-  title: `Политика обработки персональных данных - ${STORE_INFO.name}`,
+  title: `Политика обработки персональных данных (152-ФЗ) - ${STORE_INFO.name}`,
 };
 
 const sections: LegalSection[] = [
   {
     title: "1. Оператор персональных данных",
     paragraphs: [
-      `Оператор сайта: ${STORE_INFO.name}. Адрес магазина: ${STORE_INFO.address}. Контактный телефон: ${STORE_INFO.phone}. Email для обращений по персональным данным: ${STORE_INFO.email}.`,
-      "Юридическое наименование, ИНН, ОГРН/ОГРНИП и юридический адрес продавца необходимо заполнить фактическими реквизитами владельца магазина до запуска сайта в публичный доступ.",
+      `Оператор персональных данных: ${STORE_INFO.legalName} (ИНН: ${STORE_INFO.inn}, ОГРНИП: ${STORE_INFO.ogrn}).`,
+      `Адрес осуществления деятельности: ${STORE_INFO.address}. Контактный телефон: ${STORE_INFO.phone}. Email для обращений субъектов персональных данных: ${STORE_INFO.email}.`,
+      "Обработка персональных данных осуществляется в строгом соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».",
     ],
   },
   {

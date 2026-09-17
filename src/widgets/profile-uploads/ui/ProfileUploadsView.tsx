@@ -1,6 +1,7 @@
 "use client";
 
 import { type ChangeEvent, type FormEvent, useState, useTransition } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { FileImage, Info, Search, Trash2, Upload } from "lucide-react";
 import { uploadApi, type UploadEntityType, type UploadFileResponse } from "@/entities/upload";
@@ -232,11 +233,16 @@ export const ProfileUploadsView = () => {
           {currentFile ? (
             <div className="mt-6 grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
               <div className="border-border bg-bg-primary overflow-hidden rounded-lg border">
-                <img
-                  className="aspect-square w-full object-cover"
-                  src={currentFile.url}
-                  alt={currentFile.original_filename}
-                />
+                <div className="relative aspect-square w-full">
+                  <Image
+                    className="object-cover"
+                    src={currentFile.url}
+                    alt={currentFile.original_filename}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 320px"
+                    unoptimized={currentFile.url.startsWith("blob:")}
+                  />
+                </div>
               </div>
               <div>
                 <dl className="grid gap-4 sm:grid-cols-[180px_minmax(0,1fr)]">

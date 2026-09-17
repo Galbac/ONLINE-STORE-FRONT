@@ -122,3 +122,29 @@ select {
     background-position: 58% center;
   }
 }
+
+/* iOS PWA Safe Area insets and touch enhancements */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+body {
+  padding-top: var(--sat);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Отступ снизу для контента, чтобы не перекрывался нижней мобильной навигацией */
+.mobile-bottom-padding {
+  padding-bottom: calc(72px + var(--sab));
+}
+@media (min-width: 1024px) {
+  .mobile-bottom-padding {
+    padding-bottom: 0px;
+  }
+}

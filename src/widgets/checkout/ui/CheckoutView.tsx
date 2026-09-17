@@ -3,6 +3,9 @@
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { notifyCartChanged } from "@/shared/lib/cart-events";
+import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import {
   Calendar,
   Check,
@@ -91,6 +94,7 @@ export const CheckoutView = ({
   const [order, setOrder] = useState<OrderCreateResponse | null>(null);
   const [payment, setPayment] = useState<PaymentCreateResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const selectedAddress = useMemo(() => {
@@ -133,30 +137,61 @@ export const CheckoutView = ({
       delivery_type: deliveryType,
       payment_method: paymentMethod,
       customer_name: contact.name,
-      customer_phone: contact.phone,
+      customer_phone: normalizePhoneNumber(contact.phone),
       customer_email: contact.email || null,
       delivery_date: selectedDate,
       delivery_time_slot_id: selectedSlot?.id ?? null,
       comment: null,
     };
 
+    const minAmount = deliveryCalculation.min_order_amount 
+      ? Number(deliveryCalculation.min_order_amount) 
+      : (deliveryOptions.delivery.min_order_amount ? Number(deliveryOptions.delivery.min_order_amount) : 0);
+
+    if (minAmount > 0 && Number(summary.final_price) < minAmount) {
+      setErrorMessage(`Минимальная сумма заказа для оформления: ${minAmount} ₽.`);
+      return;
+    }
+
     if (deliveryType === "delivery") {
-      request.address_id = selectedAddress?.id ?? null;
+      if (!selectedAddress?.id) {
+        setErrorMessage("Пожалуйста, выберите или добавьте адрес доставки.");
+        return;
+      }
+      request.address_id = selectedAddress.id;
       request.pickup_point_id = null;
     } else {
+      if (!selectedPickupPoint?.id) {
+        setErrorMessage("Пожалуйста, выберите пункт выдачи заказа.");
+        return;
+      }
       request.address_id = null;
-      request.pickup_point_id = selectedPickupPoint?.id ?? null;
+      request.pickup_point_id = selectedPickupPoint.id;
     }
 
     startTransition(async () => {
       try {
         const createdOrder = await orderApi.create(request);
         setOrder(createdOrder);
+        notifyCartChanged({ itemsCount: 0 });
 
+        let createdPaymentId: number | null = null;
         if (paymentMethod === "online") {
-          const createdPayment = await paymentApi.create({ order_id: createdOrder.id });
-          setPayment(createdPayment);
+          try {
+            const createdPayment = await paymentApi.create({ order_id: createdOrder.id });
+            setPayment(createdPayment);
+            createdPaymentId = createdPayment.id;
+          } catch {
+            // Оплата может быть продолжена со страницы успеха
+          }
         }
+
+        const successParams = new URLSearchParams();
+        successParams.set("order_id", String(createdOrder.id));
+        if (createdPaymentId) {
+          successParams.set("payment_id", String(createdPaymentId));
+        }
+        router.push(`${ROUTES.CHECKOUT_SUCCESS}?${successParams.toString()}`);
       } catch {
         setErrorMessage("Не удалось создать заказ. Проверьте данные и попробуйте еще раз.");
       }
@@ -347,38 +382,40 @@ interface CheckoutStepsProps {
 
 const CheckoutSteps = ({ activeStep }: CheckoutStepsProps) => {
   return (
-    <ol className="grid gap-3 md:grid-cols-7">
-      {steps.map((step, index) => {
-        const stepNumber = index + 1;
-        const isActive = stepNumber <= activeStep;
+    <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ol className="flex min-w-[560px] md:min-w-0 md:grid md:grid-cols-7 gap-3">
+        {steps.map((step, index) => {
+          const stepNumber = index + 1;
+          const isActive = stepNumber <= activeStep;
 
-        return (
-          <li className="relative flex items-center gap-3 md:block md:text-center" key={step}>
-            <span
-              className={cn(
-                "relative z-10 grid size-9 shrink-0 place-items-center rounded-full border text-sm font-bold",
-                isActive
-                  ? "border-accent-primary bg-accent-primary text-accent-contrast"
-                  : "border-border bg-bg-primary text-text-primary",
-              )}
-            >
-              {stepNumber}
-            </span>
-            {stepNumber < steps.length ? (
-              <span className="bg-border absolute top-4 left-1/2 hidden h-px w-full md:block" />
-            ) : null}
-            <p
-              className={cn(
-                "text-sm leading-5 md:mt-3",
-                isActive ? "text-accent-primary font-bold" : "text-text-secondary",
-              )}
-            >
-              {step}
-            </p>
-          </li>
-        );
-      })}
-    </ol>
+          return (
+            <li className="relative flex flex-1 items-center gap-2.5 md:block md:text-center shrink-0" key={step}>
+              <span
+                className={cn(
+                  "relative z-10 grid size-8 md:size-9 shrink-0 place-items-center rounded-full border text-xs md:text-sm font-bold transition",
+                  isActive
+                    ? "border-accent-primary bg-accent-primary text-accent-contrast shadow-xs"
+                    : "border-border bg-bg-primary text-text-muted",
+                )}
+              >
+                {stepNumber}
+              </span>
+              {stepNumber < steps.length ? (
+                <span className="bg-border absolute top-4 left-1/2 hidden h-px w-full md:block" />
+              ) : null}
+              <p
+                className={cn(
+                  "text-xs md:text-sm leading-tight md:mt-2 truncate max-w-[85px] md:max-w-none",
+                  isActive ? "text-accent-primary font-bold" : "text-text-secondary",
+                )}
+              >
+                {step}
+              </p>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 };
 
@@ -481,9 +518,11 @@ const AddressSelector = ({ addresses, onSelect, selectedAddressId }: AddressSele
           />
         ))}
       </div>
-      <Button className="self-start" variant="secondary" type="button">
-        Добавить адрес
-      </Button>
+      <Link href={ROUTES.PROFILE_ADDRESSES}>
+        <Button className="self-start" variant="secondary" type="button">
+          Добавить адрес
+        </Button>
+      </Link>
     </div>
   );
 };
@@ -702,10 +741,21 @@ const OrderSummary = ({
         </span>
       </label>
 
+      {deliveryCalculation.min_order_amount && Number(summary.final_price) < Number(deliveryCalculation.min_order_amount) ? (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          Минимальная сумма заказа для оформления — {toPriceFormat(deliveryCalculation.min_order_amount)}
+        </div>
+      ) : null}
+
       <Button
         className="mt-4 h-14 w-full text-base"
         type="submit"
-        disabled={isPending || cart.items.length === 0 || !personalDataAgreement}
+        disabled={
+          isPending || 
+          cart.items.length === 0 || 
+          !personalDataAgreement ||
+          (deliveryCalculation.min_order_amount !== null && deliveryCalculation.min_order_amount !== undefined && Number(summary.final_price) < Number(deliveryCalculation.min_order_amount))
+        }
       >
         {order ? "Заказ создан" : "Создать заказ"}
       </Button>

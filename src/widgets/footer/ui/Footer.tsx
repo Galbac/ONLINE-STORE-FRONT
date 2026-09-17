@@ -118,8 +118,13 @@ export const Footer = () => {
             </div>
           </div>
         </div>
-        <div className="border-border text-text-muted mt-8 flex items-center justify-between border-t pt-5 text-sm">
-          <span>© 2026 {STORE_INFO.name}. Все права защищены.</span>
+        <div className="border-border text-text-muted mt-8 flex flex-wrap items-center justify-between gap-4 border-t pt-5 text-xs sm:text-sm">
+          <div>
+            <p>© 2026 {STORE_INFO.name}. Все права защищены.</p>
+            <p className="mt-1 text-text-secondary">
+              {STORE_INFO.legalName} · ИНН {STORE_INFO.inn} · ОГРНИП {STORE_INFO.ogrn}
+            </p>
+          </div>
           <span className="text-accent-primary font-bold">МИР · VISA · Mastercard</span>
         </div>
       </Container>

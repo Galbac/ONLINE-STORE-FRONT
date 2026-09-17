@@ -59,27 +59,21 @@ export const AdminProductCreateForm = ({ categories }: AdminProductCreateFormPro
         const accessToken = getStoredAdminAccessToken();
         const product = await adminProductApi.create(payload, accessToken);
 
-        await Promise.all(
-          selectedFiles.map(async (file, index) => {
-            await adminProductApi.uploadImage(
-              {
-                entity_type: "product",
-                file,
-              },
-              accessToken,
-            );
-
-            await adminProductApi.addImage(
-              product.id,
-              {
-                file,
-                is_main: index === 0,
-                sort_order: index,
-              },
-              accessToken,
-            );
-          }),
-        );
+        for (let index = 0; index < selectedFiles.length; index += 1) {
+          const file = selectedFiles[index];
+          if (!file) {
+            continue;
+          }
+          await adminProductApi.addImage(
+            product.id,
+            {
+              file,
+              is_main: index === 0,
+              sort_order: index,
+            },
+            accessToken,
+          );
+        }
 
         setSuccessMessage("Товар создан.");
         router.replace(ROUTES.ADMIN_PRODUCT_EDIT(product.id));

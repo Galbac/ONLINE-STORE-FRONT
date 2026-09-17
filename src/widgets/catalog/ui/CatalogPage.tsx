@@ -186,6 +186,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                             initialInCart={cartProductIds.has(product.id)}
                             productId={product.id}
                             productName={product.name}
+                            minQuantity={product.min_quantity}
                           />
                         }
                         favoriteControl={

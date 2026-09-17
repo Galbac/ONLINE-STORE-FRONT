@@ -48,6 +48,7 @@ export interface CartItemResponse {
   quantity: string;
   unit: string;
   product_type?: string | null;
+  quantity_step?: string | number | null;
   price: string;
   old_price?: string | null;
   discount_amount?: string;

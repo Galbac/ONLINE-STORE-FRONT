@@ -130,6 +130,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
                       initialInCart={cartProductIds.has(product.id)}
                       productId={product.id}
                       productName={product.name}
+                      minQuantity={product.min_quantity}
                     />
                   }
                   favoriteControl={

@@ -205,6 +205,7 @@ const ProductSection = ({
                 initialInCart={cartProductIds.has(product.id)}
                 productId={product.id}
                 productName={product.name}
+                minQuantity={product.min_quantity}
               />
             }
             favoriteControl={

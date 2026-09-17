@@ -31,6 +31,8 @@ export interface ProductShortResponse {
   discount_percent?: number | null;
   unit: string;
   product_type: string;
+  min_quantity?: string | number | null;
+  quantity_step?: string | number | null;
   is_available: boolean;
   stock_display: string;
   category?: ProductCategoryShortResponse | null;

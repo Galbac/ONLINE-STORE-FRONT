@@ -57,23 +57,13 @@ export const LoginForm = () => {
           password: values.password,
         });
 
-        const refreshedTokens = await authApi
-          .refresh({
-            refresh_token: response.refresh_token,
-          })
-          .catch(() => ({
-            access_token: response.access_token,
-            refresh_token: response.refresh_token,
-            token_type: response.token_type,
-          }));
-
         storeAuthTokens({
-          accessToken: refreshedTokens.access_token,
-          refreshToken: refreshedTokens.refresh_token,
+          accessToken: response.access_token,
+          refreshToken: response.refresh_token,
           remember: values.rememberMe,
         });
 
-        await authApi.getMe(refreshedTokens.access_token);
+        await authApi.getMe(response.access_token);
 
         setSuccessMessage("Вы вошли в аккаунт.");
         setValues(initialValues);

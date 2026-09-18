@@ -182,6 +182,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 viewMode={viewMode}
               />
 
+              <div className="my-6">
               <QuickFilterChips
                 chips={[
                   {
@@ -221,8 +222,9 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                     href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), product_type: productType === "piece" ? undefined : "piece", page: undefined }),
                   },
                 ]}
-                className="mb-4"
+                className="py-1"
               />
+              </div>
               {products.items.length > 0 ? (
                 <>
                   <div

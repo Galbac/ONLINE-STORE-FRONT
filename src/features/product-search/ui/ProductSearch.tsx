@@ -71,6 +71,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchSuggestionsResponse | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [dynamicPopularSearches, setDynamicPopularSearches] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,6 +81,15 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
         setRecentSearches(JSON.parse(stored));
       }
     } catch {}
+
+    apiClient
+      .get<{ items: Array<{ name: string }> }>("/api/categories")
+      .then((res) => {
+        if (res.items && Array.isArray(res.items) && res.items.length > 0) {
+          setDynamicPopularSearches(res.items.slice(0, 8).map((c) => c.name));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const saveRecentSearch = (term: string) => {
@@ -235,7 +245,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
               Часто ищут
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {POPULAR_SEARCHES.map((item) => (
+              {(dynamicPopularSearches.length > 0 ? dynamicPopularSearches : POPULAR_SEARCHES).map((item) => (
                 <button
                   key={item}
                   type="button"

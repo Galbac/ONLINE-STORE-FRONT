@@ -84,19 +84,19 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
         "@type": "ListItem",
         position: 1,
         name: "Главная",
-        item: "https://grocerystore.ru",
+        item: (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "") || ROUTES.HOME,
       },
       {
         "@type": "ListItem",
         position: 2,
         name: product.category?.name || "Каталог",
-        item: `https://grocerystore.ru/catalog/${product.category?.slug || ""}`,
+        item: `${(process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "")}/catalog/${product.category?.slug || ""}`,
       },
       {
         "@type": "ListItem",
         position: 3,
         name: product.name,
-        item: `https://grocerystore.ru/product/${product.slug}`,
+        item: `${(process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "")}/product/${product.slug}`,
       },
     ],
   };
@@ -130,23 +130,25 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
                 Арт. {product.id.toString().padStart(6, "0")}
               </div>
 
-              <div className="mt-6 flex flex-wrap items-baseline gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-5 shadow-2xs">
-                <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                  {toPriceFormat(product.price)}
-                </span>
-                {product.old_price ? (
-                  <span className="text-lg text-slate-400 line-through">
-                    {toPriceFormat(product.old_price)}
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-5 shadow-2xs">
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none">
+                    {toPriceFormat(product.price)}
                   </span>
-                ) : null}
-                {product.discount_percent ? (
-                  <span className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1 text-xs font-black text-white shadow-xs">
-                    -{product.discount_percent}%
-                  </span>
-                ) : null}
-                <span className="ml-auto text-xs font-semibold text-slate-500">
+                  {product.old_price ? (
+                    <span className="text-lg text-slate-400 line-through leading-none font-medium">
+                      {toPriceFormat(product.old_price)}
+                    </span>
+                  ) : null}
+                  {product.discount_percent ? (
+                    <span className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1 text-xs font-black text-white shadow-xs">
+                      -{product.discount_percent}%
+                    </span>
+                  ) : null}
+                </div>
+                <div className="rounded-xl bg-white/90 border border-emerald-200/60 px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs">
                   {toPriceFormat(product.price)} / {product.unit}
-                </span>
+                </div>
               </div>
 
               <div className="mt-8 flex items-center justify-between gap-4">

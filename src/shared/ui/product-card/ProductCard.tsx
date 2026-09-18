@@ -70,7 +70,6 @@ export const ProductCard = ({
           >
             {product.name}
           </Link>
-          <span className="mt-1 block text-xs font-medium text-slate-400">{product.unit}</span>
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
             <span className="inline-flex items-center gap-1.5 font-semibold">
               <span
@@ -187,21 +186,22 @@ export const ProductCard = ({
       >
         {product.name}
       </Link>
-      <span className="mt-1 text-xs font-medium text-slate-400">{product.unit}</span>
 
-      <div className="mt-auto flex items-end justify-between gap-2 pt-4">
-        <div className="flex flex-col">
+      <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+        <div className="flex flex-col gap-0.5">
           {product.old_price ? (
-            <span className="text-xs font-medium text-slate-400 line-through">
+            <span className="text-xs font-medium text-slate-400 line-through leading-none">
               {toPriceFormat(product.old_price)}
             </span>
           ) : null}
-          <span className="text-xl font-black tracking-tight text-slate-900">
-            {toPriceFormat(product.price)}
-          </span>
-          <span className="text-[11px] text-slate-400 font-medium">
-            {toPriceFormat(product.price)} / {product.unit}
-          </span>
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-xl font-black tracking-tight text-slate-900 leading-none">
+              {toPriceFormat(product.price)}
+            </span>
+            <span className="text-xs font-semibold text-slate-400 leading-none">
+              / {product.unit}
+            </span>
+          </div>
         </div>
         {!product.is_available ? (
           <StockAlertButton

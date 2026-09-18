@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useMemo, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/shared/api";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import {
@@ -32,7 +33,7 @@ import type {
 import { orderApi, type OrderCreateRequest, type OrderCreateResponse } from "@/entities/order";
 import { paymentApi, type PaymentCreateResponse } from "@/entities/payment";
 import type { AddressListResponse, AddressResponse } from "@/entities/profile";
-import { cn, ROUTES } from "@/shared/config";
+import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Button, Container } from "@/shared/ui";
 
@@ -87,6 +88,18 @@ export const CheckoutView = ({
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
   const [usePoints, setUsePoints] = useState<number>(0);
+  const [loyaltyBalance, setLoyaltyBalance] = useState<number>(0);
+
+  useEffect(() => {
+    apiClient
+      .get<{ balance: number }>("/api/profile/loyalty")
+      .then((res) => {
+        if (typeof res?.balance === "number") {
+          setLoyaltyBalance(res.balance);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [apartment, setApartment] = useState("");
   const [entrance, setEntrance] = useState("");
   const [floor, setFloor] = useState("");
@@ -339,20 +352,20 @@ export const CheckoutView = ({
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-4 pt-1">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                  <div className="flex flex-wrap gap-6 pt-4 pb-1">
+                    <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none">
                       <input
                         type="checkbox"
-                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                        className="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
                         checked={leaveAtDoor}
                         onChange={(e) => setLeaveAtDoor(e.target.checked)}
                       />
                       <span>Оставить заказ у двери</span>
                     </label>
-                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                    <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none">
                       <input
                         type="checkbox"
-                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                        className="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
                         checked={dontRingDoorbell}
                         onChange={(e) => setDontRingDoorbell(e.target.checked)}
                       />
@@ -360,8 +373,8 @@ export const CheckoutView = ({
                     </label>
                   </div>
 
-                  <div className="pt-1">
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1.5">
+                  <div className="pt-4 border-t border-slate-100">
+                    <label className="block text-xs font-bold text-slate-800 mb-3">
                       Если товара не окажется на складе:
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -442,11 +455,11 @@ export const CheckoutView = ({
                 <input
                   type="number"
                   min="0"
-                  max="10000"
+                  max={loyaltyBalance > 0 ? loyaltyBalance : undefined}
                   className="w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-emerald-500"
                   placeholder="0 бонусов"
                   value={usePoints || ""}
-                  onChange={(e) => setUsePoints(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(e) => setUsePoints(Math.max(0, Math.min(Number(e.target.value) || 0, loyaltyBalance > 0 ? loyaltyBalance : Infinity)))}
                 />
                 <span className="text-xs font-bold text-slate-600">₽</span>
               </div>
@@ -638,16 +651,13 @@ interface AddressSuggestionModalProps {
 }
 
 const COMMON_ADDRESS_SUGGESTIONS = [
-  "ул. Ленина, д. 15",
-  "ул. Ленина, д. 42",
-  "пр. Мира, д. 88",
-  "ул. Пушкина, д. 10",
-  "ул. Гагарина, д. 23",
-  "ул. Советская, д. 5",
-  "пр. Победы, д. 12",
-  "ул. Кирова, д. 7",
-  "ул. Садовая, д. 18",
-  "ул. Зеленая, д. 3",
+  `ул. Победы, д. 15, ${STORE_INFO.city}`,
+  `ул. Победы, д. 87А, ${STORE_INFO.city}`,
+  `ул. Ленина, д. 24, ${STORE_INFO.city}`,
+  `ул. Советская, д. 10, ${STORE_INFO.city}`,
+  `ул. Гагарина, д. 42, ${STORE_INFO.city}`,
+  `ул. Мира, д. 5, ${STORE_INFO.city}`,
+  `ул. Пушкина, д. 18, ${STORE_INFO.city}`,
 ];
 
 const AddressAutocompleteModal = ({
@@ -771,7 +781,7 @@ const AddressSelector = ({ addresses, onSelect, selectedAddressId }: AddressSele
 
   const handleAddCustom = (fullAddress: string) => {
     const newId = Date.now();
-    setCustomAddresses((prev) => [...prev, { id: newId, title: fullAddress, city: "Москва" }]);
+    setCustomAddresses((prev) => [...prev, { id: newId, title: fullAddress, city: STORE_INFO.city }]);
     onSelect(newId);
   };
 

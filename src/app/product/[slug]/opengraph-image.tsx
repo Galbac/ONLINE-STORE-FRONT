@@ -93,7 +93,7 @@ export default async function Image({ params }: Props) {
           }}
         >
           <div style={{ fontSize: 20, color: "#cbd5e1" }}>
-            Заказывайте онлайн: grocerystore.ru
+            Заказывайте онлайн свежие продукты
           </div>
           <div
             style={{

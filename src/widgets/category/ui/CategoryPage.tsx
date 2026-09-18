@@ -178,6 +178,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
                 viewMode={viewMode}
               />
 
+              <div className="my-6">
               <QuickFilterChips
                 chips={[
                   {
@@ -217,8 +218,9 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
                     href: buildCategoryHref(slug, { ...urlParamsRecord, product_type: productType === "piece" ? undefined : "piece", page: undefined }),
                   },
                 ]}
-                className="mb-4"
+                className="py-1"
               />
+              </div>
 
               {products.items.length > 0 ? (
                 <>

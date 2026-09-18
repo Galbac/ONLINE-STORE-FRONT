@@ -67,6 +67,7 @@ export interface ProductListParams {
   max_price?: string | number;
   has_discount?: boolean;
   product_type?: "piece" | "weight";
+  tag?: string;
   sort?: "price_asc" | "price_desc" | "newest" | "popular" | "name_asc" | "name_desc";
 }
 
@@ -88,6 +89,7 @@ export interface ProductSearchParams {
   max_price?: string | number;
   has_discount?: boolean;
   product_type?: "piece" | "weight";
+  tag?: string;
   sort?: "relevance" | "price_asc" | "price_desc" | "newest" | "popular";
 }
 

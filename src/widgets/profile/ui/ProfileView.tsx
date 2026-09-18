@@ -89,7 +89,29 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
           />
         </section>
 
-        <section className="mt-12">
+
+        {/* Мои регулярные покупки */}
+        <section className="mt-8 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/80 to-teal-50/50 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
+              <Sparkles size={28} />
+            </span>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Мои регулярные покупки</h3>
+              <p className="text-xs text-slate-600 mt-1 max-w-md leading-relaxed">
+                Соберите вашу привычную недельную продуктовую корзину (хлеб, молоко, сыр, яйца, свежие фрукты) в 1 клик!
+              </p>
+            </div>
+          </div>
+          <Link
+            href={ROUTES.CART}
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition"
+          >
+            Собрать корзину ⚡
+          </Link>
+        </section>
+    
+        <section className="mt-10">
           <h2 className="text-text-primary text-2xl font-bold">Быстрые ссылки</h2>
           <div className="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
             <QuickLink

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { cartApi } from "@/entities/cart";
 import { favoriteApi } from "@/entities/favorite";
 import { isApiErrorStatus } from "@/shared/api";
 import { cn } from "@/shared/config";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
+import { toast } from "sonner";
+import { openCartDrawer } from "@/widgets/cart-drawer";
 import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 
 interface CatalogCartButtonProps {
@@ -14,6 +16,7 @@ interface CatalogCartButtonProps {
   productName: string;
   initialInCart: boolean;
   minQuantity?: number | string | null | undefined;
+  quantityStep?: number | string | null | undefined;
 }
 
 export const CatalogCartButton = ({
@@ -21,13 +24,17 @@ export const CatalogCartButton = ({
   productId,
   productName,
   minQuantity,
+  quantityStep,
 }: CatalogCartButtonProps) => {
-  const [isInCart, setIsInCart] = useState(initialInCart);
+  const step = quantityStep ? Number(quantityStep) : 1;
+  const minQty = minQuantity ? Number(minQuantity) : (Number.isFinite(step) && step > 0 ? step : 1);
+  const [quantity, setQuantity] = useState<number>(initialInCart ? minQty : 0);
+  const [cartItemId, setCartItemId] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleAddToCart = (): void => {
-    const qty = minQuantity ? Number(minQuantity) : 1;
-    const finalQuantity = Number.isFinite(qty) && qty > 0 ? (Number.isInteger(qty) ? qty : qty.toFixed(1)) : 1;
+    const qty = minQty;
+    const finalQuantity = Number.isFinite(qty) && qty > 0 ? (Number.isInteger(qty) ? qty : Number(qty.toFixed(2))) : 1;
 
     startTransition(async () => {
       try {
@@ -35,19 +42,132 @@ export const CatalogCartButton = ({
           product_id: productId,
           quantity: finalQuantity,
         });
+        const matched = response.cart.items.find((it) => it.product_id === productId);
+        if (matched) {
+          setCartItemId(matched.id);
+          setQuantity(Number(matched.quantity));
+        } else {
+          setQuantity(finalQuantity);
+        }
         notifyCartChanged({ itemsCount: response.cart.items_count });
-        setIsInCart(true);
+        toast.success(`«${productName}» добавлен в корзину`, {
+          action: {
+            label: "Открыть корзину",
+            onClick: () => openCartDrawer(),
+          },
+        });
       } catch {
-        setIsInCart(false);
+        setQuantity(0);
       }
     });
   };
 
+  const handleIncrement = (): void => {
+    const nextQty = Number((quantity + step).toFixed(2));
+    startTransition(async () => {
+      try {
+        if (cartItemId) {
+          const response = await cartApi.updateItem(cartItemId, { quantity: nextQty });
+          setQuantity(nextQty);
+          notifyCartChanged({ itemsCount: response.cart.items_count });
+        toast.success(`«${productName}» добавлен в корзину`, {
+          action: {
+            label: "Открыть корзину",
+            onClick: () => openCartDrawer(),
+          },
+        });
+        } else {
+          const response = await cartApi.addItem({ product_id: productId, quantity: step });
+          const matched = response.cart.items.find((it) => it.product_id === productId);
+          if (matched) setCartItemId(matched.id);
+          setQuantity(nextQty);
+          notifyCartChanged({ itemsCount: response.cart.items_count });
+        toast.success(`«${productName}» добавлен в корзину`, {
+          action: {
+            label: "Открыть корзину",
+            onClick: () => openCartDrawer(),
+          },
+        });
+        }
+      } catch {}
+    });
+  };
+
+  const handleDecrement = (): void => {
+    const nextQty = Number((quantity - step).toFixed(2));
+    startTransition(async () => {
+      try {
+        if (nextQty <= 0.001) {
+          if (cartItemId) {
+            const response = await cartApi.deleteItem(cartItemId);
+            setQuantity(0);
+            setCartItemId(null);
+            notifyCartChanged({ itemsCount: response.cart.items_count });
+        toast.success(`«${productName}» добавлен в корзину`, {
+          action: {
+            label: "Открыть корзину",
+            onClick: () => openCartDrawer(),
+          },
+        });
+          } else {
+            setQuantity(0);
+          }
+        } else {
+          if (cartItemId) {
+            const response = await cartApi.updateItem(cartItemId, { quantity: nextQty });
+            setQuantity(nextQty);
+            notifyCartChanged({ itemsCount: response.cart.items_count });
+        toast.success(`«${productName}» добавлен в корзину`, {
+          action: {
+            label: "Открыть корзину",
+            onClick: () => openCartDrawer(),
+          },
+        });
+          } else {
+            setQuantity(nextQty);
+          }
+        }
+      } catch {}
+    });
+  };
+
+  if (quantity > 0) {
+    return (
+      <div
+        className={cn(
+          "flex h-10 items-center justify-between rounded-xl bg-emerald-600 px-1 text-white shadow-xs shadow-emerald-700/20 transition-all select-none min-w-[96px]",
+          isPending && "opacity-75 cursor-wait",
+        )}
+      >
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={handleDecrement}
+          className="flex size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition"
+          aria-label={`Уменьшить количество ${productName}`}
+        >
+          <Minus size={14} />
+        </button>
+        <span className="text-xs font-extrabold px-1 tracking-tight">
+          {quantity}
+        </span>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={handleIncrement}
+          className="flex size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition"
+          aria-label={`Увеличить количество ${productName}`}
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
       className={cn(
-        "grid size-11 place-items-center rounded-lg text-white transition-all duration-150 active:scale-90 select-none",
-        isInCart ? "bg-accent-hover shadow-xs" : "bg-accent-primary hover:bg-accent-hover shadow-soft",
+        "flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95 select-none",
         isPending && "cursor-wait opacity-70",
       )}
       type="button"
@@ -86,6 +206,7 @@ export const CatalogFavoriteButton = ({
         }
         setIsFavorite(nextValue);
         notifyFavoritesChanged();
+        toast(nextValue ? `«${productName}» добавлен в избранное` : `«${productName}» удален из избранного`);
       } catch (error) {
         if (nextValue && isApiErrorStatus(error, 409)) {
           setIsFavorite(true);
@@ -101,8 +222,8 @@ export const CatalogFavoriteButton = ({
   return (
     <button
       className={cn(
-        "absolute top-3 right-3 transition",
-        isFavorite ? "text-error" : "text-text-muted hover:text-error",
+        "absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95",
+        isFavorite && "text-rose-500",
         isPending && "cursor-wait opacity-70",
       )}
       type="button"
@@ -112,7 +233,7 @@ export const CatalogFavoriteButton = ({
         isFavorite ? `Убрать ${productName} из избранного` : `Добавить ${productName} в избранное`
       }
     >
-      <Heart fill={isFavorite ? "currentColor" : "none"} size={20} />
+      <Heart fill={isFavorite ? "currentColor" : "none"} size={18} />
     </button>
   );
 };

@@ -19,6 +19,7 @@ import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
 import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
+import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
 import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 
 interface SearchPageProps {
@@ -35,6 +36,7 @@ interface SearchPageParams {
   min_price?: string;
   max_price?: string;
   product_type?: "piece" | "weight";
+  tag?: string;
   sort?: ProductSearchParams["sort"];
   view?: ProductViewMode;
 }
@@ -49,6 +51,7 @@ interface SearchUrlParams {
   min_price?: string | undefined;
   max_price?: string | undefined;
   product_type?: string | undefined;
+  tag?: string | undefined;
   sort?: string | undefined;
   view?: string | undefined;
 }
@@ -93,6 +96,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
     searchParams.product_type === "piece" || searchParams.product_type === "weight"
       ? searchParams.product_type
       : undefined;
+  const tag = searchParams.tag?.trim() || undefined;
   const sort = toSearchSort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
@@ -121,6 +125,9 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   }
   if (productType !== undefined) {
     searchPayload.product_type = productType;
+  }
+  if (tag !== undefined) {
+    searchPayload.tag = tag;
   }
 
   const [categoryListResponse, products, cart, favorites] = await Promise.all([
@@ -390,6 +397,19 @@ const SearchFilters = ({
             page: undefined,
           })}
           label="Со скидкой"
+        />
+      </FilterPanel>
+
+      <FilterPanel title="Диета и состав">
+        <DietaryFilter
+          currentTag={currentParams.tag}
+          buildHref={(t) =>
+            buildSearchHref({
+              ...currentParams,
+              tag: t,
+              page: undefined,
+            })
+          }
         />
       </FilterPanel>
 
@@ -754,6 +774,7 @@ const toSearchUrlParams = (searchParams: SearchPageParams): SearchUrlParams => {
   setSearchUrlParam(params, "max_price", searchParams.max_price);
   setSearchUrlParam(params, "min_price", searchParams.min_price);
   setSearchUrlParam(params, "product_type", searchParams.product_type);
+  setSearchUrlParam(params, "tag", searchParams.tag);
   setSearchUrlParam(params, "page", searchParams.page);
   setSearchUrlParam(params, "q", searchParams.q);
   setSearchUrlParam(params, "sort", searchParams.sort);

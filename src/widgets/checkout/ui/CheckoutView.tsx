@@ -19,6 +19,7 @@ import {
   Sparkles,
   Truck,
   UserRound,
+  X,
 } from "lucide-react";
 import type { CartItemResponse, CartResponse, CartSummaryResponse } from "@/entities/cart";
 import type {
@@ -629,6 +630,135 @@ const ChoiceCard = ({ checked, disabled = false, onClick, text, title }: ChoiceC
   );
 };
 
+
+interface AddressSuggestionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddAddress: (addressText: string) => void;
+}
+
+const COMMON_ADDRESS_SUGGESTIONS = [
+  "ул. Ленина, д. 15",
+  "ул. Ленина, д. 42",
+  "пр. Мира, д. 88",
+  "ул. Пушкина, д. 10",
+  "ул. Гагарина, д. 23",
+  "ул. Советская, д. 5",
+  "пр. Победы, д. 12",
+  "ул. Кирова, д. 7",
+  "ул. Садовая, д. 18",
+  "ул. Зеленая, д. 3",
+];
+
+const AddressAutocompleteModal = ({
+  isOpen,
+  onClose,
+  onAddAddress,
+}: AddressSuggestionModalProps) => {
+  const [query, setQuery] = useState("");
+  const [apt, setApt] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+
+  if (!isOpen) return null;
+
+  const filtered = query.trim()
+    ? COMMON_ADDRESS_SUGGESTIONS.filter((s) =>
+        s.toLowerCase().includes(query.toLowerCase().trim()),
+      )
+    : COMMON_ADDRESS_SUGGESTIONS.slice(0, 5);
+
+  const handleSelect = (s: string) => {
+    setQuery(s);
+    setIsFocused(false);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalAddr = apt.trim() ? `${query.trim()}, кв. ${apt.trim()}` : query.trim();
+    if (finalAddr) {
+      onAddAddress(finalAddr);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150">
+      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <MapPin size={18} className="text-emerald-600" />
+            Быстрое добавление адреса
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 p-1"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="relative">
+            <label className="block text-xs font-bold text-slate-600 mb-1">
+              Улица и номер дома (начните вводить):
+            </label>
+            <input
+              type="text"
+              required
+              autoFocus
+              placeholder="Например: ул. Ленина, д. 15"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+            />
+
+            {isFocused && filtered.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-20 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                <div className="p-1">
+                  {filtered.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onMouseDown={() => handleSelect(s)}
+                      className="w-full text-left rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1">
+              Квартира / Офис (необязательно):
+            </label>
+            <input
+              type="text"
+              placeholder="Например: 42"
+              value={apt}
+              onChange={(e) => setApt(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={onClose} className="h-10 text-xs">
+              Отмена
+            </Button>
+            <Button type="submit" disabled={!query.trim()} className="h-10 text-xs font-bold">
+              Сохранить адрес
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 interface AddressSelectorProps {
   addresses: AddressResponse[];
   selectedAddressId: number | null;
@@ -636,6 +766,15 @@ interface AddressSelectorProps {
 }
 
 const AddressSelector = ({ addresses, onSelect, selectedAddressId }: AddressSelectorProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [customAddresses, setCustomAddresses] = useState<Array<{ id: number; title: string; city: string }>>([]);
+
+  const handleAddCustom = (fullAddress: string) => {
+    const newId = Date.now();
+    setCustomAddresses((prev) => [...prev, { id: newId, title: fullAddress, city: "Москва" }]);
+    onSelect(newId);
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
       <div className="grid gap-3">
@@ -648,12 +787,35 @@ const AddressSelector = ({ addresses, onSelect, selectedAddressId }: AddressSele
             onClick={() => onSelect(address.id)}
           />
         ))}
+        {customAddresses.map((custom) => (
+          <ChoiceCard
+            key={custom.id}
+            checked={selectedAddressId === custom.id}
+            title={custom.title}
+            text={`${custom.city}, Россия`}
+            onClick={() => onSelect(custom.id)}
+          />
+        ))}
       </div>
-      <Link href={ROUTES.PROFILE_ADDRESSES}>
-        <Button className="self-start" variant="secondary" type="button">
-          Добавить адрес
+      <div className="flex flex-col gap-2">
+        <Button
+          className="self-start w-full text-xs font-bold"
+          variant="secondary"
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+        >
+          + Быстрый адрес
         </Button>
-      </Link>
+        <Link href={ROUTES.PROFILE_ADDRESSES} className="text-[11px] text-slate-400 hover:text-emerald-700 text-center">
+          Управление адресами
+        </Link>
+      </div>
+
+      <AddressAutocompleteModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddAddress={handleAddCustom}
+      />
     </div>
   );
 };

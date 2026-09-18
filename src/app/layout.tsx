@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { STORE_INFO } from "@/shared/config";
 import { CookieBanner, PwaInstallPrompt } from "@/shared/ui";
 import { BottomNav } from "@/widgets/bottom-nav";
+import { CartDrawer } from "@/widgets/cart-drawer";
+import { Toaster } from "sonner";
 
 import "./globals.css";
 
@@ -48,6 +50,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body className="mobile-bottom-padding">
         {children}
         <BottomNav />
+        <CartDrawer />
+        <Toaster position="bottom-right" richColors closeButton />
         <CookieBanner />
         <PwaInstallPrompt />
       </body>

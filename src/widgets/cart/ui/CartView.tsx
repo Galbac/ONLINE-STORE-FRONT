@@ -194,6 +194,23 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
   };
 
 
+
+  const handleAssembleRegularBasket = () => {
+    runCartMutation("regular-basket", async () => {
+      let latestCart = cart;
+      try {
+        const popular = await apiClient.get<{ items: Array<{ id: number }> }>("/api/products/popular?limit=5");
+        if (popular.items && popular.items.length > 0) {
+          for (const item of popular.items.slice(0, 4)) {
+            const res = await cartApi.addItem({ product_id: item.id, quantity: 1 });
+            latestCart = res.cart;
+          }
+        }
+      } catch {}
+      return refreshSummary(latestCart);
+    });
+  };
+
   const handleQuickAdd = (productId: number): void => {
     runCartMutation(`quick-add-${productId}`, async () => {
       const response = await cartApi.addItem({
@@ -264,6 +281,26 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
             </div>
 
             <div className="min-w-0 space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-4 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                    <Sparkles size={18} />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">Привычная продуктовая корзина</p>
+                    <p className="text-[11px] text-slate-500">Базовый набор: молоко, хлеб, сыр, фрукты</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={handleAssembleRegularBasket}
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 active:scale-95 shadow-xs"
+                >
+                  Собрать в 1 клик ⚡
+                </button>
+              </div>
+
               <section className="space-y-5">
                 {cart.items.map((item) => (
                   <CartItem

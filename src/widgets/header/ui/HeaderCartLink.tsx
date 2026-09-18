@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
+import { openCartDrawer } from "@/widgets/cart-drawer";
 
 import { cartApi } from "@/entities/cart";
 import { ROUTES } from "@/shared/config";
@@ -58,8 +59,14 @@ export const HeaderCartLink = () => {
     };
   }, []);
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    openCartDrawer();
+  };
+
   return (
     <Link
+      onClick={handleClick}
       className="group relative flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
       href={ROUTES.CART}
     >

@@ -283,6 +283,104 @@ interface OrderCardProps {
   onRepeat: (order: OrderShortResponse) => void;
 }
 
+
+const ORDER_STATUS_STEPS = [
+  { key: "created", label: "Принят" },
+  { key: "confirmed", label: "Подтвержден" },
+  { key: "assembling", label: "Сборка" },
+  { key: "in_delivery", label: "В пути" },
+  { key: "delivered", label: "Доставлен" },
+];
+
+const getStatusStepIndex = (status: string): number => {
+  switch (status.toLowerCase()) {
+    case "created":
+    case "new":
+    case "pending":
+      return 0;
+    case "confirmed":
+    case "paid":
+      return 1;
+    case "assembling":
+    case "processing":
+      return 2;
+    case "in_delivery":
+    case "shipped":
+      return 3;
+    case "delivered":
+    case "completed":
+      return 4;
+    default:
+      return 0;
+  }
+};
+
+const OrderStatusStepper = ({ status }: { status: string }) => {
+  const isCancelled = status.toLowerCase().includes("cancel");
+  if (isCancelled) {
+    return (
+      <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700">
+        Заказ отменен
+      </div>
+    );
+  }
+
+  const currentIdx = getStatusStepIndex(status);
+
+  return (
+    <div className="mt-4 pt-4 border-t border-slate-100">
+      <div className="relative flex items-center justify-between">
+        <div className="absolute left-3 right-3 top-1/2 h-0.5 -translate-y-1/2 bg-slate-200 -z-0" />
+        <div
+          className="absolute left-3 top-1/2 h-0.5 -translate-y-1/2 bg-emerald-600 transition-all duration-300 -z-0"
+          style={{ width: `${(currentIdx / (ORDER_STATUS_STEPS.length - 1)) * 100}%` }}
+        />
+        {ORDER_STATUS_STEPS.map((step, idx) => {
+          const isPassed = idx <= currentIdx;
+          const isCurrent = idx === currentIdx;
+          return (
+            <div key={step.key} className="relative z-10 flex flex-col items-center">
+              <div
+                className={cn(
+                  "flex size-6 items-center justify-center rounded-full text-[10px] font-bold transition",
+                  isPassed
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "bg-white text-slate-400 border-2 border-slate-200",
+                  isCurrent && "ring-3 ring-emerald-500/20",
+                )}
+              >
+                {idx + 1}
+              </div>
+              <span
+                className={cn(
+                  "mt-1 text-[10px] font-semibold whitespace-nowrap",
+                  isPassed ? "text-slate-800" : "text-slate-400",
+                )}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2.5 flex items-center justify-between text-[11px]">
+        <span className="text-slate-500 font-medium">
+          {currentIdx === 4
+            ? "✅ Заказ успешно доставлен"
+            : currentIdx === 3
+            ? "🚴 Курьер выехал: доставка ожидается в течение ~25 минут"
+            : currentIdx >= 1
+            ? "📦 Заказ в обработке, прибудет в указанное время"
+            : "⏳ Заказ принят магазином"}
+        </span>
+        <span className="font-bold text-emerald-700">
+          {currentIdx < 4 ? "Шаг " + (currentIdx + 1) + " из 5" : "Завершен"}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
   const DeliveryIcon = order.delivery_type === "pickup" ? Store : Truck;
   const PaymentIcon = order.payment_method === "cash" ? Banknote : CreditCard;
@@ -367,6 +465,7 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
           </Button>
         </div>
       </div>
+      <OrderStatusStepper status={order.status} />
     </article>
   );
 };

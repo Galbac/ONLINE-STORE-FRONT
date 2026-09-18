@@ -21,6 +21,7 @@ import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
 import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
+import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
 import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 
 interface CategoryPageProps {
@@ -36,6 +37,7 @@ interface CategorySearchParams {
   min_price?: string;
   max_price?: string;
   product_type?: ProductListParams["product_type"];
+  tag?: string;
   sort?: ProductListParams["sort"];
   view?: ProductViewMode;
 }
@@ -65,6 +67,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
     searchParams.product_type === "piece" || searchParams.product_type === "weight"
       ? searchParams.product_type
       : undefined;
+  const tag = searchParams.tag?.trim() || undefined;
   const sort = toCategorySort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
@@ -95,6 +98,9 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   if (productType !== undefined) {
     productParams.product_type = productType;
   }
+  if (tag !== undefined) {
+    productParams.tag = tag;
+  }
 
   const [products, cart, favorites, priceBounds] = await Promise.all([
     productApi.getList(productParams),
@@ -124,6 +130,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
     min_price: minPrice,
     max_price: maxPrice,
     product_type: productType,
+    tag,
     sort: sort === "popular" ? undefined : sort,
     limit: searchParams.limit,
     view: viewMode === "list" ? "list" : undefined,
@@ -375,6 +382,19 @@ const CategoryFilters = ({
             />
           </Link>
         </div>
+      </FilterPanel>
+
+      <FilterPanel title="Диета и состав">
+        <DietaryFilter
+          currentTag={currentParams.tag}
+          buildHref={(t) =>
+            buildCategoryHref(slug, {
+              ...currentParams,
+              tag: t,
+              page: undefined,
+            })
+          }
+        />
       </FilterPanel>
 
       <FilterPanel title="Тип товара">

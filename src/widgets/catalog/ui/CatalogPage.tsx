@@ -26,6 +26,7 @@ import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
 import { CatalogPriceFilter } from "./CatalogPriceFilter";
 import { QuickFilterChips } from "./QuickFilterChips";
 import { ProductTypeFilter } from "./ProductTypeFilter";
+import { DietaryFilter } from "./DietaryFilter";
 
 interface CatalogPageProps {
   searchParams: CatalogSearchParams;
@@ -40,6 +41,7 @@ interface CatalogSearchParams {
   min_price?: string;
   max_price?: string;
   product_type?: ProductListParams["product_type"];
+  tag?: string;
   sort?: ProductListParams["sort"];
   view?: ProductViewMode;
 }
@@ -67,6 +69,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const minPrice = toOptionalPrice(searchParams.min_price);
   const maxPrice = toOptionalPrice(searchParams.max_price);
   const productType = searchParams.product_type === "piece" || searchParams.product_type === "weight" ? searchParams.product_type : undefined;
+  const tag = searchParams.tag?.trim() || undefined;
   const sort = toCatalogSort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
@@ -99,6 +102,9 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
   if (productType !== undefined) {
     productParams.product_type = productType;
+  }
+  if (tag !== undefined) {
+    productParams.tag = tag;
   }
 
   const priceBoundsParams: ProductListParams = {
@@ -383,6 +389,19 @@ const CatalogFilters = ({
             />
           </Link>
         </div>
+      </FilterPanel>
+
+      <FilterPanel title="Диета и состав">
+        <DietaryFilter
+          currentTag={currentParams.tag}
+          buildHref={(t) =>
+            buildCatalogHref({
+              ...currentParams,
+              tag: t,
+              page: undefined,
+            })
+          }
+        />
       </FilterPanel>
 
       <FilterPanel title="Тип товара">
@@ -777,6 +796,7 @@ const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams
   setCatalogUrlParam(params, "max_price", searchParams.max_price);
   setCatalogUrlParam(params, "min_price", searchParams.min_price);
   setCatalogUrlParam(params, "product_type", searchParams.product_type);
+  setCatalogUrlParam(params, "tag", searchParams.tag);
   setCatalogUrlParam(params, "page", searchParams.page);
   setCatalogUrlParam(params, "sort", searchParams.sort);
   setCatalogUrlParam(params, "view", searchParams.view);

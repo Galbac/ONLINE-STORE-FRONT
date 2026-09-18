@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Grid2X2 } from "lucide-react";
+import { ChevronRight, Grid2X2, RotateCcw } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import {
   categoryApi,
@@ -19,6 +19,9 @@ import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shar
 import type { ProductViewMode } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
+import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
+import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
+import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 
 interface CategoryPageProps {
   slug: string;
@@ -29,6 +32,10 @@ interface CategorySearchParams {
   page?: string;
   limit?: string;
   in_stock?: string;
+  has_discount?: string;
+  min_price?: string;
+  max_price?: string;
+  product_type?: ProductListParams["product_type"];
   sort?: ProductListParams["sort"];
   view?: ProductViewMode;
 }
@@ -51,6 +58,13 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   const page = toPositiveNumber(searchParams.page, 1);
   const pageSize = toPageSize(searchParams.limit);
   const inStock = searchParams.in_stock !== "false";
+  const hasDiscount = searchParams.has_discount === "true";
+  const minPrice = toOptionalPrice(searchParams.min_price);
+  const maxPrice = toOptionalPrice(searchParams.max_price);
+  const productType =
+    searchParams.product_type === "piece" || searchParams.product_type === "weight"
+      ? searchParams.product_type
+      : undefined;
   const sort = toCategorySort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
@@ -69,19 +83,51 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   if (inStock) {
     productParams.in_stock = true;
   }
+  if (hasDiscount) {
+    productParams.has_discount = true;
+  }
+  if (minPrice !== undefined) {
+    productParams.min_price = minPrice;
+  }
+  if (maxPrice !== undefined) {
+    productParams.max_price = maxPrice;
+  }
+  if (productType !== undefined) {
+    productParams.product_type = productType;
+  }
 
-  const [products, cart, favorites] = await Promise.all([
+  const [products, cart, favorites, priceBounds] = await Promise.all([
     productApi.getList(productParams),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
       emptyFavoritesResponse,
     ),
+    productApi.getList({
+      category_id: category.id,
+      limit: 1,
+      page: 1,
+      sort: "price_desc",
+    }),
   ]);
+
+  const maxCategoryPrice = priceBounds.items[0] ? Number(priceBounds.items[0].price) : 5000;
+  const sliderMax = Math.ceil(Math.max(100, maxCategoryPrice) / 100) * 100;
 
   const childCategories = category.children ?? [];
   const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
+
+  const urlParamsRecord: Record<string, string | undefined> = {
+    in_stock: inStock ? undefined : "false",
+    has_discount: hasDiscount ? "true" : undefined,
+    min_price: minPrice,
+    max_price: maxPrice,
+    product_type: productType,
+    sort: sort === "popular" ? undefined : sort,
+    limit: searchParams.limit,
+    view: viewMode === "list" ? "list" : undefined,
+  };
 
   return (
     <>
@@ -102,60 +148,286 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
             </section>
           ) : null}
 
-          <section className="mt-8">
-            <CategoryToolbar
-              category={category}
+          <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
+            <CategoryFilters
+              currentParams={urlParamsRecord}
+              hasDiscount={hasDiscount}
               inStock={inStock}
-              productsTotal={products.total}
-              searchParams={searchParams}
-              sort={sort}
-              viewMode={viewMode}
+              maxPrice={maxPrice}
+              minPrice={minPrice}
+              productType={productType}
+              sliderMax={sliderMax}
+              slug={slug}
+              subcategories={childCategories}
             />
 
-            <div
-              className={cn(
-                "mt-5 grid gap-4",
-                viewMode === "grid"
-                  ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
-                  : "grid-cols-1",
+            <section className="min-w-0">
+              <CategoryToolbar
+                category={category}
+                inStock={inStock}
+                productsTotal={products.total}
+                searchParams={searchParams}
+                sort={sort}
+                viewMode={viewMode}
+              />
+
+              <QuickFilterChips
+                chips={[
+                  {
+                    id: "all",
+                    label: "Все товары",
+                    active: !hasDiscount && !productType && inStock && sort === "popular",
+                    href: buildCategoryHref(slug, { ...urlParamsRecord, has_discount: undefined, product_type: undefined, in_stock: undefined, sort: undefined, page: undefined }),
+                  },
+                  {
+                    id: "discount",
+                    label: "🔥 Скидки",
+                    active: hasDiscount,
+                    href: buildCategoryHref(slug, { ...urlParamsRecord, has_discount: hasDiscount ? undefined : "true", page: undefined }),
+                  },
+                  {
+                    id: "popular",
+                    label: "⭐ Популярное",
+                    active: sort === "popular",
+                    href: buildCategoryHref(slug, { ...urlParamsRecord, sort: "popular", page: undefined }),
+                  },
+                  {
+                    id: "newest",
+                    label: "🆕 Новинки",
+                    active: sort === "newest",
+                    href: buildCategoryHref(slug, { ...urlParamsRecord, sort: "newest", page: undefined }),
+                  },
+                  {
+                    id: "weight",
+                    label: "⚖️ На развес",
+                    active: productType === "weight",
+                    href: buildCategoryHref(slug, { ...urlParamsRecord, product_type: productType === "weight" ? undefined : "weight", page: undefined }),
+                  },
+                  {
+                    id: "piece",
+                    label: "📦 Штучные",
+                    active: productType === "piece",
+                    href: buildCategoryHref(slug, { ...urlParamsRecord, product_type: productType === "piece" ? undefined : "piece", page: undefined }),
+                  },
+                ]}
+                className="mb-4"
+              />
+
+              {products.items.length > 0 ? (
+                <>
+                  <div
+                    className={cn(
+                      "mt-4 grid gap-4",
+                      viewMode === "grid"
+                        ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+                        : "grid-cols-1",
+                    )}
+                  >
+                    {products.items.map((product) => (
+                      <ProductCard
+                        cartControl={
+                          <CatalogCartButton
+                            initialInCart={cartProductIds.has(product.id)}
+                            productId={product.id}
+                            productName={product.name}
+                            minQuantity={product.min_quantity}
+                          />
+                        }
+                        favoriteControl={
+                          <CatalogFavoriteButton
+                            initialFavorite={favoriteProductIds.has(product.id)}
+                            productId={product.id}
+                            productName={product.name}
+                          />
+                        }
+                        key={product.id}
+                        product={product}
+                        variant={viewMode}
+                      />
+                    ))}
+                  </div>
+
+                  <CategoryPagination
+                    currentPage={page}
+                    pageSize={pageSize}
+                    searchParams={searchParams}
+                    slug={category.slug}
+                    totalPages={products.pages}
+                  />
+                </>
+              ) : (
+                <div className="border-border rounded-lg border bg-white p-8 text-center shadow-xs">
+                  <h3 className="text-lg font-bold text-slate-800">В этой категории нет подходящих товаров</h3>
+                  <p className="mt-2 text-xs text-slate-500">Попробуйте сбросить фильтры или выбрать другой диапазон цен.</p>
+                  <Link
+                    href={ROUTES.CATEGORY(slug)}
+                    className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white transition hover:bg-emerald-700"
+                  >
+                    Сбросить фильтры
+                  </Link>
+                </div>
               )}
-            >
-              {products.items.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  variant={viewMode}
-                  cartControl={
-                    <CatalogCartButton
-                      initialInCart={cartProductIds.has(product.id)}
-                      productId={product.id}
-                      productName={product.name}
-                      minQuantity={product.min_quantity}
-                    />
-                  }
-                  favoriteControl={
-                    <CatalogFavoriteButton
-                      initialFavorite={favoriteProductIds.has(product.id)}
-                      productId={product.id}
-                      productName={product.name}
-                    />
-                  }
-                />
-              ))}
-            </div>
-
-            <CategoryPagination
-              currentPage={products.page || page}
-              pageSize={pageSize}
-              searchParams={searchParams}
-              slug={category.slug}
-              totalPages={products.pages}
-            />
-          </section>
+            </section>
+          </div>
         </Container>
       </main>
       <Footer />
     </>
+  );
+};
+
+interface CategoryFiltersProps {
+  currentParams: Record<string, string | undefined>;
+  hasDiscount: boolean;
+  inStock: boolean;
+  maxPrice?: string | undefined;
+  minPrice?: string | undefined;
+  productType?: string | undefined;
+  sliderMax: number;
+  slug: string;
+  subcategories: CategoryShortResponse[];
+}
+
+const CategoryFilters = ({
+  currentParams,
+  hasDiscount,
+  inStock,
+  maxPrice,
+  minPrice,
+  productType,
+  sliderMax,
+  slug,
+  subcategories,
+}: CategoryFiltersProps) => {
+  return (
+    <aside className="min-w-0 space-y-4">
+      {subcategories.length > 0 && (
+        <FilterPanel title="Подкатегории">
+          <ul className="space-y-2">
+            {subcategories.map((sub) => (
+              <li key={sub.id}>
+                <Link
+                  href={ROUTES.CATEGORY(sub.slug)}
+                  className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-800"
+                >
+                  <span className="truncate">{sub.name}</span>
+                  {sub.products_count !== undefined && (
+                    <span className="text-slate-400 text-[11px]">{sub.products_count}</span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </FilterPanel>
+      )}
+
+      <FilterPanel>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold">Только в наличии</h2>
+            <p className="text-text-muted mt-1 text-xs leading-5">Товары на складе</p>
+          </div>
+          <Link
+            className={cn(
+              "relative h-8 w-14 shrink-0 rounded-full transition",
+              inStock ? "bg-accent-primary" : "bg-border",
+            )}
+            href={buildCategoryHref(slug, {
+              ...currentParams,
+              in_stock: inStock ? "false" : "true",
+              page: undefined,
+            })}
+            aria-label="Переключить фильтр наличия"
+          >
+            <span
+              className={cn(
+                "absolute top-1 grid size-6 place-items-center rounded-full bg-white transition",
+                inStock ? "right-1" : "left-1",
+              )}
+            />
+          </Link>
+        </div>
+      </FilterPanel>
+
+      <FilterPanel>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold">Акции и скидки</h2>
+            <p className="text-text-muted mt-1 text-xs leading-5">Товары со скидкой</p>
+          </div>
+          <Link
+            aria-label="Переключить фильтр акций"
+            className={cn(
+              "relative h-8 w-14 shrink-0 rounded-full transition",
+              hasDiscount ? "bg-accent-primary" : "bg-border",
+            )}
+            href={buildCategoryHref(slug, {
+              ...currentParams,
+              has_discount: hasDiscount ? undefined : "true",
+              page: undefined,
+            })}
+          >
+            <span
+              className={cn(
+                "absolute top-1 grid size-6 place-items-center rounded-full bg-white transition",
+                hasDiscount ? "right-1" : "left-1",
+              )}
+            />
+          </Link>
+        </div>
+      </FilterPanel>
+
+      <FilterPanel title="Тип товара">
+        <ProductTypeFilter
+          currentType={productType}
+          buildHref={(type) =>
+            buildCategoryHref(slug, {
+              ...currentParams,
+              product_type: type,
+              page: undefined,
+            })
+          }
+        />
+      </FilterPanel>
+
+      <FilterPanel title="Цена, ₽">
+        <CatalogPriceFilter
+          action={ROUTES.CATEGORY(slug)}
+          currentParams={currentParams}
+          maxPrice={maxPrice}
+          minPrice={minPrice}
+          resetHref={buildCategoryHref(slug, {
+            ...currentParams,
+            max_price: undefined,
+            min_price: undefined,
+            page: undefined,
+          })}
+          sliderMax={sliderMax}
+        />
+      </FilterPanel>
+
+      <Link
+        className="border-border text-text-secondary hover:bg-bg-hover flex h-11 items-center justify-center gap-2 rounded-xl border text-xs font-bold transition"
+        href={ROUTES.CATEGORY(slug)}
+      >
+        <RotateCcw size={14} />
+        Сбросить все фильтры
+      </Link>
+    </aside>
+  );
+};
+
+interface FilterPanelProps {
+  title?: string;
+  children: React.ReactNode;
+}
+
+const FilterPanel = ({ children, title }: FilterPanelProps) => {
+  return (
+    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-[0_10px_26px_rgb(20_28_18/0.05)]">
+      {title ? <h2 className="mb-4 text-sm font-bold">{title}</h2> : null}
+      {children}
+    </section>
   );
 };
 
@@ -206,17 +478,17 @@ const CategoryHero = ({ category }: CategoryHeroProps) => {
   return (
     <section
       className={cn(
-        "border-border shadow-soft min-h-[255px] overflow-hidden rounded-lg border px-7 py-10 md:px-9",
+        "border-border shadow-soft min-h-[200px] overflow-hidden rounded-lg border px-7 py-8 md:px-9",
         category.image_url ? "bg-cover bg-center" : "hero-fruit",
       )}
       style={heroStyle}
     >
       <div className="max-w-lg">
-        <h1 className="text-text-primary text-4xl leading-tight font-bold md:text-5xl">
+        <h1 className="text-text-primary text-3xl leading-tight font-bold md:text-4xl">
           {category.name}
         </h1>
         {category.description ? (
-          <p className="text-text-secondary mt-5 text-base leading-8 md:text-lg">
+          <p className="text-text-secondary mt-3 text-sm leading-6 md:text-base">
             {category.description}
           </p>
         ) : null}
@@ -232,37 +504,42 @@ interface SubcategoryCardProps {
 const SubcategoryCard = ({ subcategory }: SubcategoryCardProps) => {
   return (
     <Link
-      className="group border-border bg-bg-primary hover:shadow-soft flex min-h-32 flex-col justify-between rounded-lg border p-4 shadow-[0_10px_26px_rgb(20_28_18/0.06)] transition hover:-translate-y-1"
+      className="border-border shadow-soft hover:border-accent-primary group flex flex-col justify-between rounded-lg border bg-white p-4 transition"
       href={ROUTES.CATEGORY(subcategory.slug)}
     >
-      <span className="flex h-16 items-center justify-center">
+      <div className="bg-bg-hover relative grid size-12 place-items-center overflow-hidden rounded-lg">
         {subcategory.image_url ? (
           <Image
             alt={subcategory.name}
-            className="h-full w-full object-contain"
-            height={72}
+            className="object-cover"
+            fill
+            sizes="48px"
             src={subcategory.image_url}
-            width={120}
           />
         ) : (
-          <Grid2X2 className="text-accent-primary" size={36} />
+          <Grid2X2 className="text-accent-primary" size={24} />
         )}
-      </span>
-      <span className="mt-4 flex items-center justify-between gap-3 text-sm font-bold">
-        <span className="line-clamp-2">{subcategory.name}</span>
+      </div>
+      <div className="mt-4 flex items-center justify-between">
+        <div>
+          <p className="group-hover:text-accent-primary text-sm font-bold transition">
+            {subcategory.name}
+          </p>
+          <p className="text-text-secondary mt-1 text-xs">{subcategory.products_count ?? 0} товаров</p>
+        </div>
         <ChevronRight
-          className="text-text-muted group-hover:text-accent-primary shrink-0 transition"
+          className="text-text-secondary group-hover:text-accent-primary transition group-hover:translate-x-1"
           size={16}
         />
-      </span>
+      </div>
     </Link>
   );
 };
 
 interface CategoryToolbarProps {
   category: CategoryDetailResponse;
-  productsTotal: number;
   inStock: boolean;
+  productsTotal: number;
   searchParams: CategorySearchParams;
   sort: NonNullable<ProductListParams["sort"]>;
   viewMode: ProductViewMode;
@@ -277,45 +554,19 @@ const CategoryToolbar = ({
   viewMode,
 }: CategoryToolbarProps) => {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center gap-4">
-        <Link
-          className={cn(
-            "border-border bg-bg-primary flex h-12 items-center gap-4 rounded-lg border px-5 text-sm font-semibold transition",
-            inStock ? "text-text-primary" : "text-text-secondary",
-          )}
-          href={buildCategoryHref(category.slug, {
-            in_stock: inStock ? "false" : "true",
-            limit: searchParams.limit,
-            page: undefined,
-            sort,
-            view: viewMode === "list" ? viewMode : undefined,
-          })}
-        >
-          Только в наличии
-          <span
-            className={cn(
-              "relative h-7 w-12 rounded-full transition",
-              inStock ? "bg-accent-primary" : "bg-border",
-            )}
-          >
-            <span
-              className={cn(
-                "absolute top-1 size-5 rounded-full bg-white transition",
-                inStock ? "right-1" : "left-1",
-              )}
-            />
-          </span>
-        </Link>
-        <p className="text-text-secondary text-sm">Найдено {productsTotal} товара</p>
-      </div>
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+      <p className="text-text-secondary text-sm font-medium">Найдено {productsTotal} товаров</p>
 
       <div className="flex max-w-full flex-wrap items-center gap-4">
         <AutoSubmitSelect
           action={ROUTES.CATEGORY(category.slug)}
           defaultValue={sort}
           hiddenFields={getCategoryHiddenFields({
-            in_stock: String(inStock),
+            in_stock: inStock ? undefined : "false",
+            has_discount: searchParams.has_discount,
+            min_price: searchParams.min_price,
+            max_price: searchParams.max_price,
+            product_type: searchParams.product_type,
             limit: searchParams.limit,
             view: viewMode === "list" ? viewMode : undefined,
           })}
@@ -401,6 +652,10 @@ const CategoryPagination = ({
           defaultValue={String(pageSize)}
           hiddenFields={getCategoryHiddenFields({
             in_stock: searchParams.in_stock,
+            has_discount: searchParams.has_discount,
+            min_price: searchParams.min_price,
+            max_price: searchParams.max_price,
+            product_type: searchParams.product_type,
             sort: searchParams.sort,
             view: searchParams.view,
           })}
@@ -448,25 +703,27 @@ const PageLink = ({ active, children, disabled, page, searchParams, slug }: Page
 
 const toPositiveNumber = (value: string | undefined, fallback: number): number => {
   const parsed = Number(value);
-
-  if (!Number.isInteger(parsed) || parsed < 1) {
+  if (!Number.isFinite(parsed) || parsed < 1) {
     return fallback;
   }
+  return Math.floor(parsed);
+};
 
-  return parsed;
+const toOptionalPrice = (value: string | undefined): string | undefined => {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return String(parsed);
 };
 
 const toPageSize = (value: string | undefined): number => {
-  const parsed = Number(value);
-
-  return pageSizeOptions.some((option) => Number(option.value) === parsed) ? parsed : 24;
+  if (value === "48") return 48;
+  if (value === "96") return 96;
+  return 24;
 };
 
-const toCategorySort = (
-  value: ProductListParams["sort"] | undefined,
-): NonNullable<ProductListParams["sort"]> => {
-  const option = sortOptions.find((sortOption) => sortOption.value === value);
-
+const toCategorySort = (value: string | undefined): NonNullable<ProductListParams["sort"]> => {
+  const option = sortOptions.find((item) => item.value === value);
   return option?.value ?? "popular";
 };
 
@@ -484,21 +741,17 @@ const getCategoryHiddenFields = (
 
 const getAccessToken = async (): Promise<string | undefined> => {
   const cookieStore = await cookies();
-
   return cookieStore.get("access_token")?.value;
 };
 
 const buildCategoryHref = (slug: string, params: Record<string, string | undefined>): string => {
   const query = new URLSearchParams();
-
   Object.entries(params).forEach(([key, value]) => {
     if (value) {
       query.set(key, value);
     }
   });
-
   const queryString = query.toString();
   const pathname = ROUTES.CATEGORY(slug);
-
   return queryString ? `${pathname}?${queryString}` : pathname;
 };

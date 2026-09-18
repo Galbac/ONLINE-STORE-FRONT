@@ -13,6 +13,7 @@ import {
   Plus,
   ShieldCheck,
   ShoppingBag,
+  Sparkles,
   TicketPercent,
   Trash2,
   Truck,
@@ -50,6 +51,18 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
   const [summary, setSummary] = useState(initialSummary);
   const [promoCode, setPromoCode] = useState(initialSummary.promo_code ?? "");
   const [promoEnabled, setPromoEnabled] = useState(true);
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number | null>(null);
+
+  useEffect(() => {
+    apiClient.get<{ delivery?: { free_from_amount?: string | number | null } }>("/api/delivery/options")
+      .then((res) => {
+        const threshold = res.delivery?.free_from_amount ? Number(res.delivery.free_from_amount) : null;
+        if (threshold && Number.isFinite(threshold) && threshold > 0) {
+          setFreeDeliveryThreshold(threshold);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     apiClient.get<{ promo_codes_enabled?: boolean }>("/api/settings")
@@ -180,6 +193,17 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
     });
   };
 
+
+  const handleQuickAdd = (productId: number): void => {
+    runCartMutation(`quick-add-${productId}`, async () => {
+      const response = await cartApi.addItem({
+        product_id: productId,
+        quantity: 1,
+      });
+      return refreshSummary(response.cart);
+    });
+  };
+
   const hasItems = cart.items.length > 0;
   const appliedPromoCode = summary.promo_code ?? cart.promo_code?.code ?? null;
 
@@ -269,6 +293,8 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                 ) : null}
               </section>
 
+              <CrossSellSection onAddProduct={handleQuickAdd} disabled={isBusy} />
+
               {promoEnabled ? (
                 <PromoPanel
                   appliedPromoCode={appliedPromoCode}
@@ -285,7 +311,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
             </div>
 
             <aside className="space-y-5 xl:sticky xl:top-5 xl:self-start">
-              <SummaryPanel summary={summary} disabled={isBusy || !hasItems} />
+              <SummaryPanel summary={summary} disabled={isBusy || !hasItems} freeDeliveryThreshold={freeDeliveryThreshold} />
               <BenefitsPanel />
             </aside>
           </div>
@@ -576,16 +602,61 @@ const PromoPanel = ({
   );
 };
 
+
 interface SummaryPanelProps {
   summary: CartSummaryResponse;
   disabled: boolean;
+  freeDeliveryThreshold?: number | null;
 }
 
-const SummaryPanel = ({ disabled, summary }: SummaryPanelProps) => {
+const FreeDeliveryProgressBar = ({
+  finalPrice,
+  threshold,
+}: {
+  finalPrice: string | number;
+  threshold: number;
+}) => {
+  const currentPrice = Number(finalPrice);
+  const diff = threshold - currentPrice;
+  const progressPercent = Math.min(100, Math.max(0, Math.round((currentPrice / threshold) * 100)));
+
+  if (diff <= 0) {
+    return (
+      <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/90 p-3.5 text-xs font-bold text-emerald-800 shadow-xs">
+        <Sparkles size={16} className="text-emerald-600 shrink-0" />
+        <span>Поздравляем! У вас бесплатная доставка 🎉</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3.5 shadow-xs">
+      <div className="mb-2 flex items-center justify-between text-xs">
+        <span className="flex items-center gap-1.5 font-semibold text-emerald-950">
+          <Truck size={15} className="text-emerald-600" />
+          До бесплатной доставки:
+        </span>
+        <span className="font-extrabold text-emerald-700">{toPriceFormat(diff)}</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const SummaryPanel = ({ disabled, summary, freeDeliveryThreshold }: SummaryPanelProps) => {
   return (
     <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-[0_14px_40px_rgb(20_28_18/0.08)]">
-      <h2 className="mb-6 text-xl font-bold">Ваш заказ</h2>
+      <h2 className="mb-4 text-xl font-bold">Ваш заказ</h2>
+      {freeDeliveryThreshold && freeDeliveryThreshold > 0 ? (
+        <FreeDeliveryProgressBar finalPrice={summary.final_price} threshold={freeDeliveryThreshold} />
+      ) : null}
       <div className="space-y-4">
+
         <SummaryRow
           label={`Товаров (${summary.items_count})`}
           value={toPriceFormat(summary.subtotal)}
@@ -775,6 +846,95 @@ const normalizeManualQuantity = (value: string, step: number): number | null => 
   const roundedToStep = Math.round(parsedValue / step) * step;
 
   return roundQuantity(Math.max(step, roundedToStep));
+};
+
+
+interface CrossSellItem {
+  id: number;
+  name: string;
+  price: string;
+  unit: string;
+  preview_image_url?: string | null;
+  slug: string;
+}
+
+const CrossSellSection = ({
+  onAddProduct,
+  disabled,
+}: {
+  onAddProduct: (productId: number) => void;
+  disabled: boolean;
+}) => {
+  const [items, setItems] = useState<CrossSellItem[]>([]);
+
+  useEffect(() => {
+    apiClient
+      .get<{ items: CrossSellItem[] }>("/api/products/popular?limit=6")
+      .then((res) => {
+        if (res.items && Array.isArray(res.items)) {
+          setItems(res.items);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  if (items.length === 0) return null;
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs mt-6">
+      <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+        <Sparkles size={18} className="text-amber-500" />
+        Не забудьте купить
+      </h3>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {items.map((prod) => (
+          <div
+            key={prod.id}
+            className="group flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 transition hover:border-emerald-300 hover:bg-white"
+          >
+            <Link
+              href={ROUTES.PRODUCT(prod.slug)}
+              className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-white p-1"
+            >
+              {prod.preview_image_url ? (
+                <Image
+                  src={prod.preview_image_url}
+                  alt={prod.name}
+                  width={80}
+                  height={80}
+                  className="object-contain"
+                />
+              ) : (
+                <ShoppingBag size={24} className="text-slate-300" />
+              )}
+            </Link>
+            <div className="mt-2 min-w-0">
+              <Link
+                href={ROUTES.PRODUCT(prod.slug)}
+                className="line-clamp-1 text-xs font-bold text-slate-800 hover:text-emerald-700 transition"
+              >
+                {prod.name}
+              </Link>
+              <div className="mt-2 flex items-center justify-between gap-1">
+                <span className="text-xs font-extrabold text-slate-900">
+                  {toPriceFormat(prod.price)}
+                </span>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onAddProduct(prod.id)}
+                  className="flex size-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition"
+                  title="Добавить в корзину"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 };
 
 const formatQuantity = (value: number | string): string => {

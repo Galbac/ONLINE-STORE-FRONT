@@ -17,6 +17,9 @@ import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shar
 import type { ProductViewMode } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
+import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
+import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
+import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 
 interface SearchPageProps {
   searchParams: SearchPageParams;
@@ -29,6 +32,9 @@ interface SearchPageParams {
   category_id?: string;
   in_stock?: string;
   has_discount?: string;
+  min_price?: string;
+  max_price?: string;
+  product_type?: "piece" | "weight";
   sort?: ProductSearchParams["sort"];
   view?: ProductViewMode;
 }
@@ -40,6 +46,9 @@ interface SearchUrlParams {
   category_id?: string | undefined;
   in_stock?: string | undefined;
   has_discount?: string | undefined;
+  min_price?: string | undefined;
+  max_price?: string | undefined;
+  product_type?: string | undefined;
   sort?: string | undefined;
   view?: string | undefined;
 }
@@ -78,32 +87,45 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const categoryId = toOptionalNumber(searchParams.category_id);
   const inStock = searchParams.in_stock !== "false";
   const hasDiscount = searchParams.has_discount === "true";
+  const minPrice = toOptionalPrice(searchParams.min_price);
+  const maxPrice = toOptionalPrice(searchParams.max_price);
+  const productType =
+    searchParams.product_type === "piece" || searchParams.product_type === "weight"
+      ? searchParams.product_type
+      : undefined;
   const sort = toSearchSort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
 
-  const productParams: ProductSearchParams = {
-    q: query,
-    page,
+  const searchPayload: ProductSearchParams = {
     limit: pageSize,
+    page,
+    q: query,
     sort,
   };
+  if (categoryId !== undefined) {
+    searchPayload.category_id = categoryId;
+  }
 
   if (inStock) {
-    productParams.in_stock = true;
+    searchPayload.in_stock = true;
   }
-
-  if (categoryId !== undefined) {
-    productParams.category_id = categoryId;
-  }
-
   if (hasDiscount) {
-    productParams.has_discount = true;
+    searchPayload.has_discount = true;
+  }
+  if (minPrice !== undefined) {
+    searchPayload.min_price = minPrice;
+  }
+  if (maxPrice !== undefined) {
+    searchPayload.max_price = maxPrice;
+  }
+  if (productType !== undefined) {
+    searchPayload.product_type = productType;
   }
 
-  const [categories, products, cart, favorites] = await Promise.all([
+  const [categoryListResponse, products, cart, favorites] = await Promise.all([
     categoryApi.getList(),
-    getSearchProducts(productParams, query, page, pageSize),
+    getSearchProducts(searchPayload, query, page, pageSize),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
@@ -111,10 +133,16 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
     ),
   ]);
 
-  const visibleCategories = categories.items;
-  const selectedCategory = visibleCategories.find((category) => category.id === categoryId);
+  const prices = products.items.map((item) => Number(item.price)).filter(Number.isFinite);
+  const maxSearchPrice = Math.max(100, ...prices, Number(maxPrice || 0));
+  const sliderMax = Math.ceil(maxSearchPrice / 100) * 100;
+
   const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
+  const categories = categoryListResponse.items;
+  const selectedCategory = categories.find((category) => category.id === categoryId);
+  const visibleCategories = getVisibleCategories(categories, selectedCategory);
+  const urlParams = toSearchUrlParams(searchParams);
 
   return (
     <>
@@ -132,12 +160,12 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
           <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-text-primary text-4xl leading-tight font-bold">
+                <h1 className="text-text-primary text-3xl md:text-4xl leading-tight font-bold">
                   Результаты поиска
                 </h1>
                 {query ? <FilterChip label={`«${query}»`} /> : null}
               </div>
-              <p className="text-text-secondary mt-3 text-sm">
+              <p className="text-text-secondary mt-2 text-sm">
                 Найдено {products.total} {getProductCountLabel(products.total)}
               </p>
             </div>
@@ -149,13 +177,18 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
           <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
             <SearchFilters
               categories={visibleCategories}
-              currentParams={toSearchUrlParams(searchParams)}
+              currentParams={urlParams}
               currentCategoryId={categoryId}
               hasDiscount={hasDiscount}
               inStock={inStock}
+              maxPrice={maxPrice}
+              minPrice={minPrice}
+              productType={productType}
               query={query}
+              sliderMax={sliderMax}
             />
-            <section>
+
+            <section className="min-w-0">
               <SearchToolbar
                 currentCategoryId={categoryId}
                 hasDiscount={hasDiscount}
@@ -168,12 +201,54 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
                 viewMode={viewMode}
               />
 
+              <QuickFilterChips
+                chips={[
+                  {
+                    id: "all",
+                    label: "Все результаты",
+                    active: !hasDiscount && !productType && inStock && sort === "relevance",
+                    href: buildSearchHref({ ...urlParams, has_discount: undefined, product_type: undefined, in_stock: undefined, sort: undefined, page: undefined }),
+                  },
+                  {
+                    id: "discount",
+                    label: "🔥 Скидки",
+                    active: hasDiscount,
+                    href: buildSearchHref({ ...urlParams, has_discount: hasDiscount ? undefined : "true", page: undefined }),
+                  },
+                  {
+                    id: "popular",
+                    label: "⭐ Популярное",
+                    active: sort === "popular",
+                    href: buildSearchHref({ ...urlParams, sort: "popular", page: undefined }),
+                  },
+                  {
+                    id: "newest",
+                    label: "🆕 Новинки",
+                    active: sort === "newest",
+                    href: buildSearchHref({ ...urlParams, sort: "newest", page: undefined }),
+                  },
+                  {
+                    id: "weight",
+                    label: "⚖️ На развес",
+                    active: productType === "weight",
+                    href: buildSearchHref({ ...urlParams, product_type: productType === "weight" ? undefined : "weight", page: undefined }),
+                  },
+                  {
+                    id: "piece",
+                    label: "📦 Штучные",
+                    active: productType === "piece",
+                    href: buildSearchHref({ ...urlParams, product_type: productType === "piece" ? undefined : "piece", page: undefined }),
+                  },
+                ]}
+                className="mb-4"
+              />
+
               {products.items.length > 0 ? (
                 <>
                   <div
                     className={cn(
-                      "mt-5 grid gap-4",
-                      viewMode === "grid" ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-1",
+                      "mt-4 grid gap-4",
+                      viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-4" : "grid-cols-1",
                     )}
                   >
                     {products.items.map((product) => (
@@ -201,14 +276,14 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
                   </div>
 
                   <SearchPagination
-                    currentPage={products.page || page}
+                    currentPage={page}
                     pageSize={pageSize}
                     searchParams={searchParams}
                     totalPages={products.pages}
                   />
                 </>
               ) : (
-                <SearchEmptyState query={query} />
+                <EmptySearchState query={query} />
               )}
             </section>
           </div>
@@ -225,16 +300,24 @@ interface SearchFiltersProps {
   currentCategoryId?: number | undefined;
   hasDiscount: boolean;
   inStock: boolean;
+  maxPrice?: string | undefined;
+  minPrice?: string | undefined;
+  productType?: string | undefined;
   query: string;
+  sliderMax: number;
 }
 
 const SearchFilters = ({
   categories,
-  currentParams,
   currentCategoryId,
+  currentParams,
   hasDiscount,
   inStock,
+  maxPrice,
+  minPrice,
+  productType,
   query,
+  sliderMax,
 }: SearchFiltersProps) => {
   return (
     <aside className="min-w-0 space-y-4">
@@ -245,7 +328,7 @@ const SearchFilters = ({
               className={cn(
                 "flex items-center justify-between gap-3 rounded-md px-1 py-1.5 text-sm transition",
                 currentCategoryId === undefined
-                  ? "text-accent-primary"
+                  ? "text-accent-primary font-bold"
                   : "text-text-primary hover:text-accent-primary",
               )}
               href={buildSearchHref({
@@ -254,9 +337,9 @@ const SearchFilters = ({
                 page: undefined,
               })}
             >
-              <span className="flex items-center gap-3">
-                <span className="border-border size-4 rounded border" />
-                Все результаты
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="border-border size-4 shrink-0 rounded border" />
+                <span className="truncate">Все категории</span>
               </span>
             </Link>
           </li>
@@ -266,7 +349,7 @@ const SearchFilters = ({
                 className={cn(
                   "flex items-center justify-between gap-3 rounded-md px-1 py-1.5 text-sm transition",
                   currentCategoryId === category.id
-                    ? "text-accent-primary"
+                    ? "text-accent-primary font-bold"
                     : "text-text-primary hover:text-accent-primary",
                 )}
                 href={buildSearchHref({
@@ -279,7 +362,7 @@ const SearchFilters = ({
                   <span className="border-border size-4 shrink-0 rounded border" />
                   <span className="truncate">{category.name}</span>
                 </span>
-                <span className="text-text-muted">{category.products_count ?? 0}</span>
+                <span className="text-text-muted text-xs">{category.products_count ?? 0}</span>
               </Link>
             </li>
           ))}
@@ -310,11 +393,40 @@ const SearchFilters = ({
         />
       </FilterPanel>
 
+      <FilterPanel title="Тип товара">
+        <ProductTypeFilter
+          currentType={productType}
+          buildHref={(type) =>
+            buildSearchHref({
+              ...currentParams,
+              product_type: type,
+              page: undefined,
+            })
+          }
+        />
+      </FilterPanel>
+
+      <FilterPanel title="Цена, ₽">
+        <CatalogPriceFilter
+          action={ROUTES.SEARCH}
+          currentParams={currentParams as Record<string, string | undefined>}
+          maxPrice={maxPrice}
+          minPrice={minPrice}
+          resetHref={buildSearchHref({
+            ...currentParams,
+            max_price: undefined,
+            min_price: undefined,
+            page: undefined,
+          })}
+          sliderMax={sliderMax}
+        />
+      </FilterPanel>
+
       <Link
-        className="border-border text-text-secondary hover:bg-bg-hover flex h-12 items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition"
+        className="border-border text-text-secondary hover:bg-bg-hover flex h-11 items-center justify-center gap-2 rounded-xl border text-xs font-bold transition"
         href={query ? `${ROUTES.SEARCH}?q=${encodeURIComponent(query)}` : ROUTES.SEARCH}
       >
-        <RotateCcw size={16} />
+        <RotateCcw size={14} />
         Сбросить фильтры
       </Link>
     </aside>
@@ -386,9 +498,9 @@ const SearchToolbar = ({
   viewMode,
 }: SearchToolbarProps) => {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-text-secondary text-sm">
+        <span className="text-text-secondary text-sm font-medium">
           Показано {productsTotal} {getProductCountLabel(productsTotal)}
         </span>
         {selectedCategoryName ? <FilterChip label={selectedCategoryName} /> : null}
@@ -396,39 +508,26 @@ const SearchToolbar = ({
         {hasDiscount ? <FilterChip label="Со скидкой" /> : null}
       </div>
       <div className="flex max-w-full flex-wrap items-center gap-4">
-        <form
-          className="border-border bg-bg-primary flex h-12 min-w-0 items-center gap-3 rounded-lg border px-4"
+        <AutoSubmitSelect
           action={ROUTES.SEARCH}
-        >
-          {query ? <input name="q" type="hidden" value={query} /> : null}
-          {currentCategoryId ? (
-            <input name="category_id" type="hidden" value={currentCategoryId} />
-          ) : null}
-          {!inStock ? <input name="in_stock" type="hidden" value="false" /> : null}
-          {searchParams.limit ? (
-            <input name="limit" type="hidden" value={searchParams.limit} />
-          ) : null}
-          {hasDiscount ? <input name="has_discount" type="hidden" value="true" /> : null}
-          {viewMode === "list" ? <input name="view" type="hidden" value={viewMode} /> : null}
-          <span className="text-text-secondary hidden text-sm sm:inline">Сортировать:</span>
-          <select
-            className="min-w-0 bg-transparent text-sm outline-none"
-            name="sort"
-            defaultValue={sort}
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <button className="sr-only" type="submit">
-            Сортировать
-          </button>
-        </form>
+          defaultValue={sort ?? "relevance"}
+          hiddenFields={getSearchHiddenFields({
+            category_id: currentCategoryId ? String(currentCategoryId) : undefined,
+            has_discount: hasDiscount ? "true" : undefined,
+            in_stock: inStock ? undefined : "false",
+            min_price: searchParams.min_price,
+            max_price: searchParams.max_price,
+            product_type: searchParams.product_type,
+            q: query,
+            view: viewMode === "list" ? viewMode : undefined,
+          })}
+          label="Сортировать:"
+          name="sort"
+          options={sortOptions}
+        />
         <ViewModeToggle
-          gridHref={buildSearchHref({ ...searchParams, page: undefined, view: undefined })}
-          listHref={buildSearchHref({ ...searchParams, page: undefined, view: "list" })}
+          gridHref={buildSearchHref({ ...toSearchUrlParams(searchParams), page: undefined, view: undefined })}
+          listHref={buildSearchHref({ ...toSearchUrlParams(searchParams), page: undefined, view: "list" })}
           viewMode={viewMode}
         />
       </div>
@@ -437,39 +536,36 @@ const SearchToolbar = ({
 };
 
 interface FilterChipProps {
-  label: string;
+  label?: string | undefined;
 }
 
 const FilterChip = ({ label }: FilterChipProps) => {
+  if (!label) return null;
   return (
-    <span className="border-accent-primary/25 bg-bg-hover text-accent-primary rounded-lg border px-4 py-2 text-sm font-semibold">
+    <span className="border-accent-primary/25 bg-bg-hover text-accent-primary rounded-lg border px-3 py-1 text-xs font-semibold">
       {label}
     </span>
   );
 };
 
-interface SearchEmptyStateProps {
-  query: string;
-}
-
-const SearchEmptyState = ({ query }: SearchEmptyStateProps) => {
+const EmptySearchState = ({ query }: { query: string }) => {
   return (
-    <div className="border-border mt-5 flex min-h-48 flex-col items-center justify-center rounded-lg border p-8 text-center md:flex-row md:text-left">
-      <SearchX className="text-text-muted mb-4 md:mr-6 md:mb-0" size={72} />
-      <div>
-        <h2 className="text-xl font-bold">Ничего не найдено</h2>
-        <p className="text-text-secondary mt-2 text-sm">
-          {query
-            ? "Попробуйте изменить запрос или выбрать другую категорию."
-            : "Введите поисковый запрос или измените выбранные фильтры."}
-        </p>
-        <Link
-          className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-5 inline-flex h-12 items-center justify-center rounded-lg px-5 text-sm font-bold transition"
-          href={ROUTES.SEARCH}
-        >
-          Сбросить фильтры
-        </Link>
+    <div className="border-border rounded-lg border bg-white p-10 text-center shadow-xs">
+      <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+        <SearchX size={28} />
       </div>
+      <h3 className="mt-4 text-xl font-bold text-slate-800">
+        {query ? `Ничего не найдено по запросу «${query}»` : "Начните поиск товаров"}
+      </h3>
+      <p className="mt-2 text-xs text-slate-500 max-w-md mx-auto">
+        Проверьте правильность написания или попробуйте изменить параметры фильтрации.
+      </p>
+      <Link
+        href={ROUTES.CATALOG}
+        className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white transition hover:bg-emerald-700 shadow-xs"
+      >
+        Перейти в каталог
+      </Link>
     </div>
   );
 };
@@ -477,8 +573,8 @@ const SearchEmptyState = ({ query }: SearchEmptyStateProps) => {
 interface SearchPaginationProps {
   currentPage: number;
   pageSize: number;
-  totalPages: number;
   searchParams: SearchPageParams;
+  totalPages: number;
 }
 
 const SearchPagination = ({
@@ -487,38 +583,30 @@ const SearchPagination = ({
   searchParams,
   totalPages,
 }: SearchPaginationProps) => {
-  if (totalPages <= 1) {
-    return null;
-  }
-
   const pages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => index + 1);
+  const currentParams = toSearchUrlParams(searchParams);
 
   return (
     <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <PageLink disabled={currentPage <= 1} page={currentPage - 1} searchParams={searchParams}>
+        <PageLink disabled={currentPage <= 1} page={currentPage - 1} searchParams={currentParams}>
           ‹
         </PageLink>
         {pages.map((page) => (
-          <PageLink
-            active={page === currentPage}
-            key={page}
-            page={page}
-            searchParams={searchParams}
-          >
+          <PageLink active={page === currentPage} key={page} page={page} searchParams={currentParams}>
             {page}
           </PageLink>
         ))}
         {totalPages > 6 ? <span className="text-text-muted px-2">...</span> : null}
         {totalPages > 5 ? (
-          <PageLink page={totalPages} searchParams={searchParams}>
+          <PageLink page={totalPages} searchParams={currentParams}>
             {totalPages}
           </PageLink>
         ) : null}
         <PageLink
           disabled={currentPage >= totalPages}
           page={currentPage + 1}
-          searchParams={searchParams}
+          searchParams={currentParams}
         >
           ›
         </PageLink>
@@ -531,6 +619,9 @@ const SearchPagination = ({
             category_id: searchParams.category_id,
             has_discount: searchParams.has_discount,
             in_stock: searchParams.in_stock,
+            min_price: searchParams.min_price,
+            max_price: searchParams.max_price,
+            product_type: searchParams.product_type,
             q: searchParams.q,
             sort: searchParams.sort,
             view: searchParams.view,
@@ -548,7 +639,7 @@ interface PageLinkProps {
   active?: boolean;
   disabled?: boolean;
   page: number;
-  searchParams: SearchPageParams;
+  searchParams: SearchUrlParams;
   children: React.ReactNode;
 }
 
@@ -576,20 +667,18 @@ const PageLink = ({ active, children, disabled, page, searchParams }: PageLinkPr
   );
 };
 
-const toPositiveNumber = (value: string | undefined, fallback: number): number => {
-  const parsed = Number(value);
-
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    return fallback;
+const getVisibleCategories = (
+  categories: CategoryShortResponse[],
+  selectedCategory?: CategoryShortResponse | undefined,
+): CategoryShortResponse[] => {
+  if (!selectedCategory) {
+    return categories;
   }
-
-  return parsed;
-};
-
-const toPageSize = (value: string | undefined): number => {
-  const parsed = Number(value);
-
-  return pageSizeOptions.some((option) => Number(option.value) === parsed) ? parsed : 24;
+  const hasSelectedCategory = categories.some((category) => category.id === selectedCategory.id);
+  if (hasSelectedCategory) {
+    return categories;
+  }
+  return [selectedCategory, ...categories];
 };
 
 const getSearchProducts = async (
@@ -601,33 +690,49 @@ const getSearchProducts = async (
   if (!query) {
     return getEmptySearchResponse(query, page, limit);
   }
-
   try {
     return await productApi.search(params);
   } catch (error) {
     if (isApiErrorStatus(error, 400) || isApiErrorStatus(error, 404)) {
       return getEmptySearchResponse(query, page, limit);
     }
-
     throw error;
   }
 };
 
+const toPositiveNumber = (value: string | undefined, fallback: number): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+  return Math.floor(parsed);
+};
+
+const toOptionalPrice = (value: string | undefined): string | undefined => {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return String(parsed);
+};
+
 const toOptionalNumber = (value: string | undefined): number | undefined => {
   const parsed = Number(value);
-
   if (!Number.isInteger(parsed) || parsed < 1) {
     return undefined;
   }
-
   return parsed;
+};
+
+const toPageSize = (value: string | undefined): number => {
+  if (value === "48") return 48;
+  if (value === "96") return 96;
+  return 24;
 };
 
 const toSearchSort = (
   value: ProductSearchParams["sort"] | undefined,
 ): NonNullable<ProductSearchParams["sort"]> => {
   const option = sortOptions.find((sortOption) => sortOption.value === value);
-
   return option?.value ?? "relevance";
 };
 
@@ -637,22 +742,22 @@ const toViewMode = (value: ProductViewMode | undefined): ProductViewMode => {
 
 const getAccessToken = async (): Promise<string | undefined> => {
   const cookieStore = await cookies();
-
   return cookieStore.get("access_token")?.value;
 };
 
 const toSearchUrlParams = (searchParams: SearchPageParams): SearchUrlParams => {
   const params: SearchUrlParams = {};
-
   setSearchUrlParam(params, "category_id", searchParams.category_id);
   setSearchUrlParam(params, "has_discount", searchParams.has_discount);
   setSearchUrlParam(params, "in_stock", searchParams.in_stock);
   setSearchUrlParam(params, "limit", searchParams.limit);
+  setSearchUrlParam(params, "max_price", searchParams.max_price);
+  setSearchUrlParam(params, "min_price", searchParams.min_price);
+  setSearchUrlParam(params, "product_type", searchParams.product_type);
   setSearchUrlParam(params, "page", searchParams.page);
   setSearchUrlParam(params, "q", searchParams.q);
   setSearchUrlParam(params, "sort", searchParams.sort);
   setSearchUrlParam(params, "view", searchParams.view);
-
   return params;
 };
 
@@ -668,22 +773,17 @@ const setSearchUrlParam = (
 
 const buildSearchHref = (params: SearchUrlParams): string => {
   const query = new URLSearchParams();
-
   Object.entries(params).forEach(([key, value]) => {
     if (value) {
       query.set(key, value);
     }
   });
-
   const queryString = query.toString();
-
   return queryString ? `${ROUTES.SEARCH}?${queryString}` : ROUTES.SEARCH;
 };
 
 const getSearchHiddenFields = (
-  params: Partial<
-    Pick<SearchUrlParams, "category_id" | "has_discount" | "in_stock" | "q" | "sort" | "view">
-  >,
+  params: Record<string, string | undefined>,
 ): Array<{ name: string; value: string }> => {
   return Object.entries(params).flatMap(([name, value]) => {
     return value ? [{ name, value }] : [];
@@ -693,18 +793,14 @@ const getSearchHiddenFields = (
 const getProductCountLabel = (count: number): string => {
   const lastTwoDigits = count % 100;
   const lastDigit = count % 10;
-
   if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
     return "товаров";
   }
-
   if (lastDigit === 1) {
     return "товар";
   }
-
   if (lastDigit >= 2 && lastDigit <= 4) {
     return "товара";
   }
-
   return "товаров";
 };

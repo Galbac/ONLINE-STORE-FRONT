@@ -24,6 +24,8 @@ import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
 import { CatalogPriceFilter } from "./CatalogPriceFilter";
+import { QuickFilterChips } from "./QuickFilterChips";
+import { ProductTypeFilter } from "./ProductTypeFilter";
 
 interface CatalogPageProps {
   searchParams: CatalogSearchParams;
@@ -37,6 +39,7 @@ interface CatalogSearchParams {
   has_discount?: string;
   min_price?: string;
   max_price?: string;
+  product_type?: ProductListParams["product_type"];
   sort?: ProductListParams["sort"];
   view?: ProductViewMode;
 }
@@ -63,6 +66,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const hasDiscount = searchParams.has_discount === "true";
   const minPrice = toOptionalPrice(searchParams.min_price);
   const maxPrice = toOptionalPrice(searchParams.max_price);
+  const productType = searchParams.product_type === "piece" || searchParams.product_type === "weight" ? searchParams.product_type : undefined;
   const sort = toCatalogSort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
@@ -91,6 +95,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
   if (minPrice !== undefined) {
     productParams.min_price = minPrice;
+  }
+
+  if (productType !== undefined) {
+    productParams.product_type = productType;
   }
 
   const priceBoundsParams: ProductListParams = {
@@ -168,6 +176,47 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 viewMode={viewMode}
               />
 
+              <QuickFilterChips
+                chips={[
+                  {
+                    id: "all",
+                    label: "Все товары",
+                    active: !hasDiscount && !productType && inStock && sort === "popular",
+                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), has_discount: undefined, product_type: undefined, in_stock: undefined, sort: undefined, page: undefined }),
+                  },
+                  {
+                    id: "discount",
+                    label: "🔥 Скидки",
+                    active: hasDiscount,
+                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), has_discount: hasDiscount ? undefined : "true", page: undefined }),
+                  },
+                  {
+                    id: "popular",
+                    label: "⭐ Популярное",
+                    active: sort === "popular",
+                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), sort: "popular", page: undefined }),
+                  },
+                  {
+                    id: "newest",
+                    label: "🆕 Новинки",
+                    active: sort === "newest",
+                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), sort: "newest", page: undefined }),
+                  },
+                  {
+                    id: "weight",
+                    label: "⚖️ На развес",
+                    active: productType === "weight",
+                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), product_type: productType === "weight" ? undefined : "weight", page: undefined }),
+                  },
+                  {
+                    id: "piece",
+                    label: "📦 Штучные",
+                    active: productType === "piece",
+                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), product_type: productType === "piece" ? undefined : "piece", page: undefined }),
+                  },
+                ]}
+                className="mb-4"
+              />
               {products.items.length > 0 ? (
                 <>
                   <div
@@ -334,6 +383,19 @@ const CatalogFilters = ({
             />
           </Link>
         </div>
+      </FilterPanel>
+
+      <FilterPanel title="Тип товара">
+        <ProductTypeFilter
+          currentType={currentParams.product_type}
+          buildHref={(type) =>
+            buildCatalogHref({
+              ...currentParams,
+              product_type: type,
+              page: undefined,
+            })
+          }
+        />
       </FilterPanel>
 
       <FilterPanel title="Цена, ₽">
@@ -714,6 +776,7 @@ const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams
   setCatalogUrlParam(params, "limit", searchParams.limit);
   setCatalogUrlParam(params, "max_price", searchParams.max_price);
   setCatalogUrlParam(params, "min_price", searchParams.min_price);
+  setCatalogUrlParam(params, "product_type", searchParams.product_type);
   setCatalogUrlParam(params, "page", searchParams.page);
   setCatalogUrlParam(params, "sort", searchParams.sort);
   setCatalogUrlParam(params, "view", searchParams.view);

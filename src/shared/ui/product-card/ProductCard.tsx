@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingBag, ShoppingCart, Star } from "lucide-react";
 import type { ProductShortResponse } from "@/entities/product";
+import { StockAlertButton } from "@/features/catalog-product-actions";
+import { QuickViewButton } from "@/features/quick-view";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 
@@ -18,6 +20,8 @@ export const ProductCard = ({
   product,
   variant = "grid",
 }: ProductCardProps) => {
+  const isLowStock = product.is_available && product.stock_display.startsWith("Осталось");
+
   if (variant === "list") {
     return (
       <article className="group relative grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5 sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[170px_minmax(0,1fr)_auto]">
@@ -26,6 +30,7 @@ export const ProductCard = ({
             -{product.discount_percent}%
           </span>
         ) : null}
+        <QuickViewButton product={product} />
         {favoriteControl ?? (
           <button
             aria-label={`Добавить ${product.name} в избранное`}
@@ -67,10 +72,10 @@ export const ProductCard = ({
             <span className="inline-flex items-center gap-1.5 font-semibold">
               <span
                 className={`size-2 rounded-full ${
-                  product.is_available ? "bg-emerald-500" : "bg-rose-400"
+                  product.is_available ? (isLowStock ? "bg-amber-500" : "bg-emerald-500") : "bg-rose-400"
                 }`}
               />
-              <span className={product.is_available ? "text-emerald-700" : "text-rose-600"}>
+              <span className={product.is_available ? (isLowStock ? "text-amber-700 font-bold" : "text-emerald-700") : "text-rose-600"}>
                 {product.stock_display}
               </span>
             </span>
@@ -92,14 +97,18 @@ export const ProductCard = ({
               </span>
             ) : null}
           </div>
-          {cartControl ?? (
-            <button
-              aria-label={`Добавить ${product.name} в корзину`}
-              className="flex size-11 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
-              type="button"
-            >
-              <ShoppingCart size={19} />
-            </button>
+          {!product.is_available ? (
+            <StockAlertButton productId={product.id} productName={product.name} />
+          ) : (
+            cartControl ?? (
+              <button
+                aria-label={`Добавить ${product.name} в корзину`}
+                className="flex size-11 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
+                type="button"
+              >
+                <ShoppingCart size={19} />
+              </button>
+            )
           )}
         </div>
       </article>
@@ -113,7 +122,8 @@ export const ProductCard = ({
           -{product.discount_percent}%
         </span>
       ) : null}
-      {favoriteControl ?? (
+      <QuickViewButton product={product} />
+        {favoriteControl ?? (
         <button
           className="absolute top-3.5 right-3.5 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
           type="button"
@@ -155,10 +165,12 @@ export const ProductCard = ({
         <span className="inline-flex items-center gap-1 font-medium text-slate-500">
           <span
             className={`size-1.5 rounded-full ${
-              product.is_available ? "bg-emerald-500" : "bg-rose-400"
+              product.is_available ? (isLowStock ? "bg-amber-500" : "bg-emerald-500") : "bg-rose-400"
             }`}
           />
-          {product.stock_display}
+          <span className={isLowStock ? "text-amber-700 font-bold text-[11px]" : ""}>
+            {product.stock_display}
+          </span>
         </span>
       </div>
 
@@ -180,15 +192,26 @@ export const ProductCard = ({
           <span className="text-lg font-extrabold tracking-tight text-slate-900">
             {toPriceFormat(product.price)}
           </span>
+          <span className="text-[11px] text-slate-400 font-medium">
+            {toPriceFormat(product.price)} / {product.unit}
+          </span>
         </div>
-        {cartControl ?? (
-          <button
-            className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
-            type="button"
-            aria-label={`Добавить ${product.name} в корзину`}
-          >
-            <ShoppingCart size={18} />
-          </button>
+        {!product.is_available ? (
+          <StockAlertButton
+            productId={product.id}
+            productName={product.name}
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-900 hover:bg-amber-100 transition shadow-xs"
+          />
+        ) : (
+          cartControl ?? (
+            <button
+              className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
+              type="button"
+              aria-label={`Добавить ${product.name} в корзину`}
+            >
+              <ShoppingCart size={18} />
+            </button>
+          )
         )}
       </div>
     </article>
@@ -198,4 +221,3 @@ export const ProductCard = ({
 const getProductTypeLabel = (productType: string): string => {
   return productType === "weight" ? "Весовой товар" : "Штучный товар";
 };
-

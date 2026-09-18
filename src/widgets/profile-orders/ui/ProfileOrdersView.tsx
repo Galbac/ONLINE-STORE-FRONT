@@ -18,6 +18,7 @@ import {
 import { orderApi, type OrderShortResponse } from "@/entities/order";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
+import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { Button, Container } from "@/shared/ui";
 
 interface ProfileOrdersViewProps {
@@ -67,6 +68,8 @@ const serviceBenefits = [
 export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => {
   const [orders, setOrders] = useState<OrderShortResponse[]>(initialOrders.items);
   const [activeFilter, setActiveFilter] = useState<OrderFilter>("all");
+  const [searchNumber, setSearchNumber] = useState<string>("");
+  const [datePeriod, setDatePeriod] = useState<string>("all");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
@@ -103,8 +106,27 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
   }, []);
 
   const visibleOrders = useMemo(() => {
-    return orders.filter((order) => matchesFilter(order.status, activeFilter));
-  }, [activeFilter, orders]);
+    return orders.filter((order) => {
+      if (!matchesFilter(order.status, activeFilter)) {
+        return false;
+      }
+      if (searchNumber.trim()) {
+        const query = searchNumber.trim().toLowerCase().replace("#", "");
+        const matchesId = String(order.id).includes(query);
+        const matchesNumber = order.order_number?.toLowerCase().includes(query) ?? false;
+        if (!matchesId && !matchesNumber) return false;
+      }
+      if (datePeriod !== "all") {
+        const orderDate = new Date(order.created_at).getTime();
+        const now = Date.now();
+        const days = datePeriod === "month" ? 30 : datePeriod === "3months" ? 90 : 365;
+        if (now - orderDate > days * 24 * 60 * 60 * 1000) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [activeFilter, datePeriod, orders, searchNumber]);
 
   const handleRepeatOrder = (order: OrderShortResponse): void => {
     const accessToken = getAccessToken();
@@ -123,7 +145,8 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
             ? ` Добавлено с предупреждениями: ${response.warnings.length}.`
             : "";
 
-        setStatusMessage(`${response.message}${warningText}`);
+        notifyCartChanged({ itemsCount: response.cart.items.length });
+        setStatusMessage(`${response.message}${warningText} Товары добавлены в корзину.`);
       } catch {
         setStatusMessage(null);
         setErrorMessage("Не удалось повторить заказ. Возможно, товары недоступны.");
@@ -152,6 +175,28 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
           <h1 className="text-text-primary text-4xl font-bold md:text-5xl">Мои заказы</h1>
         </section>
 
+        <div className="mb-6 grid gap-4 sm:grid-cols-[1fr_auto]">
+          <input
+            type="search"
+            placeholder="Поиск по номеру заказа (#123)..."
+            value={searchNumber}
+            onChange={(e) => setSearchNumber(e.target.value)}
+            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500 font-medium">Период:</span>
+            <select
+              value={datePeriod}
+              onChange={(e) => setDatePeriod(e.target.value)}
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-500"
+            >
+              <option value="all">За всё время</option>
+              <option value="month">За последний месяц</option>
+              <option value="3months">За 3 месяца</option>
+              <option value="year">За последний год</option>
+            </select>
+          </div>
+        </div>
         <div className="mb-8 flex gap-3 overflow-x-auto pb-2">
           {filterOptions.map((option) => (
             <button

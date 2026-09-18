@@ -3,21 +3,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 
-import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
+import { buildCatalogHref } from "../lib/catalogUrl";
 
-interface CatalogPriceFilterProps {
-  currentParams: CatalogUrlParams;
+export interface CatalogPriceFilterProps {
+  action?: string | undefined;
+  currentParams: Record<string, string | undefined>;
   maxPrice?: string | undefined;
   minPrice?: string | undefined;
   sliderMax: number;
+  resetHref?: string | undefined;
 }
 
 const MIN_PRICE = 0;
 
 export const CatalogPriceFilter = ({
+  action = "/catalog",
   currentParams,
   maxPrice,
   minPrice,
+  resetHref,
   sliderMax,
 }: CatalogPriceFilterProps) => {
   const normalizedSliderMax = Math.max(sliderMax, MIN_PRICE + 1);
@@ -53,12 +57,16 @@ export const CatalogPriceFilter = ({
     const nextPrice = clampPrice(value, fromPrice, normalizedSliderMax, normalizedSliderMax);
     setToPrice(nextPrice);
   };
-  const resetHref = buildCatalogHref({
-    ...currentParams,
-    max_price: undefined,
-    min_price: undefined,
-    page: undefined,
-  });
+
+  const targetResetHref =
+    resetHref ||
+    buildCatalogHref({
+      ...currentParams,
+      max_price: undefined,
+      min_price: undefined,
+      page: undefined,
+    });
+
   const hasActivePriceFilter =
     minPrice !== undefined ||
     maxPrice !== undefined ||
@@ -66,17 +74,13 @@ export const CatalogPriceFilter = ({
     toPrice < normalizedSliderMax;
 
   return (
-    <form className="space-y-5" action="/catalog">
-      {currentParams.category_id ? (
-        <input name="category_id" type="hidden" value={currentParams.category_id} />
-      ) : null}
-      {currentParams.in_stock ? (
-        <input name="in_stock" type="hidden" value={currentParams.in_stock} />
-      ) : null}
-      {currentParams.has_discount ? (
-        <input name="has_discount" type="hidden" value={currentParams.has_discount} />
-      ) : null}
-      {currentParams.sort ? <input name="sort" type="hidden" value={currentParams.sort} /> : null}
+    <form className="space-y-5" action={action}>
+      {Object.entries(currentParams).map(([key, value]) => {
+        if (!value || key === "min_price" || key === "max_price" || key === "page") {
+          return null;
+        }
+        return <input key={key} name={key} type="hidden" value={value} />;
+      })}
 
       <div className="bg-bg-hover rounded-lg px-4 py-3">
         <div className="text-text-muted mb-1 flex items-center gap-2 text-xs font-bold uppercase">
@@ -160,7 +164,7 @@ export const CatalogPriceFilter = ({
         </button>
         <a
           className="border-border text-text-secondary hover:bg-bg-hover grid size-10 place-items-center rounded-lg border transition"
-          href={resetHref}
+          href={targetResetHref}
           aria-label="Сбросить цену"
         >
           <X size={16} className={hasActivePriceFilter ? "text-error" : undefined} />

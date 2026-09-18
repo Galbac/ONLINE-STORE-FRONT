@@ -84,7 +84,10 @@ export interface ProductSearchParams {
   limit?: number;
   category_id?: number;
   in_stock?: boolean;
+  min_price?: string | number;
+  max_price?: string | number;
   has_discount?: boolean;
+  product_type?: "piece" | "weight";
   sort?: "relevance" | "price_asc" | "price_desc" | "newest" | "popular";
 }
 

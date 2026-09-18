@@ -1,6 +1,7 @@
 import { ROUTES } from "@/shared/config";
 
 export interface CatalogUrlParams {
+  [key: string]: string | undefined;
   page?: string | undefined;
   limit?: string | undefined;
   category_id?: string | undefined;
@@ -8,6 +9,7 @@ export interface CatalogUrlParams {
   has_discount?: string | undefined;
   min_price?: string | undefined;
   max_price?: string | undefined;
+  product_type?: string | undefined;
   sort?: string | undefined;
   view?: string | undefined;
 }

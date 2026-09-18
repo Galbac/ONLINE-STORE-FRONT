@@ -61,7 +61,10 @@ export const productApi = {
       limit: params.limit ?? 24,
       category_id: params.category_id,
       in_stock: params.in_stock,
+      min_price: params.min_price,
+      max_price: params.max_price,
       has_discount: params.has_discount,
+      product_type: params.product_type,
       sort: params.sort ?? "relevance",
     });
   },

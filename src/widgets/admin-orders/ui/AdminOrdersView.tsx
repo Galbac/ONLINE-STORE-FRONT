@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Eye, Search } from "lucide-react";
+import { Download, Eye, Search } from "lucide-react";
 import type { AdminOrderListItemResponse, AdminOrderListResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -24,11 +24,21 @@ interface AdminOrdersViewProps {
 export const AdminOrdersView = ({ filters, orders }: AdminOrdersViewProps) => {
   return (
     <div className="space-y-6">
-      <section>
-        <h1 className="text-text-primary text-2xl font-bold sm:text-3xl">Заказы</h1>
-        <p className="text-text-secondary mt-2">
-          Поиск, фильтры, оплата, доставка и статусы синхронизации 1С.
-        </p>
+      <section className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-text-primary text-2xl font-bold sm:text-3xl">Заказы</h1>
+          <p className="text-text-secondary mt-2">
+            Поиск, фильтры, оплата, доставка и статусы синхронизации 1С.
+          </p>
+        </div>
+        <a
+          href="/api/admin/orders/export"
+          target="_blank"
+          download
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition active:scale-95"
+        >
+          <Download size={15} /> Экспорт в Excel (CSV)
+        </a>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">

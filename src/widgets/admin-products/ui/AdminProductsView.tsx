@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Edit, PackagePlus, Search } from "lucide-react";
+import { Download, Edit, PackagePlus, Search } from "lucide-react";
 import type { AdminCategoryListResponse } from "@/entities/admin-category";
 import type { AdminLowStockResponse } from "@/entities/admin-dashboard";
 import type { AdminProductListItemResponse, AdminProductListResponse } from "@/entities/admin-product";
@@ -38,13 +38,23 @@ export const AdminProductsView = ({
             Каталог, остатки, доступность и статусы синхронизации.
           </p>
         </div>
-        <Link
-          className="bg-accent-primary text-accent-contrast hover:bg-accent-hover inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition"
-          href={ROUTES.ADMIN_PRODUCT_CREATE}
-        >
-          <PackagePlus size={18} />
-          Создать товар
-        </Link>
+        <div className="flex items-center gap-3">
+          <a
+            href="/api/admin/products/export"
+            target="_blank"
+            download
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition active:scale-95"
+          >
+            <Download size={15} /> Экспорт остатков (CSV)
+          </a>
+          <Link
+            className="bg-accent-primary text-accent-contrast hover:bg-accent-hover inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition"
+            href={ROUTES.ADMIN_PRODUCT_CREATE}
+          >
+            <PackagePlus size={18} />
+            Создать товар
+          </Link>
+        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">

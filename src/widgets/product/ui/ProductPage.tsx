@@ -1,3 +1,4 @@
+import { ProductReviews } from "@/widgets/product-reviews";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
@@ -140,6 +141,10 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               ))}
             </div>
           </section>
+
+          <div className="mt-12">
+            <ProductReviews productId={product.id} />
+          </div>
         </Container>
       </main>
       <Footer />

@@ -16,6 +16,7 @@ import {
   PackageCheck,
   ShieldCheck,
   ShoppingBag,
+  Sparkles,
   Truck,
   UserRound,
 } from "lucide-react";
@@ -84,6 +85,7 @@ export const CheckoutView = ({
   });
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
+  const [usePoints, setUsePoints] = useState<number>(0);
   const [selectedAddressId, setSelectedAddressId] = useState(defaultAddress?.id ?? null);
   const [selectedPickupPointId, setSelectedPickupPointId] = useState(
     defaultPickupPoint?.id ?? null,
@@ -142,6 +144,7 @@ export const CheckoutView = ({
       delivery_date: selectedDate,
       delivery_time_slot_id: selectedSlot?.id ?? null,
       comment: null,
+      use_points: usePoints > 0 ? usePoints : 0,
     };
 
     const minAmount = deliveryCalculation.min_order_amount 
@@ -319,6 +322,30 @@ export const CheckoutView = ({
                 onSlotChange={setSelectedSlotId}
               />
             </CheckoutSection>
+
+            <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                  <Sparkles size={18} />
+                </span>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Бонусные баллы</h4>
+                  <p className="text-xs text-slate-500">Спишите бонусы программы лояльности (1 бонус = 1 ₽)</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="10000"
+                  className="w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-emerald-500"
+                  placeholder="0 бонусов"
+                  value={usePoints || ""}
+                  onChange={(e) => setUsePoints(Math.max(0, Number(e.target.value) || 0))}
+                />
+                <span className="text-xs font-bold text-slate-600">₽</span>
+              </div>
+            </div>
 
             <CheckoutSection icon={<CreditCard size={24} />} number={6} title="Способ оплаты">
               <div className="grid gap-4 md:grid-cols-2">

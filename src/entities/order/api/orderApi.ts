@@ -8,6 +8,7 @@ import type {
   OrderListParams,
   OrderMyListResponse,
   OrderStatusResponse,
+  OrderTrackingResponse,
   ProfileOrderListParams,
   ProfileOrderListResponse,
   RepeatOrderRequest,
@@ -132,6 +133,14 @@ export const orderApi = {
     return apiClient.post<RepeatOrderRequest, RepeatOrderResponse>(
       API_ENDPOINTS.PROFILE.ORDER_REPEAT(orderId),
       data,
+      getAuthHeaders(accessToken),
+    );
+  },
+
+  getTracking: async (orderId: number, accessToken?: string | null): Promise<OrderTrackingResponse> => {
+    return apiClient.get<OrderTrackingResponse>(
+      API_ENDPOINTS.ORDER.TRACKING(orderId),
+      undefined,
       getAuthHeaders(accessToken),
     );
   },

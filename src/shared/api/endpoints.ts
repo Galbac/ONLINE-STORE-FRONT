@@ -95,6 +95,7 @@ export const API_ENDPOINTS = {
     NEW: "/api/products/new",
     LIST: "/api/products",
     SEARCH: "/api/products/search",
+    SEARCH_SUGGESTIONS: (q: string): string => `/api/products/search/suggestions?q=${encodeURIComponent(q)}`,
     BY_ID: (productId: number): string => `/api/products/${productId}`,
     BY_SLUG: (slug: string): string => `/api/products/slug/${slug}`,
     SIMILAR: (productId: number): string => `/api/products/${productId}/similar`,
@@ -150,6 +151,22 @@ export const API_ENDPOINTS = {
     CANCEL: (orderId: number): string => `/api/orders/${orderId}/cancel`,
     REPEAT: (orderId: number): string => `/api/orders/${orderId}/repeat`,
     STATUS: (orderId: number): string => `/api/orders/${orderId}/status`,
+    TRACKING: (orderId: number): string => `/api/orders/${orderId}/tracking`,
+  },
+  BANNER: {
+    LIST: "/api/banners",
+    ADMIN_LIST: "/api/admin/banners",
+    CREATE: "/api/admin/banners",
+    BY_ID: (bannerId: number): string => `/api/admin/banners/${bannerId}`,
+  },
+  REVIEW: {
+    BY_PRODUCT: (productId: number): string => `/api/products/${productId}/reviews`,
+    MODERATE: (reviewId: number): string => `/api/admin/reviews/${reviewId}/moderate`,
+  },
+  FEEDBACK: {
+    SUBMIT: "/api/feedback",
+    ADMIN_LIST: "/api/admin/feedback",
+    UPDATE_STATUS: (feedbackId: number): string => `/api/admin/feedback/${feedbackId}/status`,
   },
   PAYMENT: {
     CREATE: "/api/payments/create",

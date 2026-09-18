@@ -45,6 +45,10 @@ const companyLinks: FooterLink[] = [
 
 const helpLinks: FooterLink[] = [
   {
+    href: ROUTES.FEEDBACK,
+    label: "Служба поддержки",
+  },
+  {
     href: ROUTES.FORGOT_PASSWORD,
     label: "Восстановление пароля",
   },

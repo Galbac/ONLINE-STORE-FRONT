@@ -1,5 +1,7 @@
 "use client";
 
+import { OrderTrackingTimeline } from "@/widgets/order-tracking";
+
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
@@ -240,6 +242,10 @@ export const ProfileOrderDetailsView = ({
         ) : message ? (
           <StatusPanel text={message} tone="success" />
         ) : null}
+
+        <div className="mb-8">
+          <OrderTrackingTimeline orderId={order.id} />
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">
           <section className="border-border rounded-lg border bg-white shadow-[0_12px_34px_rgb(20_28_18/0.05)]">

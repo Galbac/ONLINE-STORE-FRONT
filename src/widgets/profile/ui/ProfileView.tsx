@@ -16,6 +16,7 @@ import {
   Truck,
   UserRound,
   WalletCards,
+  Sparkles,
 } from "lucide-react";
 import type { ProfileSummaryResponse } from "@/entities/profile";
 import type { UserMeResponse } from "@/entities/user";
@@ -90,7 +91,13 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
 
         <section className="mt-12">
           <h2 className="text-text-primary text-2xl font-bold">Быстрые ссылки</h2>
-          <div className="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
+            <QuickLink
+              href={ROUTES.PROFILE_LOYALTY}
+              icon={<Sparkles size={30} className="text-emerald-600" />}
+              title="Бонусы и лояльность"
+              text="Баланс и кэшбэк"
+            />
             <QuickLink
               href={ROUTES.PROFILE_ADDRESSES}
               icon={<MapPin size={30} />}

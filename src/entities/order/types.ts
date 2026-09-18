@@ -31,6 +31,7 @@ export interface OrderCreateRequest {
   delivery_date?: string | null;
   delivery_time_slot_id?: number | null;
   comment?: string | null;
+  use_points?: number | null;
 }
 
 export interface OrderCreateResponse {
@@ -187,4 +188,23 @@ export interface OrderStatusResponse {
   delivery_type: string;
   next_action?: OrderNextActionResponse | null;
   updated_at: string;
+}
+
+export interface OrderTrackingStep {
+  step_key: string;
+  title: string;
+  description: string;
+  timestamp?: string | null;
+  is_completed: boolean;
+  is_current: boolean;
+}
+
+export interface OrderTrackingResponse {
+  order_id: number;
+  order_number: string;
+  current_status: string;
+  payment_status: string;
+  delivery_type: string;
+  steps: OrderTrackingStep[];
+  estimated_delivery?: string | null;
 }

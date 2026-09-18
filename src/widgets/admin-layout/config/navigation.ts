@@ -1,5 +1,9 @@
 import {
   BadgePercent,
+  Headphones,
+  MessageSquare,
+  PackageCheck,
+  Sparkles,
   Activity,
   Bell,
   ClipboardList,
@@ -35,6 +39,36 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: ClipboardList,
     label: "Заказы",
     requiredPermissions: ["admin.orders.read", "orders.read", "orders:view"],
+  },
+  {
+    href: ROUTES.ADMIN_ORDERS_ASSEMBLY,
+    icon: PackageCheck,
+    label: "Сборка",
+    requiredPermissions: ["admin.orders.pick", "orders.pick", "admin:orders:pick"],
+  },
+  {
+    href: ROUTES.ADMIN_ORDERS_COURIER,
+    icon: Truck,
+    label: "Курьер",
+    requiredPermissions: ["admin.orders.deliver", "orders.deliver", "admin:orders:deliver"],
+  },
+  {
+    href: ROUTES.ADMIN_REVIEWS,
+    icon: MessageSquare,
+    label: "Отзывы",
+    requiredPermissions: ["admin.settings.read", "settings.read", "settings:view"],
+  },
+  {
+    href: ROUTES.ADMIN_BANNERS,
+    icon: Sparkles,
+    label: "Баннеры",
+    requiredPermissions: ["admin.settings.read", "settings.read", "settings:view"],
+  },
+  {
+    href: ROUTES.ADMIN_FEEDBACK,
+    icon: Headphones,
+    label: "Поддержка",
+    requiredPermissions: ["admin.settings.read", "settings.read", "settings:view"],
   },
   {
     href: ROUTES.ADMIN_PRODUCTS,

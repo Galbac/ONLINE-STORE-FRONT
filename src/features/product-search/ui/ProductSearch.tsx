@@ -1,34 +1,216 @@
-import { Search } from "lucide-react";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowRight, LayoutGrid, Loader2, Search, ShoppingBag, X } from "lucide-react";
+import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
+import { toPriceFormat } from "@/shared/lib/format";
 import { Button } from "@/shared/ui";
+
+interface SuggestionCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface SuggestionProduct {
+  id: number;
+  name: string;
+  slug: string;
+  price: string | number;
+  preview_image_url?: string | null;
+}
+
+interface SearchSuggestionsResponse {
+  query: string;
+  categories: SuggestionCategory[];
+  products: SuggestionProduct[];
+}
 
 interface ProductSearchProps {
   defaultValue?: string | undefined;
 }
 
 export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
+  const router = useRouter();
+  const [query, setQuery] = useState(defaultValue ?? "");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<SearchSuggestionsResponse | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions(null);
+      setIsOpen(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const data = await apiClient.get<SearchSuggestionsResponse>(
+          API_ENDPOINTS.PRODUCT.SEARCH_SUGGESTIONS(trimmed),
+        );
+        setSuggestions(data);
+        if (data.categories.length > 0 || data.products.length > 0) {
+          setIsOpen(true);
+        }
+      } catch {
+        setSuggestions(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      setIsOpen(false);
+      router.push(`${ROUTES.SEARCH}?q=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
   return (
-    <form
-      className="group relative flex min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50 shadow-xs transition-all duration-200 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-3 focus-within:ring-emerald-500/15"
-      action={ROUTES.SEARCH}
-    >
-      <label className="sr-only" htmlFor="site-search">
-        Поиск товаров
-      </label>
-      <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5">
-        <Search className="shrink-0 text-slate-400 transition-colors group-focus-within:text-emerald-600" size={19} />
-        <input
-          className="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none"
-          id="site-search"
-          name="q"
-          placeholder="Найти среди 5000+ свежих продуктов..."
-          defaultValue={defaultValue}
-          type="search"
-        />
-      </div>
-      <Button className="h-11 rounded-none px-6 text-xs uppercase tracking-wider font-bold" type="submit">
-        Найти
-      </Button>
-    </form>
+    <div className="relative w-full" ref={containerRef}>
+      <form
+        className="group relative flex min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50 shadow-xs transition-all duration-200 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-3 focus-within:ring-emerald-500/15"
+        onSubmit={handleSubmit}
+      >
+        <label className="sr-only" htmlFor="site-search">
+          Поиск товаров
+        </label>
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5">
+          <Search
+            className="shrink-0 text-slate-400 transition-colors group-focus-within:text-emerald-600"
+            size={19}
+          />
+          <input
+            autoComplete="off"
+            className="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none"
+            id="site-search"
+            name="q"
+            placeholder="Найти среди 5000+ свежих продуктов..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => {
+              if (suggestions && (suggestions.categories.length > 0 || suggestions.products.length > 0)) {
+                setIsOpen(true);
+              }
+            }}
+            type="search"
+          />
+          {isLoading ? (
+            <Loader2 className="size-4 animate-spin text-emerald-600" />
+          ) : query ? (
+            <button
+              className="text-slate-400 hover:text-slate-600 p-1"
+              onClick={() => setQuery("")}
+              type="button"
+            >
+              <X size={16} />
+            </button>
+          ) : null}
+        </div>
+        <Button className="h-11 rounded-none px-6 text-xs uppercase tracking-wider font-bold" type="submit">
+          Найти
+        </Button>
+      </form>
+
+      {/* Autocomplete Dropdown */}
+      {isOpen && suggestions && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150">
+          {suggestions.categories.length > 0 && (
+            <div className="mb-3">
+              <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Категории
+              </span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {suggestions.categories.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={ROUTES.CATEGORY(c.slug)}
+                    onClick={() => setIsOpen(false)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                  >
+                    <LayoutGrid size={13} className="text-emerald-600" />
+                    {c.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {suggestions.products.length > 0 && (
+            <div>
+              <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Товары
+              </span>
+              <div className="mt-1.5 divide-y divide-slate-100">
+                {suggestions.products.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={ROUTES.PRODUCT(p.slug)}
+                    onClick={() => setIsOpen(false)}
+                    className="group flex items-center justify-between gap-3 rounded-xl p-2.5 transition hover:bg-slate-50"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 overflow-hidden">
+                        {p.preview_image_url ? (
+                          <Image
+                            alt={p.name}
+                            className="object-contain"
+                            height={40}
+                            src={p.preview_image_url}
+                            width={40}
+                          />
+                        ) : (
+                          <ShoppingBag size={18} className="text-slate-400" />
+                        )}
+                      </div>
+                      <span className="line-clamp-1 text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition">
+                        {p.name}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-xs font-extrabold text-slate-900">
+                      {toPriceFormat(p.price)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-2 border-t border-slate-100 pt-2 text-center">
+            <button
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition"
+              onClick={handleSubmit}
+              type="button"
+            >
+              Все результаты по запросу «{query}»
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

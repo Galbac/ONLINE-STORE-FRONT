@@ -20,4 +20,6 @@ export type {
   RepeatOrderRequest,
   RepeatOrderResponse,
   RepeatOrderWarningResponse,
+  OrderTrackingResponse,
+  OrderTrackingStep,
 } from "./types";

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 
 import { cartApi } from "@/entities/cart";
 import { ROUTES } from "@/shared/config";
@@ -59,16 +59,19 @@ export const HeaderCartLink = () => {
   }, []);
 
   return (
-    <Link className="relative text-center text-sm font-semibold" href={ROUTES.CART}>
-      <span className="relative mx-auto mb-1 block w-fit">
-        <ShoppingCart size={22} />
+    <Link
+      className="group relative flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
+      href={ROUTES.CART}
+    >
+      <span className="relative mb-0.5 block">
+        <ShoppingBag size={20} className="transition-transform group-hover:scale-110" />
         {itemsCount > 0 ? (
-          <span className="bg-accent-primary text-accent-contrast absolute -top-2 -right-3 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] leading-none font-bold">
+          <span className="absolute -top-1.5 -right-2.5 flex size-4.5 min-w-4.5 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-extrabold leading-none text-white shadow-sm ring-2 ring-white">
             {formatCartCount(itemsCount)}
           </span>
         ) : null}
       </span>
-      Корзина
+      <span>Корзина</span>
     </Link>
   );
 };

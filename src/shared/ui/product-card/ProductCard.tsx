@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingBag, ShoppingCart } from "lucide-react";
 import type { ProductShortResponse } from "@/entities/product";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -20,70 +20,74 @@ export const ProductCard = ({
 }: ProductCardProps) => {
   if (variant === "list") {
     return (
-      <article className="border-border bg-bg-primary hover:shadow-soft relative grid gap-4 rounded-lg border p-4 shadow-[0_10px_28px_rgb(20_28_18/0.06)] transition sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[170px_minmax(0,1fr)_auto]">
+      <article className="group relative grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5 sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[170px_minmax(0,1fr)_auto]">
         {product.discount_percent ? (
-          <span className="bg-error absolute top-3 left-3 rounded-md px-2 py-1 text-xs font-bold text-white">
+          <span className="absolute top-3 left-3 z-10 rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm shadow-rose-500/30">
             -{product.discount_percent}%
           </span>
         ) : null}
         {favoriteControl ?? (
           <button
             aria-label={`Добавить ${product.name} в избранное`}
-            className="text-text-muted hover:text-error absolute top-3 right-3 transition"
+            className="absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
             type="button"
           >
-            <Heart size={20} />
+            <Heart size={18} />
           </button>
         )}
 
         <Link
-          className="bg-bg-secondary flex h-36 items-center justify-center rounded-lg sm:h-full sm:min-h-36"
+          className="flex h-36 items-center justify-center overflow-hidden rounded-xl bg-slate-50/80 sm:h-full sm:min-h-36"
           href={ROUTES.PRODUCT(product.slug)}
         >
           {product.preview_image_url ? (
             <Image
               alt={product.name}
-              className="h-full w-full object-contain p-3"
+              className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
               height={160}
               src={product.preview_image_url}
               width={220}
             />
           ) : (
-            <span className="bg-bg-hover text-accent-primary grid size-24 place-items-center rounded-full">
-              <ShoppingCart size={38} />
+            <span className="grid size-20 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <ShoppingBag size={32} />
             </span>
           )}
         </Link>
 
         <div className="min-w-0 pr-8">
           <Link
-            className="text-text-primary line-clamp-2 text-base font-bold"
+            className="line-clamp-2 text-base font-bold text-slate-900 transition-colors group-hover:text-emerald-700"
             href={ROUTES.PRODUCT(product.slug)}
           >
             {product.name}
           </Link>
-          <span className="text-text-secondary mt-1 block text-xs">{product.unit}</span>
-          <div className="text-text-secondary mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs">
-            <span
-              className={
-                product.is_available
-                  ? "text-success font-semibold"
-                  : "text-error font-semibold"
-              }
-            >
-              {product.stock_display}
+          <span className="mt-1 block text-xs font-medium text-slate-500">{product.unit}</span>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1.5 font-semibold">
+              <span
+                className={`size-2 rounded-full ${
+                  product.is_available ? "bg-emerald-500" : "bg-rose-400"
+                }`}
+              />
+              <span className={product.is_available ? "text-emerald-700" : "text-rose-600"}>
+                {product.stock_display}
+              </span>
             </span>
-            <span>{product.category?.name ?? "Каталог"}</span>
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
+              {product.category?.name ?? "Каталог"}
+            </span>
             <span>{getProductTypeLabel(product.product_type)}</span>
-            {product.created_at ? <span>Добавлен {formatDate(product.created_at)}</span> : null}
           </div>
         </div>
 
         <div className="flex items-end justify-between gap-3 lg:min-w-48 lg:flex-col lg:items-end lg:justify-center">
           <div className="flex flex-wrap items-baseline gap-2 lg:justify-end">
-            <span className="text-xl font-bold">{toPriceFormat(product.price)}</span>
+            <span className="text-xl font-extrabold text-slate-900">
+              {toPriceFormat(product.price)}
+            </span>
             {product.old_price ? (
-              <span className="text-text-muted text-sm line-through">
+              <span className="text-xs font-medium text-slate-400 line-through">
                 {toPriceFormat(product.old_price)}
               </span>
             ) : null}
@@ -91,10 +95,10 @@ export const ProductCard = ({
           {cartControl ?? (
             <button
               aria-label={`Добавить ${product.name} в корзину`}
-              className="bg-accent-primary hover:bg-accent-hover grid size-10 place-items-center rounded-lg text-white transition"
+              className="flex size-11 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
               type="button"
             >
-              <ShoppingCart size={18} />
+              <ShoppingCart size={19} />
             </button>
           )}
         </div>
@@ -103,77 +107,77 @@ export const ProductCard = ({
   }
 
   return (
-    <article className="border-border bg-bg-primary hover:shadow-soft relative flex min-h-[330px] flex-col rounded-lg border p-4 shadow-[0_10px_28px_rgb(20_28_18/0.06)] transition hover:-translate-y-1">
+    <article className="group relative flex min-h-[340px] flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5">
       {product.discount_percent ? (
-        <span className="bg-error absolute top-3 left-3 rounded-md px-2 py-1 text-xs font-bold text-white">
+        <span className="absolute top-3.5 left-3.5 z-10 rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm shadow-rose-500/30">
           -{product.discount_percent}%
         </span>
       ) : null}
       {favoriteControl ?? (
         <button
-          className="text-text-muted hover:text-error absolute top-3 right-3 transition"
+          className="absolute top-3.5 right-3.5 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
           type="button"
           aria-label={`Добавить ${product.name} в избранное`}
         >
-          <Heart size={20} />
+          <Heart size={18} />
         </button>
       )}
 
       <Link
-        className="mb-4 flex h-36 items-center justify-center"
+        className="mb-3.5 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-slate-50/80 p-3"
         href={ROUTES.PRODUCT(product.slug)}
       >
         {product.preview_image_url ? (
           <Image
             alt={product.name}
-            className="h-full w-full object-contain"
+            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
             height={160}
             src={product.preview_image_url}
             width={220}
           />
         ) : (
-          <span className="bg-bg-hover text-accent-primary grid size-24 place-items-center rounded-full">
-            <ShoppingCart size={38} />
+          <span className="grid size-20 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
+            <ShoppingBag size={32} />
           </span>
         )}
       </Link>
 
+      <div className="mb-2 flex items-center justify-between gap-2 text-xs">
+        <span className="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+          {product.category?.name ?? "Каталог"}
+        </span>
+        <span className="inline-flex items-center gap-1 font-medium text-slate-500">
+          <span
+            className={`size-1.5 rounded-full ${
+              product.is_available ? "bg-emerald-500" : "bg-rose-400"
+            }`}
+          />
+          {product.stock_display}
+        </span>
+      </div>
+
       <Link
-        className="text-text-primary line-clamp-2 min-h-10 text-sm font-bold"
+        className="line-clamp-2 min-h-10 text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700"
         href={ROUTES.PRODUCT(product.slug)}
       >
         {product.name}
       </Link>
-      <span className="text-text-secondary mt-1 text-xs">{product.unit}</span>
-      <div className="text-text-secondary mt-3 space-y-1 text-xs">
-        <span
-          className={
-            product.is_available
-              ? "text-success block font-semibold"
-              : "text-error block font-semibold"
-          }
-        >
-          {product.stock_display}
-        </span>
-        <span className="block">{product.category?.name ?? "Каталог"}</span>
-        <span className="block">{getProductTypeLabel(product.product_type)}</span>
-        {product.created_at ? (
-          <span className="block">Добавлен {formatDate(product.created_at)}</span>
-        ) : null}
-      </div>
+      <span className="mt-1 text-xs font-medium text-slate-400">{product.unit}</span>
 
-      <div className="mt-auto flex items-end justify-between gap-3 pt-4">
-        <div className="flex items-baseline gap-2">
-          <span className="text-xl font-bold">{toPriceFormat(product.price)}</span>
+      <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+        <div className="flex flex-col">
           {product.old_price ? (
-            <span className="text-text-muted text-sm line-through">
+            <span className="text-xs font-medium text-slate-400 line-through">
               {toPriceFormat(product.old_price)}
             </span>
           ) : null}
+          <span className="text-lg font-extrabold tracking-tight text-slate-900">
+            {toPriceFormat(product.price)}
+          </span>
         </div>
         {cartControl ?? (
           <button
-            className="bg-accent-primary hover:bg-accent-hover grid size-10 place-items-center rounded-lg text-white transition"
+            className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
             type="button"
             aria-label={`Добавить ${product.name} в корзину`}
           >
@@ -189,17 +193,3 @@ const getProductTypeLabel = (productType: string): string => {
   return productType === "weight" ? "Весовой товар" : "Штучный товар";
 };
 
-const formatDate = (value: string): string => {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "Europe/Moscow",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-};

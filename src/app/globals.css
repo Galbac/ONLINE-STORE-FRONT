@@ -2,35 +2,42 @@
 
 @theme {
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f7f8f5;
-  --color-bg-hover: #edf6ea;
-  --color-border: #e4e7df;
-  --color-text-primary: #17181d;
-  --color-text-secondary: #53565f;
-  --color-text-muted: #858a92;
-  --color-accent-primary: #15910d;
-  --color-accent-hover: #1faa15;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-card: #ffffff;
+  --color-bg-hover: #f0fdf4;
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-accent-primary: #059669;
+  --color-accent-hover: #047857;
+  --color-accent-light: #ecfdf5;
   --color-accent-contrast: #ffffff;
-  --color-success: #15910d;
+  --color-success: #10b981;
   --color-warning: #f59e0b;
-  --color-error: #ef2222;
-  --shadow-soft: 0 14px 42px rgb(28 43 22 / 0.09);
+  --color-error: #ef4444;
+  --shadow-soft: 0 10px 30px -5px rgb(15 23 42 / 0.06), 0 4px 12px -2px rgb(15 23 42 / 0.03);
+  --shadow-card: 0 2px 10px -2px rgb(15 23 42 / 0.05), 0 1px 4px -1px rgb(15 23 42 / 0.02);
+  --shadow-card-hover: 0 14px 34px -4px rgb(5 150 105 / 0.12), 0 4px 14px -2px rgb(15 23 42 / 0.05);
+  --radius-card: 16px;
 }
 
 :root {
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f7f8f5;
-  --color-bg-hover: #edf6ea;
-  --color-border: #e4e7df;
-  --color-text-primary: #17181d;
-  --color-text-secondary: #53565f;
-  --color-text-muted: #858a92;
-  --color-accent-primary: #15910d;
-  --color-accent-hover: #1faa15;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-hover: #f0fdf4;
+  --color-border: #e2e8f0;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-accent-primary: #059669;
+  --color-accent-hover: #047857;
+  --color-accent-light: #ecfdf5;
   --color-accent-contrast: #ffffff;
-  --color-success: #15910d;
+  --color-success: #10b981;
   --color-warning: #f59e0b;
-  --color-error: #ef2222;
+  --color-error: #ef4444;
 }
 
 * {
@@ -39,23 +46,38 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   min-width: 360px;
   margin: 0;
-  background: var(--color-bg-primary);
+  background: var(--color-bg-secondary);
   color: var(--color-text-primary);
   font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
     Arial,
-    Helvetica Neue,
     sans-serif;
 }
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+}
+
+/* Glassmorphism utility */
+.glass-header {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .price-range-input {
@@ -73,57 +95,36 @@ select {
   height: 22px;
   width: 22px;
   appearance: none;
-  border: 4px solid var(--color-accent-primary);
+  border: 3px solid #059669;
   border-radius: 999px;
   background: #ffffff;
-  box-shadow: 0 5px 16px rgb(21 145 13 / 0.24);
+  box-shadow: 0 4px 12px rgb(5 150 105 / 0.3);
   cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.price-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
 }
 
 .price-range-input::-moz-range-thumb {
   pointer-events: auto;
   height: 22px;
   width: 22px;
-  border: 4px solid var(--color-accent-primary);
+  border: 3px solid #059669;
   border-radius: 999px;
   background: #ffffff;
-  box-shadow: 0 5px 16px rgb(21 145 13 / 0.24);
+  box-shadow: 0 4px 12px rgb(5 150 105 / 0.3);
   cursor: pointer;
+  transition: transform 0.15s ease;
 }
 
 .container {
-  width: min(100% - 32px, 1440px);
+  width: min(100% - 32px, 1400px);
   margin-inline: auto;
 }
 
-.hero-fruit {
-  background:
-    linear-gradient(
-      90deg,
-      rgb(255 255 255 / 0.96) 0%,
-      rgb(255 255 255 / 0.84) 38%,
-      rgb(255 255 255 / 0) 62%
-    ),
-    url("/hero-fruits.jpg");
-  background-position: center;
-  background-size: cover;
-}
-
-@media (max-width: 640px) {
-  .hero-fruit {
-    background:
-      linear-gradient(
-        180deg,
-        rgb(255 255 255 / 0.96) 0%,
-        rgb(255 255 255 / 0.9) 48%,
-        rgb(255 255 255 / 0.54) 100%
-      ),
-      url("/hero-fruits.jpg");
-    background-position: 58% center;
-  }
-}
-
-/* iOS PWA Safe Area insets and touch enhancements */
+/* iOS PWA Safe Area insets */
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sar: env(safe-area-inset-right, 0px);
@@ -139,7 +140,6 @@ body {
   touch-action: manipulation;
 }
 
-/* Отступ снизу для контента, чтобы не перекрывался нижней мобильной навигацией */
 .mobile-bottom-padding {
   padding-bottom: calc(72px + var(--sab));
 }

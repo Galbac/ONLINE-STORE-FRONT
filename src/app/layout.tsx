@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { STORE_INFO } from "@/shared/config";
-import { CookieBanner } from "@/shared/ui";
+import { CookieBanner, PwaInstallPrompt } from "@/shared/ui";
 import { BottomNav } from "@/widgets/bottom-nav";
 
 import "./globals.css";
@@ -49,6 +49,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         {children}
         <BottomNav />
         <CookieBanner />
+        <PwaInstallPrompt />
       </body>
     </html>
   );
@@ -60,5 +61,5 @@ export const viewport = {
   maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
-  themeColor: "#15910d",
+  themeColor: "#059669",
 };

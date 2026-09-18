@@ -1,5 +1,7 @@
 "use client";
 
+import { captureClientException } from "@/shared/lib/sentry";
+
 import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
@@ -15,6 +17,7 @@ interface ErrorProps {
 export default function GlobalError({ error, reset }: ErrorProps) {
   useEffect(() => {
     console.error("Application runtime error:", error);
+    captureClientException(error, { digest: error.digest });
   }, [error]);
 
   return (

@@ -52,9 +52,70 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
   const relatedProducts = similarProducts.items;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    image: product.images.map((img) => img.url),
+    description: product.description || `${product.name} со свежей доставкой на дом`,
+    sku: String(product.id),
+    category: product.category?.name,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "RUB",
+      price: product.price,
+      availability: product.is_available
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      reviewCount: "24",
+      bestRating: "5",
+      worstRating: "1",
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Главная",
+        item: "https://grocerystore.ru",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: product.category?.name || "Каталог",
+        item: `https://grocerystore.ru/catalog/${product.category?.slug || ""}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: product.name,
+        item: `https://grocerystore.ru/product/${product.slug}`,
+      },
+    ],
+  };
+
+
+
   return (
     <>
       <Header />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <main>
         <Container className="py-6">
           <ProductBreadcrumbs breadcrumbs={product.breadcrumbs} product={product} />

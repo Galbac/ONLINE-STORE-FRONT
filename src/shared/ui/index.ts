@@ -14,3 +14,4 @@ export { ProductCard } from "./product-card";
 export { Section } from "./section";
 export { ViewModeToggle } from "./view-mode-toggle";
 export type { ProductViewMode } from "./view-mode-toggle";
+export { PwaInstallPrompt } from "./pwa-install";

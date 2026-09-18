@@ -96,6 +96,9 @@ export const API_ENDPOINTS = {
     LIST: "/api/products",
     SEARCH: "/api/products/search",
     SEARCH_SUGGESTIONS: (q: string): string => `/api/products/search/suggestions?q=${encodeURIComponent(q)}`,
+    POPULAR_SEARCHES: "/api/products/search/popular",
+    SUBSCRIBE_STOCK: (productId: number): string => `/api/products/${productId}/subscribe-stock`,
+    RECOMMENDATIONS: (productId: number): string => `/api/products/${productId}/recommendations`,
     BY_ID: (productId: number): string => `/api/products/${productId}`,
     BY_SLUG: (slug: string): string => `/api/products/slug/${slug}`,
     SIMILAR: (productId: number): string => `/api/products/${productId}/similar`,
@@ -152,6 +155,7 @@ export const API_ENDPOINTS = {
     REPEAT: (orderId: number): string => `/api/orders/${orderId}/repeat`,
     STATUS: (orderId: number): string => `/api/orders/${orderId}/status`,
     TRACKING: (orderId: number): string => `/api/orders/${orderId}/tracking`,
+    RECEIPT: (orderId: number): string => `/api/orders/${orderId}/receipt`,
   },
   BANNER: {
     LIST: "/api/banners",

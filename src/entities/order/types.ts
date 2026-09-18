@@ -32,6 +32,13 @@ export interface OrderCreateRequest {
   delivery_time_slot_id?: number | null;
   comment?: string | null;
   use_points?: number | null;
+  leave_at_door?: boolean;
+  dont_ring_doorbell?: boolean;
+  substitution_policy?: "call" | "replace" | "remove";
+  apartment?: string | null;
+  entrance?: string | null;
+  floor?: string | null;
+  intercom?: string | null;
 }
 
 export interface OrderCreateResponse {

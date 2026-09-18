@@ -31,10 +31,20 @@ export const OrderTrackingTimeline = ({ orderId }: OrderTrackingTimelineProps) =
       }
     };
     void load();
+    // Live polling every 12 seconds
+    const interval = setInterval(() => {
+      if (tracking && (tracking.current_status === "delivered" || tracking.current_status === "cancelled")) {
+        return;
+      }
+      void load();
+    }, 12000);
+
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
-  }, [orderId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId, tracking?.current_status]);
 
   if (isLoading || !tracking) {
     return (

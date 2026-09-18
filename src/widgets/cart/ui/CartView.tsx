@@ -18,6 +18,7 @@ import {
   Truck,
   X,
 } from "lucide-react";
+import { apiClient } from "@/shared/api";
 import {
   cartApi,
   type CartItemResponse,
@@ -48,6 +49,17 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
   const [cart, setCart] = useState(initialCart);
   const [summary, setSummary] = useState(initialSummary);
   const [promoCode, setPromoCode] = useState(initialSummary.promo_code ?? "");
+  const [promoEnabled, setPromoEnabled] = useState(true);
+
+  useEffect(() => {
+    apiClient.get<{ promo_codes_enabled?: boolean }>("/api/settings")
+      .then((res: { promo_codes_enabled?: boolean }) => {
+        if (typeof res.promo_codes_enabled === "boolean") {
+          setPromoEnabled(res.promo_codes_enabled);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -257,17 +269,19 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                 ) : null}
               </section>
 
-              <PromoPanel
-                appliedPromoCode={appliedPromoCode}
-                disabled={isBusy}
-                message={promoMessage}
-                pendingAction={pendingAction}
-                promoCode={promoCode}
-                onApply={handlePromoApply}
-                onCheck={handlePromoCheck}
-                onPromoCodeChange={setPromoCode}
-                onRemove={handlePromoRemove}
-              />
+              {promoEnabled ? (
+                <PromoPanel
+                  appliedPromoCode={appliedPromoCode}
+                  disabled={isBusy}
+                  message={promoMessage}
+                  pendingAction={pendingAction}
+                  promoCode={promoCode}
+                  onApply={handlePromoApply}
+                  onCheck={handlePromoCheck}
+                  onPromoCodeChange={setPromoCode}
+                  onRemove={handlePromoRemove}
+                />
+              ) : null}
             </div>
 
             <aside className="space-y-5 xl:sticky xl:top-5 xl:self-start">

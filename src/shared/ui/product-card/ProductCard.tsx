@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingBag, ShoppingCart, Star } from "lucide-react";
 import type { ProductShortResponse } from "@/entities/product";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -143,9 +143,15 @@ export const ProductCard = ({
       </Link>
 
       <div className="mb-2 flex items-center justify-between gap-2 text-xs">
-        <span className="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-          {product.category?.name ?? "Каталог"}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+            {product.category?.name ?? "Каталог"}
+          </span>
+          <span className="inline-flex items-center gap-0.5 text-amber-500 font-bold text-[11px]">
+            <Star size={11} className="fill-amber-400 text-amber-400" />
+            4.9
+          </span>
+        </div>
         <span className="inline-flex items-center gap-1 font-medium text-slate-500">
           <span
             className={`size-1.5 rounded-full ${

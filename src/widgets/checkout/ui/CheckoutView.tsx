@@ -86,6 +86,13 @@ export const CheckoutView = ({
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
   const [usePoints, setUsePoints] = useState<number>(0);
+  const [apartment, setApartment] = useState("");
+  const [entrance, setEntrance] = useState("");
+  const [floor, setFloor] = useState("");
+  const [intercom, setIntercom] = useState("");
+  const [leaveAtDoor, setLeaveAtDoor] = useState(false);
+  const [dontRingDoorbell, setDontRingDoorbell] = useState(false);
+  const [substitutionPolicy, setSubstitutionPolicy] = useState<"call" | "replace" | "remove">("call");
   const [selectedAddressId, setSelectedAddressId] = useState(defaultAddress?.id ?? null);
   const [selectedPickupPointId, setSelectedPickupPointId] = useState(
     defaultPickupPoint?.id ?? null,
@@ -145,6 +152,13 @@ export const CheckoutView = ({
       delivery_time_slot_id: selectedSlot?.id ?? null,
       comment: null,
       use_points: usePoints > 0 ? usePoints : 0,
+      leave_at_door: leaveAtDoor,
+      dont_ring_doorbell: dontRingDoorbell,
+      substitution_policy: substitutionPolicy,
+      apartment: apartment.trim() || null,
+      entrance: entrance.trim() || null,
+      floor: floor.trim() || null,
+      intercom: intercom.trim() || null,
     };
 
     const minAmount = deliveryCalculation.min_order_amount 
@@ -277,11 +291,101 @@ export const CheckoutView = ({
               title={deliveryType === "delivery" ? "Адрес доставки" : "Точка самовывоза"}
             >
               {deliveryType === "delivery" ? (
+                <>
                 <AddressSelector
                   addresses={addresses.items}
                   selectedAddressId={selectedAddressId}
                   onSelect={setSelectedAddressId}
                 />
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-4">
+                  <h4 className="text-xs font-bold text-slate-800">Пожелания к доставке и сборке</h4>
+                  <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Кв. / Офис</label>
+                      <input
+                        className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
+                        placeholder="12"
+                        value={apartment}
+                        onChange={(e) => setApartment(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Подъезд</label>
+                      <input
+                        className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
+                        placeholder="1"
+                        value={entrance}
+                        onChange={(e) => setEntrance(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Этаж</label>
+                      <input
+                        className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
+                        placeholder="3"
+                        value={floor}
+                        onChange={(e) => setFloor(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Домофон</label>
+                      <input
+                        className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
+                        placeholder="12К"
+                        value={intercom}
+                        onChange={(e) => setIntercom(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 pt-1">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                        checked={leaveAtDoor}
+                        onChange={(e) => setLeaveAtDoor(e.target.checked)}
+                      />
+                      <span>Оставить заказ у двери</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                        checked={dontRingDoorbell}
+                        onChange={(e) => setDontRingDoorbell(e.target.checked)}
+                      />
+                      <span>Не звонить в звонок (спит ребёнок)</span>
+                    </label>
+                  </div>
+
+                  <div className="pt-1">
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1.5">
+                      Если товара не окажется на складе:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: "call", label: "Позвонить и согласовать" },
+                        { value: "replace", label: "Заменить на свежий" },
+                        { value: "remove", label: "Убрать из заказа" },
+                      ].map((p) => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => setSubstitutionPolicy(p.value as any)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-bold transition border ${
+                            substitutionPolicy === p.value
+                              ? "bg-emerald-600 text-white border-emerald-600"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                </>
               ) : (
                 <PickupSelector
                   pickupPoints={pickupPoints.items}

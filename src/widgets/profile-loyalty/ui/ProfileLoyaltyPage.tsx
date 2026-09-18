@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, Send, Share2, Sparkles } from "lucide-react";
 import { apiClient } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { Button, Container, getStoredAccessToken } from "@/shared/ui";
@@ -33,6 +33,8 @@ interface TelegramConnectResponse {
 export const ProfileLoyaltyPage = () => {
   const [loyalty, setLoyalty] = useState<LoyaltyResponse | null>(null);
   const [tgConnected, setTgConnected] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [referral, setReferral] = useState<{ code: string; link: string; reward_amount: number } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const loadData = async () => {
@@ -40,16 +42,22 @@ export const ProfileLoyaltyPage = () => {
     if (!token) return;
 
     try {
-      const [loyaltyData, tgStatus] = await Promise.all([
+      const [loyaltyData, tgStatus, refData] = await Promise.all([
         apiClient.get<LoyaltyResponse>("/api/profile/loyalty", undefined, {
           Authorization: `Bearer ${token}`,
         }),
         apiClient.get<{ is_connected: boolean }>("/api/profile/telegram/status", undefined, {
           Authorization: `Bearer ${token}`,
         }),
+        apiClient.get<{ code: string; link: string; reward_amount: number }>("/api/profile/referral", undefined, {
+          Authorization: `Bearer ${token}`,
+        }).catch(() => null),
       ]);
       setLoyalty(loyaltyData);
       setTgConnected(tgStatus.is_connected);
+      if (refData) {
+        setReferral(refData);
+      }
     } catch {
       // Fallback
     }
@@ -150,6 +158,40 @@ export const ProfileLoyaltyPage = () => {
               </Button>
             )}
           </div>
+
+          {/* Referral card */}
+          {referral && (
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-wrap items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600">
+                  <Share2 size={22} />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Пригласите друга — получите {referral.reward_amount} бонусов</h3>
+                  <p className="text-xs text-slate-500">
+                    Ваш друг получит скидку на первый заказ, а вы — {referral.reward_amount} бонусов после его доставки.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="rounded-xl bg-slate-100 px-3.5 py-2 font-mono text-xs font-bold text-slate-800">
+                  {referral.code}
+                </span>
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(referral.link);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  variant="secondary"
+                  className="h-9 px-3 text-xs gap-1.5"
+                >
+                  <Copy size={13} /> {copied ? "Скопировано!" : "Скопировать ссылку"}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Transactions history */}
           <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">

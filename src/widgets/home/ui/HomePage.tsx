@@ -25,7 +25,7 @@ import { discountApi, type DiscountShortResponse } from "@/entities/discount";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductShortResponse } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
-import { fallbackOnUnauthorized } from "@/shared/api";
+import { apiClient, fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard, Section } from "@/shared/ui";
@@ -44,6 +44,7 @@ export const HomePage = async () => {
     delivery,
     cart,
     favorites,
+    banners,
   ] = await Promise.all([
     categoryApi.getTree(),
     categoryApi.getList(),
@@ -57,6 +58,7 @@ export const HomePage = async () => {
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
       emptyFavoritesResponse,
     ),
+    apiClient.get<{ items: any[] }>("/api/banners").catch(() => ({ items: [] })),
   ]);
 
   const visibleCategories: CategoryShortResponse[] =
@@ -71,6 +73,12 @@ export const HomePage = async () => {
         <Container className="pt-6">
           <Hero />
         </Container>
+
+        {banners?.items && banners.items.length > 0 ? (
+          <Container>
+            <PromoBanners banners={banners.items} />
+          </Container>
+        ) : null}
 
         <Container>
           <CategorySection categories={visibleCategories.slice(0, 8)} />
@@ -438,6 +446,43 @@ const DeliveryBlock = ({
           <ArrowRight size={16} />
         </Link>
       </div>
+    </section>
+  );
+};
+
+interface BannerItem {
+  id: number;
+  title: string;
+  subtitle?: string | null;
+  badge?: string | null;
+  link?: string | null;
+  bg_color?: string;
+}
+
+const PromoBanners = ({ banners }: { banners: BannerItem[] }) => {
+  return (
+    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {banners.slice(0, 3).map((b) => (
+        <Link
+          key={b.id}
+          href={b.link || "/catalog"}
+          className="group relative flex flex-col justify-between overflow-hidden rounded-3xl p-6 text-white shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+          style={{ backgroundColor: b.bg_color || "#059669" }}
+        >
+          <div>
+            {b.badge ? (
+              <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur-md">
+                {b.badge}
+              </span>
+            ) : null}
+            <h3 className="mt-3 text-xl font-extrabold leading-tight">{b.title}</h3>
+            {b.subtitle ? <p className="mt-1 text-xs text-white/80">{b.subtitle}</p> : null}
+          </div>
+          <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white group-hover:translate-x-1 transition-transform">
+            Смотреть акцию <ArrowRight size={14} />
+          </span>
+        </Link>
+      ))}
     </section>
   );
 };

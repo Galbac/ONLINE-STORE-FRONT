@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, LayoutGrid, Loader2, Search, ShoppingBag, X } from "lucide-react";
+import { ArrowRight, LayoutGrid, Loader2, Search, ShoppingBag, Sparkles, X } from "lucide-react";
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -33,6 +33,18 @@ interface SearchSuggestionsResponse {
 interface ProductSearchProps {
   defaultValue?: string | undefined;
 }
+
+
+const POPULAR_SEARCHES = [
+  "Фрукты и ягоды",
+  "Молоко фермерское",
+  "Сыр твердый",
+  "Свежий хлеб",
+  "Мясо и птица",
+  "Кофе зерновой",
+  "Авокадо Хасс",
+  "Без сахара",
+];
 
 export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
   const router = useRouter();
@@ -111,11 +123,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
             placeholder="Найти среди 5000+ свежих продуктов..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => {
-              if (suggestions && (suggestions.categories.length > 0 || suggestions.products.length > 0)) {
-                setIsOpen(true);
-              }
-            }}
+            onFocus={() => setIsOpen(true)}
             type="search"
           />
           {isLoading ? (
@@ -134,6 +142,33 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
           Найти
         </Button>
       </form>
+
+
+      {/* Popular searches when empty and focused */}
+      {isOpen && !query.trim() && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2.5">
+            <Sparkles size={12} className="text-amber-500" />
+            Часто ищут
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {POPULAR_SEARCHES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => {
+                  setQuery(item);
+                  router.push(`${ROUTES.SEARCH}?q=${encodeURIComponent(item)}`);
+                  setIsOpen(false);
+                }}
+                className="rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Autocomplete Dropdown */}
       {isOpen && suggestions && (

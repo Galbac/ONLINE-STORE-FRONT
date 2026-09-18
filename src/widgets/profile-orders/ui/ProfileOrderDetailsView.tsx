@@ -10,6 +10,7 @@ import {
   Headphones,
   Info,
   Percent,
+  Receipt,
   RefreshCcw,
   Store,
   Tag,
@@ -200,6 +201,15 @@ export const ProfileOrderDetailsView = ({
             <p className="text-text-secondary mt-4">{formatDateTime(order.created_at)}</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+            <a
+              href={`/api/orders/${order.id}/receipt`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition active:scale-95"
+            >
+              <Receipt size={16} className="text-emerald-600" />
+              Чек 54-ФЗ
+            </a>
             <Button
               className="gap-2"
               disabled={isPending}

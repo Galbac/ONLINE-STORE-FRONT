@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { cn, ROUTES } from "@/shared/config";
@@ -23,7 +23,7 @@ const initialValues: RegisterFormValues = {
   email: "",
   password: "",
   confirmPassword: "",
-  agreement: false,
+  agreement: true,
 };
 
 export const RegisterForm = () => {
@@ -45,7 +45,6 @@ export const RegisterForm = () => {
     event.preventDefault();
 
     const validationMessage = validateForm(values);
-
     if (validationMessage) {
       setErrorMessage(validationMessage);
       setSuccessMessage(null);
@@ -58,10 +57,10 @@ export const RegisterForm = () => {
         setSuccessMessage(null);
 
         const response = await authApi.register({
-          name: values.name.trim(),
-          phone: normalizePhoneNumber(values.phone),
-          password: values.password,
           email: values.email.trim() || null,
+          name: values.name.trim(),
+          password: values.password,
+          phone: normalizePhoneNumber(values.phone),
         });
 
         storeAuthTokens({
@@ -72,252 +71,211 @@ export const RegisterForm = () => {
 
         await authApi.getMe(response.access_token);
 
-        setSuccessMessage("Аккаунт создан. Вы вошли в систему.");
+        setSuccessMessage("Регистрация успешна! Добро пожаловать.");
         setValues(initialValues);
+        window.location.href = ROUTES.PROFILE;
       } catch {
-        setErrorMessage("Не удалось зарегистрироваться. Проверьте данные или попробуйте позже.");
+        setErrorMessage("Не удалось зарегистрироваться. Пользователь с таким телефоном или email уже существует.");
       }
     });
   };
 
   return (
     <form
-      className="border-border bg-bg-primary space-y-6 rounded-lg border p-6 shadow-[0_14px_42px_rgb(28_43_22/0.08)] md:p-10"
+      className="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-10"
       onSubmit={handleSubmit}
     >
-      <FormField label="Имя">
-        <TextInput
-          autoComplete="name"
-          icon={<UserRound size={20} />}
-          name="name"
-          placeholder="Введите ваше имя"
-          type="text"
-          value={values.name}
-          onChange={(value) => handleChange("name", value)}
-        />
-      </FormField>
-
-      <FormField label="Телефон">
-        <TextInput
-          autoComplete="tel"
-          icon={<Phone size={20} />}
-          name="phone"
-          placeholder="+7 (___) ___-__-__"
-          type="tel"
-          value={values.phone}
-          onChange={(value) => handleChange("phone", value)}
-        />
-      </FormField>
-
-      <FormField label="Email">
-        <TextInput
-          autoComplete="email"
-          icon={<Mail size={20} />}
-          name="email"
-          placeholder="Введите ваш email"
-          type="email"
-          value={values.email}
-          onChange={(value) => handleChange("email", value)}
-        />
-      </FormField>
-
-      <FormField label="Пароль">
-        <PasswordInput
-          autoComplete="new-password"
-          name="password"
-          placeholder="Введите пароль"
-          showPassword={showPassword}
-          value={values.password}
-          onChange={(value) => handleChange("password", value)}
-          onToggleVisibility={() => setShowPassword((isVisible) => !isVisible)}
-        />
-      </FormField>
-
-      <FormField label="Подтверждение пароля">
-        <PasswordInput
-          autoComplete="new-password"
-          name="confirmPassword"
-          placeholder="Повторите пароль"
-          showPassword={showConfirmPassword}
-          value={values.confirmPassword}
-          onChange={(value) => handleChange("confirmPassword", value)}
-          onToggleVisibility={() => setShowConfirmPassword((isVisible) => !isVisible)}
-        />
-      </FormField>
-
-      <label className="flex items-start gap-3 text-sm leading-6">
-        <input
-          className="border-border mt-1 size-5 rounded accent-[var(--color-accent-primary)]"
-          checked={values.agreement}
-          type="checkbox"
-          onChange={(event) => handleChange("agreement", event.target.checked)}
-        />
-        <span>
-          Я даю{" "}
-          <Link className="text-accent-primary font-semibold" href={ROUTES.PERSONAL_DATA_CONSENT}>
-            согласие на обработку персональных данных
-          </Link>
-          , принимаю{" "}
-          <Link className="text-accent-primary font-semibold" href={ROUTES.PRIVACY}>
-            политику обработки персональных данных
-          </Link>{" "}
-          и{" "}
-          <Link className="text-accent-primary font-semibold" href={ROUTES.OFFER}>
-            публичную оферту
-          </Link>
-        </span>
-      </label>
-
-      {errorMessage ? (
-        <p className="text-error rounded-lg bg-red-50 px-4 py-3 text-sm">{errorMessage}</p>
-      ) : null}
-      {successMessage ? (
-        <p className="text-success rounded-lg bg-green-50 px-4 py-3 text-sm">{successMessage}</p>
-      ) : null}
-
-      <button
-        className={cn(
-          "bg-accent-primary text-accent-contrast hover:bg-accent-hover h-14 w-full rounded-lg text-base font-bold transition disabled:cursor-not-allowed disabled:opacity-65",
-          isPending && "cursor-wait opacity-75",
-        )}
-        type="submit"
-        disabled={isPending}
-      >
-        Зарегистрироваться
-      </button>
-
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 text-center">
-        <span className="bg-border h-px" />
-        <span className="text-text-secondary text-sm">Уже есть аккаунт?</span>
-        <span className="bg-border h-px" />
+      <div>
+        <h2 className="text-xl font-bold text-slate-900">Создание аккаунта</h2>
+        <p className="mt-1 text-xs text-slate-500">Заполните данные для начисления кэшбэка и быстрой доставки</p>
       </div>
 
-      <Link
-        className="text-accent-primary hover:text-accent-hover block text-center text-lg font-bold"
-        href={ROUTES.LOGIN}
-      >
-        Войти
-      </Link>
-    </form>
-  );
-};
+      <div className="space-y-3.5">
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Ваше имя <span className="text-rose-500">*</span>
+          </label>
+          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+            <UserRound size={17} className="text-slate-400 mr-2.5" />
+            <input
+              type="text"
+              required
+              name="name"
+              placeholder="Иван Иванов"
+              value={values.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+            />
+          </div>
+        </div>
 
-interface FormFieldProps {
-  label: string;
-  children: React.ReactNode;
-}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Номер телефона <span className="text-rose-500">*</span>
+          </label>
+          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+            <Phone size={17} className="text-slate-400 mr-2.5" />
+            <input
+              type="tel"
+              required
+              name="phone"
+              placeholder="+7 (999) 000-00-00"
+              value={values.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+              className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+            />
+          </div>
+        </div>
 
-const FormField = ({ children, label }: FormFieldProps) => {
-  return (
-    <label className="block">
-      <span className="mb-3 block text-sm font-bold">{label}</span>
-      {children}
-    </label>
-  );
-};
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Электронная почта
+          </label>
+          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+            <Mail size={17} className="text-slate-400 mr-2.5" />
+            <input
+              type="email"
+              name="email"
+              placeholder="ivan@example.com"
+              value={values.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+            />
+          </div>
+        </div>
 
-interface TextInputProps {
-  autoComplete: string;
-  icon: React.ReactNode;
-  name: string;
-  placeholder: string;
-  type: "email" | "tel" | "text";
-  value: string;
-  onChange: (value: string) => void;
-}
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Пароль <span className="text-rose-500">*</span>
+            </label>
+            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+              <LockKeyhole size={17} className="text-slate-400 mr-2.5" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                name="password"
+                placeholder="Минимум 8 знаков"
+                value={values.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
 
-const TextInput = ({
-  autoComplete,
-  icon,
-  name,
-  onChange,
-  placeholder,
-  type,
-  value,
-}: TextInputProps) => {
-  return (
-    <span className="border-border focus-within:border-accent-primary flex h-14 items-center gap-3 rounded-lg border px-4 transition">
-      <input
-        className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
-        autoComplete={autoComplete}
-        name={name}
-        placeholder={placeholder}
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      <span className="text-text-muted shrink-0">{icon}</span>
-    </span>
-  );
-};
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Повторите пароль <span className="text-rose-500">*</span>
+            </label>
+            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+              <LockKeyhole size={17} className="text-slate-400 mr-2.5" />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                required
+                name="confirmPassword"
+                placeholder="Повторите"
+                value={values.confirmPassword}
+                onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((p) => !p)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-interface PasswordInputProps {
-  autoComplete: string;
-  name: string;
-  placeholder: string;
-  showPassword: boolean;
-  value: string;
-  onChange: (value: string) => void;
-  onToggleVisibility: () => void;
-}
+      <div className="flex items-start gap-2.5">
+        <input
+          type="checkbox"
+          id="reg-agreement"
+          required
+          checked={values.agreement}
+          onChange={(e) => handleChange("agreement", e.target.checked)}
+          className="mt-1 size-4 rounded border-slate-300 text-emerald-600 accent-emerald-600 cursor-pointer"
+        />
+        <label htmlFor="reg-agreement" className="text-xs text-slate-500 leading-normal cursor-pointer select-none">
+          Я согласен с{" "}
+          <Link href={ROUTES.PERSONAL_DATA_CONSENT} className="text-emerald-600 underline">
+            условиями обработки персональных данных
+          </Link>{" "}
+          и{" "}
+          <Link href={ROUTES.OFFER} className="text-emerald-600 underline">
+            публичной офертой
+          </Link>
+        </label>
+      </div>
 
-const PasswordInput = ({
-  autoComplete,
-  name,
-  onChange,
-  onToggleVisibility,
-  placeholder,
-  showPassword,
-  value,
-}: PasswordInputProps) => {
-  return (
-    <span className="border-border focus-within:border-accent-primary flex h-14 items-center gap-3 rounded-lg border px-4 transition">
-      <input
-        className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
-        autoComplete={autoComplete}
-        name={name}
-        placeholder={placeholder}
-        type={showPassword ? "text" : "password"}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      <LockKeyhole className="text-text-muted shrink-0" size={19} />
+      {errorMessage ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-700 animate-in fade-in-0 duration-150">
+          {errorMessage}
+        </div>
+      ) : null}
+
+      {successMessage ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-700 animate-in fade-in-0 duration-150">
+          {successMessage}
+        </div>
+      ) : null}
+
       <button
-        className="text-text-muted hover:text-text-primary shrink-0 transition"
-        type="button"
-        onClick={onToggleVisibility}
-        aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
+        type="submit"
+        disabled={isPending}
+        className={cn(
+          "flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-xs font-extrabold uppercase tracking-wider text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/30 active:scale-[0.99] transition-all disabled:opacity-60",
+          isPending && "cursor-wait opacity-75",
+        )}
       >
-        {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+        {isPending ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            <span>Регистрация...</span>
+          </>
+        ) : (
+          <>
+            <span>Зарегистрироваться</span>
+            <ArrowRight size={15} />
+          </>
+        )}
       </button>
-    </span>
+
+      <div className="border-t border-slate-100 pt-4 text-center text-xs text-slate-500">
+        Уже есть аккаунт?{" "}
+        <Link href={ROUTES.LOGIN} className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
+          Войти
+        </Link>
+      </div>
+    </form>
   );
 };
 
 const validateForm = (values: RegisterFormValues): string | null => {
   if (values.name.trim().length < 2) {
-    return "Введите имя не короче 2 символов.";
+    return "Имя должно содержать минимум 2 символа.";
   }
-
-  if (values.phone.trim().length < 5) {
-    return "Введите телефон.";
+  if (!values.phone.trim()) {
+    return "Введите корректный номер телефона.";
   }
-
-  if (values.email.trim() && !values.email.includes("@")) {
-    return "Введите корректный email.";
-  }
-
   if (values.password.length < 8) {
-    return "Пароль должен быть не короче 8 символов.";
+    return "Пароль должен содержать не менее 8 символов.";
   }
-
   if (values.password !== values.confirmPassword) {
     return "Пароли не совпадают.";
   }
-
   if (!values.agreement) {
-    return "Подтвердите согласие на обработку персональных данных.";
+    return "Необходимо принять соглашение на обработку персональных данных.";
   }
-
   return null;
 };

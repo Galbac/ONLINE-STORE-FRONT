@@ -1,144 +1,69 @@
 import Link from "next/link";
-import {
-  Bell,
-  ClipboardList,
-  Heart,
-  Percent,
-  ShoppingBasket,
-  Truck,
-  BadgeCheck,
-  Headphones,
-} from "lucide-react";
 import { RegisterForm } from "@/features/register-user";
 import { ROUTES } from "@/shared/config";
 import { Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
-
-const registrationBenefits = [
-  {
-    title: "Быстрый заказ",
-    text: "Оформляйте заказы быстрее с сохранёнными данными",
-    icon: ShoppingBasket,
-  },
-  {
-    title: "Избранное",
-    text: "Сохраняйте любимые товары и находите их в один клик",
-    icon: Heart,
-  },
-  {
-    title: "История заказов",
-    text: "Отслеживайте статусы заказов и просматривайте историю покупок",
-    icon: ClipboardList,
-  },
-  {
-    title: "Акции и скидки",
-    text: "Получайте персональные предложения и специальные скидки",
-    icon: Percent,
-  },
-  {
-    title: "Уведомления",
-    text: "Будьте в курсе статусов заказов, акций и новинок",
-    icon: Bell,
-  },
-] as const;
-
-const serviceBenefits = [
-  {
-    title: "Качество продуктов",
-    text: "Только свежие и проверенные товары каждый день",
-    icon: BadgeCheck,
-  },
-  {
-    title: "Доставка",
-    text: "Быстрая доставка на дом и в удобное время",
-    icon: Truck,
-  },
-  {
-    title: "Выгодные цены",
-    text: "Лучшие предложения и акции для вас",
-    icon: Percent,
-  },
-  {
-    title: "Поддержка 24/7",
-    text: "Мы всегда на связи и готовы помочь",
-    icon: Headphones,
-  },
-] as const;
+import { Sparkles, Gift, ShieldCheck } from "lucide-react";
 
 export const RegisterPage = () => {
   return (
     <>
       <Header />
-      <main>
-        <Container className="py-6">
-          <nav className="text-text-secondary mb-10 flex items-center gap-2 text-sm">
-            <Link className="hover:text-accent-primary" href={ROUTES.HOME}>
+      <main className="min-h-[75vh] py-10 bg-gradient-to-b from-slate-50 to-white">
+        <Container className="max-w-5xl">
+          <nav className="text-slate-400 mb-8 flex items-center gap-2 text-xs font-semibold">
+            <Link className="hover:text-emerald-700 transition" href={ROUTES.HOME}>
               Главная
             </Link>
             <span>/</span>
-            <span>Регистрация</span>
+            <span className="text-slate-700">Регистрация</span>
           </nav>
 
-          <section>
-            <h1 className="text-text-primary text-4xl font-bold">Регистрация</h1>
-            <p className="text-text-secondary mt-4 text-base">
-              Создайте аккаунт, чтобы делать покупки, сохранять избранное и отслеживать заказы.
-            </p>
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+            <RegisterForm />
 
-            <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.82fr)]">
-              <RegisterForm />
-              <RegistrationBenefits />
-            </div>
-          </section>
-
-          <section className="border-border mt-12 grid gap-5 rounded-lg border p-6 shadow-[0_10px_28px_rgb(20_28_18/0.04)] md:grid-cols-2 lg:grid-cols-4">
-            {serviceBenefits.map((benefit) => {
-              const Icon = benefit.icon;
-
-              return (
-                <div className="flex gap-4" key={benefit.title}>
-                  <span className="bg-bg-hover text-accent-primary grid size-14 shrink-0 place-items-center rounded-full border border-green-100">
-                    <Icon size={28} />
-                  </span>
-                  <span>
-                    <span className="block font-bold">{benefit.title}</span>
-                    <span className="text-text-secondary mt-2 block text-sm leading-6">
-                      {benefit.text}
-                    </span>
-                  </span>
+            <aside className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-slate-50/30 p-8 shadow-xs space-y-6">
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20">
+                  <Gift size={22} />
+                </span>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Бонусы при регистрации</h2>
+                  <p className="text-xs text-slate-500">Начните покупки с приятной выгодой</p>
                 </div>
-              );
-            })}
-          </section>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <div className="flex items-start gap-3.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white border border-emerald-200/70 text-emerald-700 shadow-2xs">
+                    <Sparkles size={18} />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">100 приветственных бонусов</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                      Автоматически зачисляются на ваш счет сразу после создания аккаунта.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white border border-emerald-200/70 text-emerald-700 shadow-2xs">
+                    <ShieldCheck size={18} />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">5% кэшбэк на каждый заказ</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                      Возвращайте часть стоимости покупок баллами и оплачивайте ими до 50% чека.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
         </Container>
       </main>
       <Footer />
     </>
-  );
-};
-
-const RegistrationBenefits = () => {
-  return (
-    <aside className="border-border bg-bg-secondary rounded-lg border p-8">
-      <h2 className="mb-8 text-2xl font-bold">Преимущества регистрации</h2>
-      <div className="space-y-8">
-        {registrationBenefits.map((benefit) => {
-          const Icon = benefit.icon;
-
-          return (
-            <div className="grid grid-cols-[64px_minmax(0,1fr)] gap-5" key={benefit.title}>
-              <span className="border-border bg-bg-primary text-accent-primary grid size-16 place-items-center rounded-full border shadow-[0_8px_20px_rgb(20_28_18/0.05)]">
-                <Icon size={30} />
-              </span>
-              <span>
-                <span className="block font-bold">{benefit.title}</span>
-                <span className="text-text-secondary mt-2 block leading-7">{benefit.text}</span>
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </aside>
   );
 };

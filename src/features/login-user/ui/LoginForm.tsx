@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { cn, ROUTES } from "@/shared/config";
 import { storeAuthTokens } from "@/shared/ui";
@@ -17,7 +17,7 @@ interface LoginFormValues {
 const initialValues: LoginFormValues = {
   login: "",
   password: "",
-  rememberMe: false,
+  rememberMe: true,
 };
 
 export const LoginForm = () => {
@@ -38,7 +38,6 @@ export const LoginForm = () => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-
     const validationMessage = validateForm(values);
 
     if (validationMessage) {
@@ -65,7 +64,7 @@ export const LoginForm = () => {
 
         await authApi.getMe(response.access_token);
 
-        setSuccessMessage("Вы вошли в аккаунт.");
+        setSuccessMessage("Вы успешно вошли в аккаунт.");
         setValues(initialValues);
         router.replace(getSafeNextPath(searchParams.get("next")));
         router.refresh();
@@ -77,94 +76,122 @@ export const LoginForm = () => {
 
   return (
     <form
-      className="border-border bg-bg-primary space-y-8 rounded-lg border p-6 shadow-[0_14px_42px_rgb(28_43_22/0.08)] md:p-10"
+      className="space-y-6 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-10"
       onSubmit={handleSubmit}
     >
-      <FormField label="Email или телефон" required>
-        <span className="border-border focus-within:border-accent-primary flex h-14 items-center gap-3 rounded-lg border px-4 transition">
-          <input
-            className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
-            autoComplete="username"
-            name="login"
-            placeholder="Введите email или телефон"
-            type="text"
-            value={values.login}
-            onChange={(event) => handleChange("login", event.target.value)}
-          />
-          <UserRound className="text-text-muted shrink-0" size={20} />
-        </span>
-      </FormField>
+      <div>
+        <h2 className="text-xl font-bold text-slate-900">Вход для клиентов</h2>
+        <p className="mt-1 text-xs text-slate-500">Войдите, чтобы использовать сохраненные адреса и бонусы</p>
+      </div>
 
-      <FormField label="Пароль" required>
-        <span className="border-border focus-within:border-accent-primary flex h-14 items-center gap-3 rounded-lg border px-4 transition">
-          <input
-            className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
-            autoComplete="current-password"
-            name="password"
-            placeholder="Введите пароль"
-            type={showPassword ? "text" : "password"}
-            value={values.password}
-            onChange={(event) => handleChange("password", event.target.value)}
-          />
-          <LockKeyhole className="text-text-muted shrink-0" size={19} />
-          <button
-            className="text-text-muted hover:text-text-primary shrink-0 transition"
-            type="button"
-            onClick={() => setShowPassword((isVisible) => !isVisible)}
-            aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
-          >
-            {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-          </button>
-        </span>
-      </FormField>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            Email или номер телефона <span className="text-rose-500">*</span>
+          </label>
+          <div className="relative flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 transition-all focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10">
+            <UserRound className="text-slate-400 shrink-0 mr-2.5" size={18} />
+            <input
+              className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              autoComplete="username"
+              name="login"
+              placeholder="user@example.com или +7 999 000-00-00"
+              type="text"
+              value={values.login}
+              onChange={(event) => handleChange("login", event.target.value)}
+            />
+          </div>
+        </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <label className="flex items-center gap-3 text-sm">
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold text-slate-700">
+              Пароль <span className="text-rose-500">*</span>
+            </label>
+            <Link
+              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition"
+              href={ROUTES.FORGOT_PASSWORD}
+            >
+              Забыли пароль?
+            </Link>
+          </div>
+          <div className="relative flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 transition-all focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10">
+            <LockKeyhole className="text-slate-400 shrink-0 mr-2.5" size={18} />
+            <input
+              className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              autoComplete="current-password"
+              name="password"
+              placeholder="Введите ваш пароль"
+              type={showPassword ? "text" : "password"}
+              value={values.password}
+              onChange={(event) => handleChange("password", event.target.value)}
+            />
+            <button
+              className="text-slate-400 hover:text-slate-700 shrink-0 p-1 transition"
+              type="button"
+              onClick={() => setShowPassword((isVisible) => !isVisible)}
+              aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center">
+        <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none">
           <input
-            className="border-border size-5 rounded accent-[var(--color-accent-primary)]"
+            className="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
             checked={values.rememberMe}
             type="checkbox"
             onChange={(event) => handleChange("rememberMe", event.target.checked)}
           />
-          Запомнить меня
+          Запомнить меня на этом устройстве
         </label>
-        <Link
-          className="text-accent-primary hover:text-accent-hover text-sm font-bold"
-          href={ROUTES.FORGOT_PASSWORD}
-        >
-          Забыли пароль?
-        </Link>
       </div>
 
       {errorMessage ? (
-        <p className="text-error rounded-lg bg-red-50 px-4 py-3 text-sm">{errorMessage}</p>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-700 animate-in fade-in-0 duration-150">
+          {errorMessage}
+        </div>
       ) : null}
+
       {successMessage ? (
-        <p className="text-success rounded-lg bg-green-50 px-4 py-3 text-sm">{successMessage}</p>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-700 animate-in fade-in-0 duration-150">
+          {successMessage}
+        </div>
       ) : null}
 
       <button
         className={cn(
-          "bg-accent-primary text-accent-contrast hover:bg-accent-hover h-14 w-full rounded-lg text-base font-bold transition disabled:cursor-not-allowed disabled:opacity-65",
+          "flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-xs font-extrabold uppercase tracking-wider text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/30 active:scale-[0.99] transition-all disabled:opacity-60",
           isPending && "cursor-wait opacity-75",
         )}
         type="submit"
         disabled={isPending}
       >
-        Войти
+        {isPending ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            <span>Входим...</span>
+          </>
+        ) : (
+          <>
+            <span>Войти в аккаунт</span>
+            <ArrowRight size={15} />
+          </>
+        )}
       </button>
 
-      <div className="bg-border h-px" />
-
-      <p className="text-text-secondary text-center">
-        Ещё нет аккаунта?{" "}
+      <div className="border-t border-slate-100 pt-5 text-center text-xs text-slate-500">
+        Впервые у нас?{" "}
         <Link
-          className="text-accent-primary hover:text-accent-hover font-bold"
+          className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
           href={ROUTES.REGISTER}
         >
-          Зарегистрироваться
+          Создать аккаунт
         </Link>
-      </p>
+      </div>
     </form>
   );
 };
@@ -173,35 +200,15 @@ const getSafeNextPath = (nextPath: string | null): string => {
   if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
     return ROUTES.PROFILE;
   }
-
   return nextPath;
-};
-
-interface FormFieldProps {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}
-
-const FormField = ({ children, label, required = false }: FormFieldProps) => {
-  return (
-    <label className="block">
-      <span className="mb-3 block text-sm font-bold">
-        {label} {required ? <span className="text-error">*</span> : null}
-      </span>
-      {children}
-    </label>
-  );
 };
 
 const validateForm = (values: LoginFormValues): string | null => {
   if (values.login.trim().length < 3) {
-    return "Введите email или телефон.";
+    return "Введите корректный email или телефон.";
   }
-
   if (values.password.length < 1) {
     return "Введите пароль.";
   }
-
   return null;
 };

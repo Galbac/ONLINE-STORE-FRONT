@@ -24,25 +24,28 @@ export const ProductCard = ({
 
   if (variant === "list") {
     return (
-      <article className="group relative grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5 sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[170px_minmax(0,1fr)_auto]">
+      <article className="group relative grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5 sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[170px_minmax(0,1fr)_auto]">
         {product.discount_percent ? (
-          <span className="absolute top-3 left-3 z-10 rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm shadow-rose-500/30">
+          <span className="absolute top-3 left-3 z-10 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-xs font-black text-white shadow-sm shadow-rose-500/30">
             -{product.discount_percent}%
           </span>
         ) : null}
-        <QuickViewButton product={product} />
-        {favoriteControl ?? (
-          <button
-            aria-label={`Добавить ${product.name} в избранное`}
-            className="absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
-            type="button"
-          >
-            <Heart size={18} />
-          </button>
-        )}
+
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+          <QuickViewButton product={product} />
+          {favoriteControl ?? (
+            <button
+              aria-label={`Добавить ${product.name} в избранное`}
+              className="flex size-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
+              type="button"
+            >
+              <Heart size={18} />
+            </button>
+          )}
+        </div>
 
         <Link
-          className="flex h-36 items-center justify-center overflow-hidden rounded-xl bg-slate-50/80 sm:h-full sm:min-h-36"
+          className="flex h-36 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/80 to-slate-100/40 sm:h-full sm:min-h-36"
           href={ROUTES.PRODUCT(product.slug)}
         >
           {product.preview_image_url ? (
@@ -67,8 +70,8 @@ export const ProductCard = ({
           >
             {product.name}
           </Link>
-          <span className="mt-1 block text-xs font-medium text-slate-500">{product.unit}</span>
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+          <span className="mt-1 block text-xs font-medium text-slate-400">{product.unit}</span>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
             <span className="inline-flex items-center gap-1.5 font-semibold">
               <span
                 className={`size-2 rounded-full ${
@@ -79,16 +82,17 @@ export const ProductCard = ({
                 {product.stock_display}
               </span>
             </span>
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
+            <span className="rounded-lg bg-emerald-50/80 px-2 py-0.5 font-semibold text-emerald-800">
               {product.category?.name ?? "Каталог"}
             </span>
+            <span className="text-slate-400">•</span>
             <span>{getProductTypeLabel(product.product_type)}</span>
           </div>
         </div>
 
         <div className="flex items-end justify-between gap-3 lg:min-w-48 lg:flex-col lg:items-end lg:justify-center">
           <div className="flex flex-wrap items-baseline gap-2 lg:justify-end">
-            <span className="text-xl font-extrabold text-slate-900">
+            <span className="text-2xl font-black text-slate-900 tracking-tight">
               {toPriceFormat(product.price)}
             </span>
             {product.old_price ? (
@@ -116,25 +120,28 @@ export const ProductCard = ({
   }
 
   return (
-    <article className="group relative flex min-h-[340px] flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5">
+    <article className="group relative flex min-h-[350px] flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/35 hover:shadow-xl hover:shadow-slate-900/5">
       {product.discount_percent ? (
-        <span className="absolute top-3.5 left-3.5 z-10 rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm shadow-rose-500/30">
+        <span className="absolute top-3.5 left-3.5 z-10 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-xs font-black text-white shadow-sm shadow-rose-500/30">
           -{product.discount_percent}%
         </span>
       ) : null}
-      <QuickViewButton product={product} />
+
+      <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-1.5">
+        <QuickViewButton product={product} />
         {favoriteControl ?? (
-        <button
-          className="absolute top-3.5 right-3.5 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
-          type="button"
-          aria-label={`Добавить ${product.name} в избранное`}
-        >
-          <Heart size={18} />
-        </button>
-      )}
+          <button
+            className="flex size-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
+            type="button"
+            aria-label={`Добавить ${product.name} в избранное`}
+          >
+            <Heart size={18} />
+          </button>
+        )}
+      </div>
 
       <Link
-        className="mb-3.5 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-slate-50/80 p-3"
+        className="mb-3.5 flex h-42 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/70 to-slate-100/40 p-3"
         href={ROUTES.PRODUCT(product.slug)}
       >
         {product.preview_image_url ? (
@@ -154,7 +161,7 @@ export const ProductCard = ({
 
       <div className="mb-2 flex items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-1.5">
-          <span className="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+          <span className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]">
             {product.category?.name ?? "Каталог"}
           </span>
           <span className="inline-flex items-center gap-0.5 text-amber-500 font-bold text-[11px]">
@@ -168,14 +175,14 @@ export const ProductCard = ({
               product.is_available ? (isLowStock ? "bg-amber-500" : "bg-emerald-500") : "bg-rose-400"
             }`}
           />
-          <span className={isLowStock ? "text-amber-700 font-bold text-[11px]" : ""}>
+          <span className={isLowStock ? "text-amber-700 font-bold text-[11px]" : "text-[11px]"}>
             {product.stock_display}
           </span>
         </span>
       </div>
 
       <Link
-        className="line-clamp-2 min-h-10 text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700"
+        className="line-clamp-2 min-h-10 text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700 leading-snug"
         href={ROUTES.PRODUCT(product.slug)}
       >
         {product.name}
@@ -189,7 +196,7 @@ export const ProductCard = ({
               {toPriceFormat(product.old_price)}
             </span>
           ) : null}
-          <span className="text-lg font-extrabold tracking-tight text-slate-900">
+          <span className="text-xl font-black tracking-tight text-slate-900">
             {toPriceFormat(product.price)}
           </span>
           <span className="text-[11px] text-slate-400 font-medium">

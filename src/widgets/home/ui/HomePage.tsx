@@ -221,27 +221,27 @@ interface CategorySectionProps {
 const CategorySection = ({ categories }: CategorySectionProps) => {
   return (
     <Section href={ROUTES.CATALOG} title="Популярные категории">
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
         {categories.map((category) => {
           const { Icon, colorClass } = getCategoryMeta(category.name);
 
           return (
             <Link
-              className="group relative flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-950/5"
+              className="group relative flex flex-col items-center justify-center rounded-2xl border border-slate-200/70 bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-950/5"
               href={ROUTES.CATEGORY(category.slug)}
               key={category.id}
             >
               <span
-                className={`mb-3 flex size-14 items-center justify-center rounded-2xl ${colorClass} transition-transform duration-300 group-hover:scale-110`}
+                className={`mb-3 flex size-15 items-center justify-center rounded-2xl ${colorClass} transition-transform duration-300 group-hover:scale-110 shadow-xs`}
               >
-                <Icon size={26} />
+                <Icon size={28} />
               </span>
-              <span className="line-clamp-2 text-xs font-bold text-slate-800 transition-colors group-hover:text-emerald-700">
+              <span className="line-clamp-2 text-xs font-bold text-slate-800 transition-colors group-hover:text-emerald-700 leading-tight">
                 {category.name}
               </span>
               {category.products_count ? (
                 <span className="mt-1 text-[11px] font-medium text-slate-400">
-                  {category.products_count} шт.
+                  {category.products_count} товаров
                 </span>
               ) : null}
             </Link>

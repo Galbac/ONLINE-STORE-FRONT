@@ -1,19 +1,15 @@
 import Link from "next/link";
 import {
-  BadgeCheck,
-  ClipboardCheck,
-  Copy,
-  CreditCard,
-  Headphones,
-  MapPin,
-  PackageCheck,
-  Percent,
+  ArrowRight,
+  CheckCircle2,
+  Sparkles,
   Truck,
 } from "lucide-react";
 import type { OrderDetailResponse, OrderStatusResponse } from "@/entities/order";
 import type { PaymentDetailResponse } from "@/entities/payment";
-import { cn, ROUTES } from "@/shared/config";
+import { ROUTES } from "@/shared/config";
 import { Container } from "@/shared/ui";
+import { toPriceFormat } from "@/shared/lib/format";
 
 interface CheckoutSuccessViewProps {
   order: OrderDetailResponse;
@@ -21,252 +17,72 @@ interface CheckoutSuccessViewProps {
   status: OrderStatusResponse;
 }
 
-export const CheckoutSuccessView = ({ order, payment, status }: CheckoutSuccessViewProps) => {
-  const paymentStatusLabel = status.payment_status_label ?? getPaymentStatusLabel(payment.status);
-  const deliveryTitle = getDeliveryTitle(order.delivery_type);
-  const deliveryDetails = getDeliveryDetails(order);
-  const orderDetailsHref = `/profile/orders/${order.id}`;
-
+export const CheckoutSuccessView = ({ order, status }: CheckoutSuccessViewProps) => {
   return (
-    <main className="bg-bg-primary min-h-[70vh]">
-      <Container className="py-6 md:py-8">
-        <nav className="text-text-secondary mb-6 flex items-center gap-2 text-sm">
-          <Link className="hover:text-accent-primary" href={ROUTES.HOME}>
-            Главная
-          </Link>
-          <span>/</span>
-          <span>Заказ оформлен</span>
-        </nav>
-
-        <section className="mx-auto max-w-4xl text-center">
-          <span className="bg-bg-hover text-accent-primary mx-auto grid size-28 place-items-center rounded-full">
-            <BadgeCheck size={62} />
+    <main className="min-h-[75vh] py-10 bg-gradient-to-b from-slate-50 to-white">
+      <Container className="max-w-3xl">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-xl shadow-slate-900/5 text-center space-y-6">
+          <span className="mx-auto flex size-20 items-center justify-center rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/25 animate-in zoom-in-95 duration-200">
+            <CheckCircle2 size={44} />
           </span>
-          <h1 className="text-text-primary mt-7 text-4xl font-bold md:text-5xl">Заказ оформлен!</h1>
-          <p className="text-text-secondary mx-auto mt-4 max-w-2xl text-lg">
-            Спасибо за покупку. Мы начали обработку вашего заказа.
-          </p>
-        </section>
 
-        <section className="border-border mx-auto mt-9 max-w-4xl rounded-lg border bg-white p-6 shadow-[0_14px_40px_rgb(20_28_18/0.08)] md:p-9">
-          <div className="space-y-8">
-            <SuccessInfoRow
-              icon={<ClipboardCheck size={34} />}
-              title="Номер заказа"
-              value={`№ ${order.order_number}`}
-              action={
-                <button
-                  className="border-border text-text-secondary hover:text-accent-primary grid size-12 place-items-center rounded-lg border transition"
-                  type="button"
-                  aria-label="Скопировать номер заказа"
-                >
-                  <Copy size={22} />
-                </button>
-              }
-            />
-            <SuccessInfoRow
-              icon={<CreditCard size={34} />}
-              title="Статус оплаты"
-              value={paymentStatusLabel}
-              badge={paymentStatusLabel}
-              text={getPaymentText(payment.status)}
-            />
-            <SuccessInfoRow
-              icon={<Truck size={34} />}
-              title="Способ получения"
-              value={deliveryTitle}
-              text={getDeliverySlotText(order)}
-            />
-            <SuccessInfoRow
-              icon={<MapPin size={34} />}
-              title={order.delivery_type === "pickup" ? "Точка самовывоза" : "Адрес доставки"}
-              value={deliveryDetails.title}
-              text={deliveryDetails.text}
-            />
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Заказ успешно оформлен!
+            </h1>
+            <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              Спасибо за ваш заказ. Мы уже передали его на сборку и бережно доставим продукты прямо к вашей двери.
+            </p>
           </div>
 
-          <div className="bg-bg-hover mt-9 rounded-lg border border-green-100 p-5 text-center">
-            <p className="text-text-secondary">
-              Детали заказа и его статус доступны на{" "}
-              <Link className="text-accent-primary font-semibold" href={orderDetailsHref}>
-                странице заказа
-              </Link>
-              .
-            </p>
+          {/* Details Card */}
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-6 text-left space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3.5">
+              <span className="text-xs font-semibold text-slate-500">Номер заказа:</span>
+              <span className="text-sm font-extrabold text-slate-900">№ {order.order_number}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3.5">
+              <span className="text-xs font-semibold text-slate-500">Сумма к оплате:</span>
+              <span className="text-base font-black text-emerald-700">{toPriceFormat(order.final_price)}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3.5">
+              <span className="text-xs font-semibold text-slate-500">Способ получения:</span>
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Truck size={14} className="text-emerald-600" />
+                {order.delivery_type === "pickup" ? "Самовывоз из магазина" : "Доставка курьером"}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-500">Статус оплаты:</span>
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
+                <Sparkles size={12} />
+                {status.payment_status_label ?? "Оплачен"}
+              </span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Link
-              className="border-accent-primary text-accent-primary hover:bg-bg-primary mt-4 inline-flex h-14 w-full max-w-md items-center justify-center gap-3 rounded-lg border px-6 text-base font-bold transition"
-              href={orderDetailsHref}
+              href={`/profile/orders/${order.id}`}
+              className="flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-emerald-600 px-7 text-xs font-extrabold uppercase tracking-wider text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-700 transition"
             >
-              Перейти к деталям заказа
-              <span aria-hidden>›</span>
+              <span>Отслеживать заказ</span>
+              <ArrowRight size={14} />
+            </Link>
+
+            <Link
+              href={ROUTES.CATALOG}
+              className="flex h-12 w-full sm:w-auto items-center justify-center rounded-xl border border-slate-200 bg-white px-7 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Продолжить покупки
             </Link>
           </div>
-
-          <Link
-            className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-5 inline-flex h-14 w-full items-center justify-center rounded-lg px-6 text-base font-bold transition"
-            href={ROUTES.CATALOG}
-          >
-            Вернуться в каталог
-          </Link>
-        </section>
-
-        <SuccessBenefits />
+        </div>
       </Container>
     </main>
   );
-};
-
-interface SuccessInfoRowProps {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  action?: React.ReactNode;
-  badge?: string;
-  text?: string;
-}
-
-const SuccessInfoRow = ({ action, badge, icon, text, title, value }: SuccessInfoRowProps) => {
-  return (
-    <div className="grid gap-4 text-left md:grid-cols-[88px_minmax(0,1fr)_60px] md:items-center">
-      <span className="bg-bg-hover text-accent-primary grid size-16 place-items-center rounded-full">
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <p className="text-text-secondary text-sm">{title}</p>
-        {badge ? (
-          <span
-            className={cn(
-              "mt-2 inline-flex rounded-full px-3 py-1 text-sm font-bold",
-              badge === "Оплачен" || badge === "Оплачено"
-                ? "bg-green-100 text-green-700"
-                : "bg-bg-secondary text-text-primary",
-            )}
-          >
-            {badge}
-          </span>
-        ) : (
-          <p className="text-text-primary mt-2 text-2xl font-bold">{value}</p>
-        )}
-        {text ? <p className="text-text-primary mt-3">{text}</p> : null}
-      </div>
-      {action ? <div className="md:justify-self-end">{action}</div> : null}
-    </div>
-  );
-};
-
-const SuccessBenefits = () => {
-  return (
-    <section className="border-border mt-10 grid gap-5 rounded-lg border bg-white p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)] md:grid-cols-4">
-      <Benefit
-        icon={<PackageCheck size={28} />}
-        title="Качество продуктов"
-        text="Только свежие товары каждый день"
-      />
-      <Benefit
-        icon={<Truck size={28} />}
-        title="Доставка"
-        text="Быстрая доставка на дом и в удобное время"
-      />
-      <Benefit
-        icon={<Percent size={28} />}
-        title="Выгодные цены"
-        text="Лучшие предложения и акции для вас"
-      />
-      <Benefit
-        icon={<Headphones size={28} />}
-        title="Поддержка 24/7"
-        text="Мы всегда на связи и готовы помочь"
-      />
-    </section>
-  );
-};
-
-interface BenefitProps {
-  icon: React.ReactNode;
-  text: string;
-  title: string;
-}
-
-const Benefit = ({ icon, text, title }: BenefitProps) => {
-  return (
-    <div className="flex items-start gap-4">
-      <span className="bg-bg-hover text-accent-primary grid size-12 shrink-0 place-items-center rounded-full">
-        {icon}
-      </span>
-      <div>
-        <p className="font-bold">{title}</p>
-        <p className="text-text-secondary mt-2 text-sm leading-6">{text}</p>
-      </div>
-    </div>
-  );
-};
-
-const getPaymentStatusLabel = (status: string): string => {
-  if (status === "paid" || status === "succeeded") {
-    return "Оплачен";
-  }
-
-  if (status === "pending") {
-    return "Ожидает оплаты";
-  }
-
-  return "В обработке";
-};
-
-const getPaymentText = (status: string): string => {
-  if (status === "paid" || status === "succeeded") {
-    return "Оплата прошла успешно.";
-  }
-
-  return "Платеж будет обновлен после подтверждения.";
-};
-
-const getDeliveryTitle = (deliveryType: string): string => {
-  return deliveryType === "pickup" ? "Самовывоз" : "Доставка курьером";
-};
-
-const getDeliverySlotText = (order: OrderDetailResponse): string => {
-  const date = formatDate(order.created_at);
-
-  return order.delivery_type === "pickup"
-    ? `${date}, заказ будет ждать в выбранной точке`
-    : `${date} с 10:00 до 12:00`;
-};
-
-const getDeliveryDetails = (order: OrderDetailResponse): { title: string; text: string } => {
-  if (order.delivery_type === "pickup" && order.pickup_point) {
-    return {
-      title: order.pickup_point.name,
-      text: "Заберите заказ в часы работы магазина.",
-    };
-  }
-
-  if (order.address) {
-    const apartment = order.address.apartment ? `, кв. ${order.address.apartment}` : "";
-
-    return {
-      title: `${order.address.city}, ул. ${order.address.street}, д. ${order.address.house}${apartment}`,
-      text: order.address.comment ?? "Курьер позвонит перед приездом.",
-    };
-  }
-
-  return {
-    title: "Адрес уточняется",
-    text: "Мы свяжемся с вами для подтверждения деталей.",
-  };
-};
-
-const formatDate = (value: string): string => {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Ближайшая дата";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "Europe/Moscow",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date);
 };

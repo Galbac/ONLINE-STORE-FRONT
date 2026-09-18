@@ -1,15 +1,13 @@
 import { ProductReviews } from "@/widgets/product-reviews";
+import { ProductGallery } from "./ProductGallery";
 import { cookies } from "next/headers";
-import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react";
 import { cartApi, emptyCartResponse, emptyCartSummaryResponse } from "@/entities/cart";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import {
   productApi,
   type ProductBreadcrumbResponse,
   type ProductDetailResponse,
-  type ProductImageResponse,
 } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { ProductPurchaseActions } from "@/features/product-purchase-actions";
@@ -132,18 +130,23 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
                 Арт. {product.id.toString().padStart(6, "0")}
               </div>
 
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                <span className="text-4xl font-bold">{toPriceFormat(product.price)}</span>
+              <div className="mt-6 flex flex-wrap items-baseline gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-5 shadow-2xs">
+                <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                  {toPriceFormat(product.price)}
+                </span>
                 {product.old_price ? (
-                  <span className="text-text-muted text-2xl line-through">
+                  <span className="text-lg text-slate-400 line-through">
                     {toPriceFormat(product.old_price)}
                   </span>
                 ) : null}
                 {product.discount_percent ? (
-                  <span className="bg-error rounded-md px-2.5 py-1 text-sm font-bold text-white">
+                  <span className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1 text-xs font-black text-white shadow-xs">
                     -{product.discount_percent}%
                   </span>
                 ) : null}
+                <span className="ml-auto text-xs font-semibold text-slate-500">
+                  {toPriceFormat(product.price)} / {product.unit}
+                </span>
               </div>
 
               <div className="mt-8 flex items-center justify-between gap-4">
@@ -249,107 +252,29 @@ const ProductBreadcrumbs = ({ breadcrumbs, product }: ProductBreadcrumbsProps) =
   );
 };
 
-interface ProductGalleryProps {
-  images: ProductImageResponse[];
-  productName: string;
-}
-
-const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
-  const sortedImages = images.slice().sort((left, right) => left.sort_order - right.sort_order);
-  const mainImage = sortedImages[0];
-
-  return (
-    <div>
-      <div className="border-border relative grid min-h-[420px] place-items-center rounded-lg border bg-white p-8 shadow-[0_10px_28px_rgb(20_28_18/0.04)] lg:min-h-[620px]">
-        {mainImage ? (
-          <Image
-            alt={productName}
-            className="h-full max-h-[540px] w-full object-contain"
-            height={620}
-            src={mainImage.url}
-            width={720}
-            priority
-          />
-        ) : (
-          <span className="bg-bg-hover text-accent-primary grid size-36 place-items-center rounded-full">
-            <ImageOff size={64} />
-          </span>
-        )}
-        <button
-          className="border-border absolute top-1/2 left-5 grid size-11 -translate-y-1/2 place-items-center rounded-full border bg-white shadow-[0_8px_18px_rgb(20_28_18/0.08)]"
-          type="button"
-          aria-label="Предыдущее изображение"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <button
-          className="border-border absolute top-1/2 right-5 grid size-11 -translate-y-1/2 place-items-center rounded-full border bg-white shadow-[0_8px_18px_rgb(20_28_18/0.08)]"
-          type="button"
-          aria-label="Следующее изображение"
-        >
-          <ChevronRight size={20} />
-        </button>
-        <button
-          className="border-border absolute right-5 bottom-5 grid size-11 place-items-center rounded-full border bg-white shadow-[0_8px_18px_rgb(20_28_18/0.08)]"
-          type="button"
-          aria-label="Увеличить изображение"
-        >
-          <Search size={20} />
-        </button>
-      </div>
-
-      <div className="mt-5 grid grid-cols-5 gap-4">
-        {sortedImages.slice(0, 5).map((image, index) => (
-          <button
-            className="border-border data-[active=true]:border-accent-primary grid aspect-square place-items-center overflow-hidden rounded-lg border bg-white p-2"
-            type="button"
-            data-active={index === 0}
-            key={`${image.id}-${index}`}
-          >
-            <Image
-              alt={`${productName}, изображение ${index + 1}`}
-              className="h-full w-full object-contain"
-              height={100}
-              src={image.url}
-              width={100}
-            />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 interface ProductUnitInfoProps {
   product: ProductDetailResponse;
 }
 
 const ProductUnitInfo = ({ product }: ProductUnitInfoProps) => {
   return (
-    <div className="border-border my-5 grid grid-cols-3 rounded-lg border">
-      <InfoCell label="Единица" value={product.unit} />
-      <InfoCell
-        label="Минимальный заказ"
-        value={`${formatQuantity(product.min_quantity)} ${unitLabel(product.unit)}`}
-      />
-      <InfoCell
-        label="Шаг"
-        value={`${formatQuantity(product.quantity_step)} ${unitLabel(product.unit)}`}
-      />
-    </div>
-  );
-};
-
-interface InfoCellProps {
-  label: string;
-  value: string;
-}
-
-const InfoCell = ({ label, value }: InfoCellProps) => {
-  return (
-    <div className="border-border min-w-0 border-r p-4 last:border-r-0">
-      <p className="text-text-muted text-sm">{label}</p>
-      <p className="mt-2 font-bold">{value}</p>
+    <div className="my-5 grid grid-cols-3 gap-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 shadow-2xs">
+      <div className="min-w-0 text-center">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Единица</p>
+        <p className="mt-1 text-sm font-extrabold text-slate-800">{product.unit}</p>
+      </div>
+      <div className="min-w-0 border-x border-slate-200/80 px-2 text-center">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Мин. заказ</p>
+        <p className="mt-1 text-sm font-extrabold text-slate-800">
+          {formatQuantity(product.min_quantity)} {unitLabel(product.unit)}
+        </p>
+      </div>
+      <div className="min-w-0 text-center">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Шаг заказа</p>
+        <p className="mt-1 text-sm font-extrabold text-slate-800">
+          {formatQuantity(product.quantity_step)} {unitLabel(product.unit)}
+        </p>
+      </div>
     </div>
   );
 };

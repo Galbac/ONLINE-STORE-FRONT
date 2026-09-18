@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LockKeyhole, Mail, Send } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { ForgotPasswordForm } from "@/features/forgot-password";
 import { ROUTES } from "@/shared/config";
 import { Container } from "@/shared/ui";
@@ -10,70 +10,43 @@ export const ForgotPasswordPage = () => {
   return (
     <>
       <Header />
-      <main>
-        <Container className="py-6">
-          <nav className="text-text-secondary mb-24 flex items-center gap-2 text-sm md:mb-32">
-            <Link className="hover:text-accent-primary" href={ROUTES.HOME}>
+      <main className="min-h-[75vh] py-10 bg-gradient-to-b from-slate-50 to-white">
+        <Container className="max-w-4xl">
+          <nav className="text-slate-400 mb-8 flex items-center gap-2 text-xs font-semibold">
+            <Link className="hover:text-emerald-700 transition" href={ROUTES.HOME}>
               Главная
             </Link>
             <span>/</span>
-            <span>Восстановление пароля</span>
+            <span className="text-slate-700">Восстановление пароля</span>
           </nav>
 
-          <section className="mx-auto max-w-[1100px]">
-            <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_420px]">
-              <div>
-                <h1 className="text-text-primary text-4xl font-bold md:text-5xl">
-                  Восстановление пароля
-                </h1>
-                <p className="text-text-secondary mt-6 text-base md:text-lg">
-                  Введите email или номер телефона, указанный при регистрации.
-                </p>
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+            <ForgotPasswordForm />
 
-                <div className="mt-10">
-                  <ForgotPasswordForm />
+            <aside className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-slate-50/30 p-8 shadow-xs space-y-6">
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20">
+                  <KeyRound size={22} />
+                </span>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Безопасный доступ</h2>
+                  <p className="text-xs text-slate-500">Защита аккаунта 256-bit SSL</p>
                 </div>
               </div>
 
-              <PasswordRecoveryIllustration />
-            </div>
-          </section>
+              <div className="space-y-4 text-xs text-slate-600 leading-relaxed pt-2">
+                <p>
+                  Ссылка для сброса пароля будет действительна в течение <strong>24 часов</strong>.
+                </p>
+                <p>
+                  Если вы не получили письмо, проверьте папку «Спам» или повторите отправку запроса.
+                </p>
+              </div>
+            </aside>
+          </div>
         </Container>
       </main>
       <Footer />
     </>
-  );
-};
-
-const PasswordRecoveryIllustration = () => {
-  return (
-    <div
-      className="relative hidden min-h-[390px] items-center justify-center overflow-hidden lg:flex"
-      aria-hidden="true"
-    >
-      <div className="bg-bg-hover absolute top-8 right-7 size-80 rounded-full" />
-      <Send className="text-accent-primary/20 absolute top-12 right-12 rotate-12" size={48} />
-      <LockKeyhole
-        className="text-accent-primary/15 absolute right-2 bottom-24 rotate-6"
-        size={48}
-      />
-      <div className="border-accent-primary/20 absolute top-24 left-8 h-28 w-48 rounded-full border-2 border-dashed" />
-      <div className="relative mt-16">
-        <div className="border-border bg-bg-primary relative h-44 w-64 overflow-hidden rounded-xl border shadow-[0_24px_60px_rgb(28_43_22/0.13)]">
-          <div className="border-border absolute inset-x-0 top-0 h-24 origin-top -skew-y-12 border-b bg-white" />
-          <div className="border-border absolute inset-x-0 bottom-0 h-24 origin-bottom skew-y-12 border-t bg-white" />
-          <Mail
-            className="text-accent-primary/20 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-            size={90}
-          />
-        </div>
-        <div className="bg-accent-primary absolute -top-16 left-1/2 grid size-28 -translate-x-1/2 place-items-center rounded-lg text-white shadow-[0_16px_34px_rgb(21_145_13/0.25)]">
-          <LockKeyhole size={62} />
-        </div>
-        <div className="bg-accent-primary absolute bottom-2 -left-20 h-32 w-8 rounded-full" />
-        <div className="bg-accent-hover absolute bottom-4 -left-12 h-24 w-8 rotate-45 rounded-full" />
-        <div className="bg-accent-primary/80 absolute bottom-20 -left-14 h-20 w-8 -rotate-45 rounded-full" />
-      </div>
-    </div>
   );
 };

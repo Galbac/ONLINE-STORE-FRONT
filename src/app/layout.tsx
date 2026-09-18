@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 
 import { STORE_INFO } from "@/shared/config";
 import { CookieBanner, PwaInstallPrompt } from "@/shared/ui";
@@ -7,6 +8,12 @@ import { CartDrawer } from "@/widgets/cart-drawer";
 import { Toaster } from "sonner";
 
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ||
@@ -46,8 +53,8 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="ru">
-      <body className="mobile-bottom-padding">
+    <html lang="ru" className={inter.variable}>
+      <body className={`${inter.className} mobile-bottom-padding antialiased bg-slate-50/70 text-slate-900 selection:bg-emerald-500 selection:text-white`}>
         {children}
         <BottomNav />
         <CartDrawer />

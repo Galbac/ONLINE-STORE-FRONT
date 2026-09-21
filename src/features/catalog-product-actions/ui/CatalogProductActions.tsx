@@ -63,71 +63,52 @@ export const CatalogCartButton = ({
   };
 
   const handleIncrement = (): void => {
+    const prevQty = quantity;
     const nextQty = Number((quantity + step).toFixed(2));
+    setQuantity(nextQty); // Optimistic instant update
+
     startTransition(async () => {
       try {
         if (cartItemId) {
           const response = await cartApi.updateItem(cartItemId, { quantity: nextQty });
-          setQuantity(nextQty);
           notifyCartChanged({ itemsCount: response.cart.items_count });
-        toast.success(`«${productName}» добавлен в корзину`, {
-          action: {
-            label: "Открыть корзину",
-            onClick: () => openCartDrawer(),
-          },
-        });
         } else {
           const response = await cartApi.addItem({ product_id: productId, quantity: step });
           const matched = response.cart.items.find((it) => it.product_id === productId);
           if (matched) setCartItemId(matched.id);
-          setQuantity(nextQty);
           notifyCartChanged({ itemsCount: response.cart.items_count });
-        toast.success(`«${productName}» добавлен в корзину`, {
-          action: {
-            label: "Открыть корзину",
-            onClick: () => openCartDrawer(),
-          },
-        });
         }
-      } catch {}
+      } catch {
+        setQuantity(prevQty); // Rollback on error
+        toast.error(`Не удалось обновить количество для «${productName}»`);
+      }
     });
   };
 
   const handleDecrement = (): void => {
+    const prevQty = quantity;
     const nextQty = Number((quantity - step).toFixed(2));
+    const isRemove = nextQty <= 0.001;
+    setQuantity(isRemove ? 0 : nextQty); // Optimistic instant update
+
     startTransition(async () => {
       try {
-        if (nextQty <= 0.001) {
+        if (isRemove) {
           if (cartItemId) {
             const response = await cartApi.deleteItem(cartItemId);
-            setQuantity(0);
             setCartItemId(null);
             notifyCartChanged({ itemsCount: response.cart.items_count });
-        toast.success(`«${productName}» добавлен в корзину`, {
-          action: {
-            label: "Открыть корзину",
-            onClick: () => openCartDrawer(),
-          },
-        });
-          } else {
-            setQuantity(0);
           }
         } else {
           if (cartItemId) {
             const response = await cartApi.updateItem(cartItemId, { quantity: nextQty });
-            setQuantity(nextQty);
             notifyCartChanged({ itemsCount: response.cart.items_count });
-        toast.success(`«${productName}» добавлен в корзину`, {
-          action: {
-            label: "Открыть корзину",
-            onClick: () => openCartDrawer(),
-          },
-        });
-          } else {
-            setQuantity(nextQty);
           }
         }
-      } catch {}
+      } catch {
+        setQuantity(prevQty); // Rollback on error
+        toast.error(`Не удалось уменьшить количество для «${productName}»`);
+      }
     });
   };
 

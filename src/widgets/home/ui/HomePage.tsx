@@ -30,6 +30,7 @@ import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard, Section } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
+import { QuickRepeatOrderBanner } from "./QuickRepeatOrderBanner";
 import { Header } from "@/widgets/header";
 
 export const HomePage = async () => {
@@ -72,6 +73,10 @@ export const HomePage = async () => {
       <main className="space-y-12 pb-16">
         <Container className="pt-6">
           <Hero />
+        </Container>
+
+        <Container className="pt-2 sm:pt-4">
+          <QuickRepeatOrderBanner />
         </Container>
 
         {banners?.items && banners.items.length > 0 ? (

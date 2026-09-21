@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Minus, Plus, ShoppingBag, Sparkles, Trash2, Truck, X } from "lucide-react";
 import { cartApi, type CartResponse } from "@/entities/cart";
+import { productApi, type ProductShortResponse } from "@/entities/product";
 import { apiClient } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { CART_CHANGED_EVENT, notifyCartChanged } from "@/shared/lib/cart-events";
@@ -22,6 +23,7 @@ export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number | null>(null);
+  const [suggestedProducts, setSuggestedProducts] = useState<ProductShortResponse[]>([]);
   const [isPending, startTransition] = useTransition();
 
   const loadCart = async () => {
@@ -51,6 +53,15 @@ export const CartDrawer = () => {
         const threshold = res.delivery?.free_from_amount ? Number(res.delivery.free_from_amount) : null;
         if (threshold && Number.isFinite(threshold) && threshold > 0) {
           setFreeDeliveryThreshold(threshold);
+        }
+      })
+      .catch(() => {});
+
+    productApi
+      .getPopular()
+      .then((res) => {
+        if (res && res.items) {
+          setSuggestedProducts(res.items);
         }
       })
       .catch(() => {});
@@ -87,9 +98,24 @@ export const CartDrawer = () => {
     });
   };
 
+  const handleQuickAdd = (productId: number) => {
+    if (typeof window !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate(15); } catch (_) {}
+    }
+    startTransition(async () => {
+      try {
+        const res = await cartApi.addItem({ product_id: productId, quantity: 1 });
+        setCart(res.cart);
+        notifyCartChanged({ itemsCount: res.cart.items_count });
+      } catch {}
+    });
+  };
+
   if (!isOpen) return null;
 
   const items = cart?.items ?? [];
+  const cartProductIds = new Set(items.map((i) => i.product_id));
+  const availableSuggestions = suggestedProducts.filter((p) => !cartProductIds.has(p.id) && p.is_available);
   const finalPriceNum = cart ? Number(cart.final_price) : 0;
   const diff = freeDeliveryThreshold ? freeDeliveryThreshold - finalPriceNum : null;
   const progressPercent =
@@ -238,6 +264,55 @@ export const CartDrawer = () => {
             ))
           )}
         </div>
+
+        {/* Cross-sell Shelf */}
+        {items.length > 0 && availableSuggestions.length > 0 ? (
+          <div className="border-t border-slate-100 bg-slate-50/70 p-4 shrink-0">
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Sparkles size={14} className="text-amber-500 shrink-0" />
+              <span className="text-xs font-bold text-slate-800">Часто забывают добавить:</span>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {availableSuggestions.slice(0, 6).map((product) => (
+                <div
+                  key={product.id}
+                  className="flex flex-col justify-between w-28 shrink-0 rounded-xl border border-slate-200/80 bg-white p-2 shadow-2xs"
+                >
+                  <div className="relative flex h-14 w-full items-center justify-center rounded-lg bg-slate-50 overflow-hidden mb-1.5">
+                    {product.preview_image_url ? (
+                      <Image
+                        src={product.preview_image_url}
+                        alt={product.name}
+                        width={48}
+                        height={48}
+                        className="object-contain"
+                      />
+                    ) : (
+                      <ShoppingBag size={18} className="text-slate-300" />
+                    )}
+                  </div>
+                  <p className="line-clamp-1 text-[11px] font-bold text-slate-900 leading-tight">
+                    {product.name}
+                  </p>
+                  <div className="mt-1.5 flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-900">
+                      {toPriceFormat(product.price)}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => handleQuickAdd(product.id)}
+                      className="flex size-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 active:scale-90 transition"
+                      aria-label={`Добавить ${product.name}`}
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {/* Footer */}
         {items.length > 0 && cart ? (

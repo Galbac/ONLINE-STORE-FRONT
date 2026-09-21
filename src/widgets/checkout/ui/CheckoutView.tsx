@@ -54,7 +54,7 @@ interface ContactState {
 }
 
 type DeliveryType = "delivery" | "pickup";
-type PaymentMethod = "online" | "on_delivery";
+type PaymentMethod = "online" | "on_delivery" | "sbp";
 
 const steps = [
   "Контактные данные",
@@ -207,7 +207,7 @@ export const CheckoutView = ({
         notifyCartChanged({ itemsCount: 0 });
 
         let createdPaymentId: number | null = null;
-        if (paymentMethod === "online") {
+        if (paymentMethod === "online" || paymentMethod === "sbp") {
           try {
             const createdPayment = await paymentApi.create({ order_id: createdOrder.id });
             setPayment(createdPayment);
@@ -466,17 +466,23 @@ export const CheckoutView = ({
             </div>
 
             <CheckoutSection icon={<CreditCard size={24} />} number={6} title="Способ оплаты">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <ChoiceCard
+                  checked={paymentMethod === "sbp"}
+                  title="СБП (в 1 клик)"
+                  text="Приложение банка, 0% комиссии"
+                  onClick={() => setPaymentMethod("sbp")}
+                />
                 <ChoiceCard
                   checked={paymentMethod === "online"}
-                  title="Онлайн-оплата"
-                  text="Банковской картой на сайте"
+                  title="Банковская карта"
+                  text="Любая карта онлайн"
                   onClick={() => setPaymentMethod("online")}
                 />
                 <ChoiceCard
                   checked={paymentMethod === "on_delivery"}
-                  title="Оплата при получении"
-                  text="Наличными или картой курьеру"
+                  title="При получении"
+                  text="Наличными или курьеру"
                   onClick={() => setPaymentMethod("on_delivery")}
                 />
               </div>

@@ -22,7 +22,7 @@ export interface ProfileOrderListParams {
 
 export interface OrderCreateRequest {
   delivery_type: "delivery" | "pickup";
-  payment_method: "online" | "on_delivery";
+  payment_method: "online" | "on_delivery" | "sbp";
   address_id?: number | null;
   pickup_point_id?: number | null;
   customer_name: string;

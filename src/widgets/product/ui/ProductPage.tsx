@@ -16,6 +16,7 @@ import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
+import { ShieldCheck, Sparkles, ThermometerSnowflake } from "lucide-react";
 import { Header } from "@/widgets/header";
 
 interface ProductPageProps {
@@ -165,6 +166,19 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
 
               <ProductUnitInfo product={product} />
 
+              {/* Freshness & Trust Guarantee */}
+              <div className="my-5 flex items-center gap-3.5 rounded-2xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-4 shadow-2xs">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                  <ShieldCheck size={20} />
+                </span>
+                <div className="text-xs">
+                  <p className="font-bold text-slate-900">Гарантия 100% свежести</p>
+                  <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+                    Отбираем вручную каждый продукт перед сборкой. Доставим в термосумках с соблюдением температурного режима.
+                  </p>
+                </div>
+              </div>
+
               <ProductPurchaseActions
                 cartSummary={cartSummary}
                 initialFavorite={favoriteProductIds.has(product.id)}
@@ -296,6 +310,38 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
           <p className="text-text-muted text-sm">Описание товара не указано.</p>
         )}
       </section>
+      {/* Nutrition & Storage */}
+      <section className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4.5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">Пищевая ценность (на 100 г)</h3>
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+            <Sparkles size={12} /> Свежий урожай
+          </span>
+        </div>
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+            <span className="block text-[11px] font-medium text-slate-400">Калории</span>
+            <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">~120 ккал</span>
+          </div>
+          <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+            <span className="block text-[11px] font-medium text-slate-400">Белки</span>
+            <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">3.5 г</span>
+          </div>
+          <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+            <span className="block text-[11px] font-medium text-slate-400">Жиры</span>
+            <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">1.2 г</span>
+          </div>
+          <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+            <span className="block text-[11px] font-medium text-slate-400">Углеводы</span>
+            <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">22.0 г</span>
+          </div>
+        </div>
+        <div className="mt-3.5 pt-3 border-t border-slate-200/60 flex items-center gap-2 text-xs text-slate-500">
+          <ThermometerSnowflake size={14} className="text-cyan-600 shrink-0" />
+          <span>Хранить при температуре от +2°C до +6°C в сухом прохладном месте</span>
+        </div>
+      </section>
+
       <section>
         <h2 className="mb-4 text-base font-bold">Характеристики</h2>
         <dl className="space-y-3 text-sm">

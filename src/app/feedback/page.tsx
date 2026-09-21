@@ -17,6 +17,7 @@ export default function FeedbackPage() {
   const [orderId, setOrderId] = useState("");
   const [message, setMessage] = useState("");
 
+  const [agreement, setAgreement] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -25,6 +26,10 @@ export default function FeedbackPage() {
     e.preventDefault();
     if (!name.trim() || !subject.trim() || !message.trim()) {
       setErrorMsg("Заполните обязательные поля: Имя, Тема и Сообщение.");
+      return;
+    }
+    if (!agreement) {
+      setErrorMsg("Необходимо дать согласие на обработку персональных данных (152-ФЗ).");
       return;
     }
 
@@ -163,6 +168,24 @@ export default function FeedbackPage() {
                       onChange={(e) => setMessage(e.target.value)}
                       required
                     />
+                  </div>
+
+                  <div className="flex items-start gap-2.5 pt-1">
+                    <input
+                      type="checkbox"
+                      id="feedback-agreement"
+                      required
+                      checked={agreement}
+                      onChange={(e) => setAgreement(e.target.checked)}
+                      className="mt-0.5 size-4 rounded border-slate-300 text-emerald-600 accent-emerald-600 cursor-pointer"
+                    />
+                    <label htmlFor="feedback-agreement" className="text-xs text-slate-500 leading-normal cursor-pointer select-none">
+                      <span className="text-rose-500 font-bold">* </span>
+                      Я согласен на обработку персональных данных в соответствии с{" "}
+                      <Link href={ROUTES.PRIVACY} className="text-emerald-600 font-semibold underline hover:text-emerald-700">
+                        Политикой конфиденциальности (152-ФЗ)
+                      </Link>
+                    </label>
                   </div>
 
                   {errorMsg ? <p className="text-xs font-semibold text-rose-500">{errorMsg}</p> : null}

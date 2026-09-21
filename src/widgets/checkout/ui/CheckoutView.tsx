@@ -1021,28 +1021,31 @@ const OrderSummary = ({
         <span className="text-3xl font-bold">{toPriceFormat(finalWithDelivery)}</span>
       </div>
 
-      <label className="mt-6 flex items-start gap-3 text-sm leading-6">
-        <input
-          className="border-border mt-1 size-5 rounded accent-[var(--color-accent-primary)]"
-          checked={personalDataAgreement}
-          type="checkbox"
-          onChange={(event) => onPersonalDataAgreementChange(event.target.checked)}
-        />
-        <span className="text-text-secondary">
-          Я даю{" "}
-          <Link className="text-accent-primary font-semibold" href={ROUTES.PERSONAL_DATA_CONSENT}>
-            согласие на обработку персональных данных
-          </Link>
-          , принимаю{" "}
-          <Link className="text-accent-primary font-semibold" href={ROUTES.PRIVACY}>
-            политику обработки персональных данных
-          </Link>{" "}
-          и{" "}
-          <Link className="text-accent-primary font-semibold" href={ROUTES.OFFER}>
-            публичную оферту
-          </Link>
-        </span>
-      </label>
+      <div className="mt-6 space-y-3">
+        <label className="flex items-start gap-3 text-sm leading-6 cursor-pointer select-none">
+          <input
+            className="border-border mt-1 size-5 rounded accent-[var(--color-accent-primary)] cursor-pointer"
+            checked={personalDataAgreement}
+            type="checkbox"
+            onChange={(event) => onPersonalDataAgreementChange(event.target.checked)}
+          />
+          <span className="text-text-secondary text-xs sm:text-sm">
+            <span className="text-red-500 font-bold">* </span>
+            Я даю{" "}
+            <Link className="text-accent-primary font-semibold hover:underline" href={ROUTES.PERSONAL_DATA_CONSENT}>
+              согласие на обработку персональных данных
+            </Link>
+            , принимаю{" "}
+            <Link className="text-accent-primary font-semibold hover:underline" href={ROUTES.PRIVACY}>
+              политику обработки персональных данных (152-ФЗ)
+            </Link>{" "}
+            и{" "}
+            <Link className="text-accent-primary font-semibold hover:underline" href={ROUTES.OFFER}>
+              публичную оферту
+            </Link>
+          </span>
+        </label>
+      </div>
 
       {deliveryCalculation.min_order_amount && Number(summary.final_price) < Number(deliveryCalculation.min_order_amount) ? (
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">

@@ -188,6 +188,10 @@ const ProfileCard = ({ email, user }: ProfileCardProps) => {
           <ProfileField label="Дата регистрации" value={formatDateTime(user.created_at)} />
           <ProfileField label="Подтвержден" value={user.is_verified ? "Да" : "Нет"} />
           <ProfileField label="Статус" value={user.is_active ? "Активен" : "Неактивен"} />
+          <ProfileField
+            label="Рассылки и акции (38-ФЗ)"
+            value={user.marketing_consent ? "Согласие предоставлено" : "Отключены"}
+          />
         </div>
       </div>
 

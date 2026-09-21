@@ -119,28 +119,30 @@ export const ProductCard = ({
   }
 
   return (
-    <article className="group relative flex min-h-[350px] flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/35 hover:shadow-xl hover:shadow-slate-900/5">
+    <article className="group relative flex min-h-[300px] sm:min-h-[350px] flex-col rounded-2xl border border-slate-200/80 bg-white p-2.5 sm:p-4 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/35 hover:shadow-xl hover:shadow-slate-900/5">
       {product.discount_percent ? (
-        <span className="absolute top-3.5 left-3.5 z-10 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-xs font-black text-white shadow-sm shadow-rose-500/30">
+        <span className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 z-10 rounded-lg sm:rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-black text-white shadow-sm shadow-rose-500/30">
           -{product.discount_percent}%
         </span>
       ) : null}
 
-      <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-1.5">
-        <QuickViewButton product={product} />
+      <div className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 z-10 flex items-center gap-1 sm:gap-1.5">
+        <div className="hidden sm:block">
+          <QuickViewButton product={product} />
+        </div>
         {favoriteControl ?? (
           <button
-            className="flex size-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
+            className="flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"
             type="button"
             aria-label={`Добавить ${product.name} в избранное`}
           >
-            <Heart size={18} />
+            <Heart size={15} className="sm:w-[18px] sm:h-[18px]" />
           </button>
         )}
       </div>
 
       <Link
-        className="mb-3.5 flex h-42 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/70 to-slate-100/40 p-3"
+        className="mb-2 sm:mb-3.5 flex h-32 sm:h-42 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/70 to-slate-100/40 p-2 sm:p-3"
         href={ROUTES.PRODUCT(product.slug)}
       >
         {product.preview_image_url ? (
@@ -187,18 +189,18 @@ export const ProductCard = ({
         {product.name}
       </Link>
 
-      <div className="mt-auto flex items-end justify-between gap-3 pt-5">
-        <div className="flex flex-col gap-0.5">
+      <div className="mt-auto flex items-end justify-between gap-1.5 sm:gap-3 pt-3 sm:pt-5">
+        <div className="flex flex-col gap-0.5 min-w-0">
           {product.old_price ? (
-            <span className="text-xs font-medium text-slate-400 line-through leading-none">
+            <span className="text-[10px] sm:text-xs font-medium text-slate-400 line-through leading-none">
               {toPriceFormat(product.old_price)}
             </span>
           ) : null}
-          <div className="flex items-baseline gap-1.5 flex-wrap">
-            <span className="text-xl font-black tracking-tight text-slate-900 leading-none">
+          <div className="flex items-baseline gap-1 flex-wrap">
+            <span className="text-base sm:text-xl font-black tracking-tight text-slate-900 leading-none">
               {toPriceFormat(product.price)}
             </span>
-            <span className="text-xs font-semibold text-slate-400 leading-none">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 leading-none">
               / {product.unit}
             </span>
           </div>
@@ -207,16 +209,16 @@ export const ProductCard = ({
           <StockAlertButton
             productId={product.id}
             productName={product.name}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-900 hover:bg-amber-100 transition shadow-xs"
+            className="inline-flex h-8 sm:h-10 items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-50 px-2 sm:px-3 text-[11px] sm:text-xs font-bold text-amber-900 hover:bg-amber-100 transition shadow-xs"
           />
         ) : (
           cartControl ?? (
             <button
-              className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
+              className="flex size-8.5 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
               type="button"
               aria-label={`Добавить ${product.name} в корзину`}
             >
-              <ShoppingCart size={18} />
+              <ShoppingCart size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
           )
         )}

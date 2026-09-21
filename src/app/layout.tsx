@@ -29,13 +29,21 @@ export const metadata: Metadata = {
   },
   description: "Онлайн-магазин свежих продуктов с быстрой доставкой и самовывозом.",
   icons: {
-    icon: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: STORE_INFO.name,
+  },
+  formatDetection: {
+    telephone: false,
   },
   openGraph: {
     title: `${STORE_INFO.name} - свежесть каждый день`,

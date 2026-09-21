@@ -34,7 +34,9 @@ html {
 }
 
 body {
-  min-width: 360px;
+  min-width: 320px;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
   margin: 0;
   background-color: #f8fafc;
   color: #0f172a;
@@ -113,9 +115,33 @@ body {
 }
 
 .container {
-  width: min(100% - 32px, 1400px);
+  width: min(100% - 20px, 1400px);
   margin-inline: auto;
 }
+@media (min-width: 480px) {
+  .container {
+    width: min(100% - 28px, 1400px);
+  }
+}
+@media (min-width: 640px) {
+  .container {
+    width: min(100% - 32px, 1400px);
+  }
+}
+
+/* Prevent auto-zoom on iOS Safari */
+@media screen and (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* App-like touch behavior */
+html {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
 
 /* iOS PWA Safe Area insets */
 :root {

@@ -110,21 +110,26 @@ export const BottomNav = () => {
             <Link
               key={item.label}
               href={item.href}
-              className={`relative flex flex-col items-center justify-center py-1 text-center transition active:scale-95 ${
+              onClick={() => {
+                if (typeof window !== "undefined" && "vibrate" in navigator) {
+                  try { navigator.vibrate(12); } catch (_) {}
+                }
+              }}
+              className={`relative flex flex-col items-center justify-center py-1 text-center transition active:scale-95 min-w-0 ${
                 item.isActive
-                  ? "text-accent-primary font-bold"
-                  : "text-text-muted hover:text-text-primary font-medium"
+                  ? "text-emerald-600 font-bold"
+                  : "text-slate-500 hover:text-slate-800 font-medium"
               }`}
             >
               <div className="relative">
-                <Icon size={22} className={item.isActive ? "stroke-[2.4]" : "stroke-[1.8]"} />
+                <Icon size={20} className={`sm:w-[22px] sm:h-[22px] ${item.isActive ? "stroke-[2.4]" : "stroke-[1.8]"}`} />
                 {item.badge ? (
-                  <span className="bg-accent-primary text-accent-contrast absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold shadow-xs">
+                  <span className="bg-emerald-600 text-white absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold shadow-xs">
                     {item.badge}
                   </span>
                 ) : null}
               </div>
-              <span className="mt-1 text-[11px] leading-tight tracking-tight">
+              <span className="mt-1 text-[10px] sm:text-[11px] leading-tight tracking-tight truncate max-w-full px-0.5">
                 {item.label}
               </span>
             </Link>

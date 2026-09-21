@@ -14,10 +14,10 @@ export const Logo = () => {
         <Sparkles className="text-white" size={20} />
       </span>
       <span className="leading-tight">
-        <span className="block text-xl font-extrabold tracking-tight text-slate-900 transition-colors group-hover:text-emerald-700">
+        <span className="block text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 transition-colors group-hover:text-emerald-700">
           {STORE_INFO.name}
         </span>
-        <span className="block text-xs font-medium text-slate-500">
+        <span className="hidden sm:block text-xs font-medium text-slate-500">
           {STORE_INFO.tagline}
         </span>
       </span>

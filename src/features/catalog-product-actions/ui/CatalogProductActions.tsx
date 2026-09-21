@@ -62,7 +62,14 @@ export const CatalogCartButton = ({
     });
   };
 
+  const triggerHaptic = () => {
+    if (typeof window !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate(15); } catch (_) {}
+    }
+  };
+
   const handleIncrement = (): void => {
+    triggerHaptic();
     const prevQty = quantity;
     const nextQty = Number((quantity + step).toFixed(2));
     setQuantity(nextQty); // Optimistic instant update
@@ -86,6 +93,7 @@ export const CatalogCartButton = ({
   };
 
   const handleDecrement = (): void => {
+    triggerHaptic();
     const prevQty = quantity;
     const nextQty = Number((quantity - step).toFixed(2));
     const isRemove = nextQty <= 0.001;

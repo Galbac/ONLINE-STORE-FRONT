@@ -36,6 +36,7 @@ html {
 body {
   min-width: 320px;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   margin: 0;
   background-color: #f8fafc;

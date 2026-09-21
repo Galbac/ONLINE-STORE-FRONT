@@ -527,8 +527,9 @@ interface CheckoutStepsProps {
 
 const CheckoutSteps = ({ activeStep }: CheckoutStepsProps) => {
   return (
-    <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <ol className="flex min-w-[560px] md:min-w-0 md:grid md:grid-cols-7 gap-3">
+    <div className="relative">
+      <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ol className="flex min-w-[560px] md:min-w-0 md:grid md:grid-cols-7 gap-3 pr-8 md:pr-0">
         {steps.map((step, index) => {
           const stepNumber = index + 1;
           const isActive = stepNumber <= activeStep;
@@ -560,6 +561,8 @@ const CheckoutSteps = ({ activeStep }: CheckoutStepsProps) => {
           );
         })}
       </ol>
+      </div>
+      <div aria-hidden="true" className="pointer-events-none absolute top-0 right-0 bottom-2 w-8 bg-gradient-to-l from-slate-50 via-slate-50/80 to-transparent md:hidden" />
     </div>
   );
 };

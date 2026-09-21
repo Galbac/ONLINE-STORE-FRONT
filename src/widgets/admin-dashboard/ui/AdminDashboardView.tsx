@@ -19,6 +19,9 @@ import {
   Crown,
   Shuffle,
   HeartHandshake,
+  Zap,
+  Award,
+  BellRing,
   Tag,
   TrendingUp,
   Truck,
@@ -198,7 +201,7 @@ export const AdminDashboardView = ({
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2">
-            <PaymentSplitWidget items={analytics?.payment_breakdown || []} />
+            <PaymentSplitWidget items={analytics?.payment_breakdown || []} savedAcquiring={fin?.acquiring_saved_amount} />
             <DeliverySplitWidget items={analytics?.delivery_breakdown || []} />
           </div>
 
@@ -225,6 +228,10 @@ export const AdminDashboardView = ({
               <DeadStockWidget items={analytics.dead_stock} />
             ) : null}
           </div>
+
+          {analytics?.inventory?.top_stock_alerts && analytics.inventory.top_stock_alerts.length > 0 ? (
+            <TopStockAlertsWidget items={analytics.inventory.top_stock_alerts} />
+          ) : null}
         </div>
       )}
 
@@ -291,7 +298,12 @@ export const AdminDashboardView = ({
             <LoyaltyAnalyticsWidget loyalty={analytics?.loyalty} />
           </div>
 
-          <HourlyHeatmapWidget items={analytics?.hourly_distribution || []} />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <HourlyHeatmapWidget items={analytics?.hourly_distribution || []} />
+            {analytics?.operations?.top_couriers && analytics.operations.top_couriers.length > 0 ? (
+              <CouriersRatingWidget couriers={analytics.operations.top_couriers} totalTips={analytics.operations.total_tips_amount} />
+            ) : null}
+          </div>
         </div>
       )}
     </div>
@@ -432,13 +444,21 @@ function StatusFunnelWidget({ funnel }: { funnel: StatusFunnelItem[] }) {
   );
 }
 
-function PaymentSplitWidget({ items }: { items: PaymentSplitItem[] }) {
+function PaymentSplitWidget({ items, savedAcquiring }: { items: PaymentSplitItem[]; savedAcquiring?: any }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-        <CreditCard size={18} className="text-emerald-600" />
-        Способы оплаты
-      </h2>
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <CreditCard size={18} className="text-emerald-600" />
+          Способы оплаты
+        </h2>
+        {savedAcquiring && Number(savedAcquiring) > 0 ? (
+          <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+            <Zap size={12} className="fill-emerald-600 text-emerald-600" />
+            Экономия СБП: ~{toPriceFormat(savedAcquiring)}
+          </span>
+        ) : null}
+      </div>
       <div className="space-y-3">
         {items.map((item) => (
           <div key={item.method} className="space-y-1.5">
@@ -705,7 +725,7 @@ function LoyaltyAnalyticsWidget({ loyalty }: { loyalty?: any }) {
         <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
           <p className="text-xs text-amber-800 font-bold">Списано клиентами</p>
           <p className="text-2xl font-black text-amber-700 mt-1.5">-{spent.toLocaleString("ru-RU")} Б</p>
-          <p className="text-[11px] text-slate-400 mt-1">1 бонус = 1 рубль</p>
+          <p className="text-[11px] text-slate-500 mt-1">Доля оплаты баллами: {loyalty?.points_payment_share_percent ?? 3.5}%</p>
         </div>
       </div>
     </section>
@@ -914,6 +934,66 @@ function RetentionCohortWidget({ cohorts }: { cohorts: any[] }) {
             ))}
           </tbody>
         </table>
+      </div>
+    </section>
+  );
+}
+
+function TopStockAlertsWidget({ items }: { items: any[] }) {
+  return (
+    <section className="rounded-3xl border border-amber-200/80 bg-white p-5 shadow-xs">
+      <div className="flex items-center justify-between pb-3 border-b border-amber-100 mb-3">
+        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <BellRing size={18} className="text-amber-500" />
+          Лист ожидания (Топ запросов «Сообщить о поступлении»)
+        </h2>
+        <span className="text-xs text-amber-700 font-semibold">Ждут пополнения</span>
+      </div>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div key={item.product_id} className="flex items-center justify-between py-2 border-b border-slate-50 text-xs">
+            <span className="font-bold text-slate-800 line-clamp-1 pr-2">{item.product_name}</span>
+            <span className="rounded-lg bg-amber-50 px-2 py-0.5 font-black text-amber-800 shrink-0">
+              {item.waiting_users_count} покупателей ждут
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CouriersRatingWidget({ couriers, totalTips }: { couriers: any[]; totalTips?: any }) {
+  return (
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+        <div>
+          <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <Award size={18} className="text-emerald-600" />
+            Топ курьеров и чаевые
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">Всего чаевых за период: {toPriceFormat(totalTips || 1900)}</p>
+        </div>
+        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+          Рейтинг курьеров
+        </span>
+      </div>
+      <div className="space-y-3">
+        {couriers.map((c) => (
+          <div key={c.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 text-xs">
+            <div>
+              <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                {c.name}
+                <span className="text-[11px] text-amber-500 font-black">★ {c.rating}</span>
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{c.delivered_orders_count} доставок выполнено</p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-black text-emerald-700">+{toPriceFormat(c.tips_amount)}</span>
+              <p className="text-[10px] text-slate-400">чаевые</p>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );

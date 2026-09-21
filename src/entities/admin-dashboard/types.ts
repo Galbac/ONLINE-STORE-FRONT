@@ -156,6 +156,7 @@ export interface InventorySummary {
   active_stock_alerts: number;
   estimated_lost_revenue?: string | number;
   turnover_days?: number;
+  top_stock_alerts?: StockAlertProductItem[];
 }
 
 export interface FinancialSummary {
@@ -171,6 +172,7 @@ export interface FinancialSummary {
   total_discount: string | number;
   total_promo_discount: string | number;
   promo_depth_percent?: number;
+  acquiring_saved_amount?: string | number;
   currency: string;
 }
 
@@ -182,6 +184,8 @@ export interface OperationsAnalytics {
   cancel_rate_percent: number;
   csat_score: number;
   total_reviews_count: number;
+  total_tips_amount?: string | number;
+  top_couriers?: CourierRatingItem[];
 }
 
 
@@ -196,6 +200,7 @@ export interface LoyaltyAnalyticsSummary {
   total_points_accrued: number;
   total_points_spent: number;
   active_accounts_count: number;
+  points_payment_share_percent?: number;
 }
 
 export interface ZoneSalesItem {
@@ -235,6 +240,21 @@ export interface SubstitutionSplitItem {
   share_percent: number;
 }
 
+
+
+export interface StockAlertProductItem {
+  product_id: number;
+  product_name: string;
+  waiting_users_count: number;
+}
+
+export interface CourierRatingItem {
+  id: number;
+  name: string;
+  delivered_orders_count: number;
+  tips_amount: string | number;
+  rating: number;
+}
 
 export interface RetentionCohortItem {
   cohort_name: string;

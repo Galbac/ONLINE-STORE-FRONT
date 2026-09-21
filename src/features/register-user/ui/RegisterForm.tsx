@@ -15,6 +15,7 @@ interface RegisterFormValues {
   password: string;
   confirmPassword: string;
   agreement: boolean;
+  marketingConsent: boolean;
 }
 
 const initialValues: RegisterFormValues = {
@@ -23,7 +24,8 @@ const initialValues: RegisterFormValues = {
   email: "",
   password: "",
   confirmPassword: "",
-  agreement: true,
+  agreement: false,
+  marketingConsent: false,
 };
 
 export const RegisterForm = () => {
@@ -61,6 +63,8 @@ export const RegisterForm = () => {
           name: values.name.trim(),
           password: values.password,
           phone: normalizePhoneNumber(values.phone),
+          agreed_to_privacy: values.agreement,
+          marketing_consent: values.marketingConsent,
         });
 
         storeAuthTokens({
@@ -197,25 +201,41 @@ export const RegisterForm = () => {
         </div>
       </div>
 
-      <div className="flex items-start gap-2.5">
-        <input
-          type="checkbox"
-          id="reg-agreement"
-          required
-          checked={values.agreement}
-          onChange={(e) => handleChange("agreement", e.target.checked)}
-          className="mt-1 size-4 rounded border-slate-300 text-emerald-600 accent-emerald-600 cursor-pointer"
-        />
-        <label htmlFor="reg-agreement" className="text-xs text-slate-500 leading-normal cursor-pointer select-none">
-          Я согласен с{" "}
-          <Link href={ROUTES.PERSONAL_DATA_CONSENT} className="text-emerald-600 underline">
-            условиями обработки персональных данных
-          </Link>{" "}
-          и{" "}
-          <Link href={ROUTES.OFFER} className="text-emerald-600 underline">
-            публичной офертой
-          </Link>
-        </label>
+      <div className="space-y-3 pt-1">
+        <div className="flex items-start gap-2.5">
+          <input
+            type="checkbox"
+            id="reg-agreement"
+            required
+            checked={values.agreement}
+            onChange={(e) => handleChange("agreement", e.target.checked)}
+            className="mt-1 size-4 rounded border-slate-300 text-emerald-600 accent-emerald-600 cursor-pointer"
+          />
+          <label htmlFor="reg-agreement" className="text-xs text-slate-600 leading-normal cursor-pointer select-none">
+            <span className="text-rose-500 font-bold">* </span>
+            Я даю{" "}
+            <Link href={ROUTES.PERSONAL_DATA_CONSENT} className="text-emerald-600 font-semibold underline hover:text-emerald-700">
+              согласие на обработку персональных данных
+            </Link>{" "}
+            и принимаю{" "}
+            <Link href={ROUTES.OFFER} className="text-emerald-600 font-semibold underline hover:text-emerald-700">
+              публичную оферту
+            </Link>
+          </label>
+        </div>
+
+        <div className="flex items-start gap-2.5">
+          <input
+            type="checkbox"
+            id="reg-marketing"
+            checked={values.marketingConsent}
+            onChange={(e) => handleChange("marketingConsent", e.target.checked)}
+            className="mt-1 size-4 rounded border-slate-300 text-emerald-600 accent-emerald-600 cursor-pointer"
+          />
+          <label htmlFor="reg-marketing" className="text-xs text-slate-500 leading-normal cursor-pointer select-none">
+            Согласен получать информацию о скидках, персональных акциях и промокодах (38-ФЗ)
+          </label>
+        </div>
       </div>
 
       {errorMessage ? (

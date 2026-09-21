@@ -5,6 +5,8 @@ export interface UserRegisterRequest {
   phone: string;
   password: string;
   email?: string | null;
+  agreed_to_privacy?: boolean;
+  marketing_consent?: boolean;
 }
 
 export interface UserLoginRequest {

@@ -138,6 +138,27 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
             name="working_hours"
           />
         </div>
+
+        <div className="mt-6 border-t border-border pt-4">
+          <h3 className="text-sm font-bold text-text-primary mb-3">Юридические документы (152-ФЗ / Оферта)</h3>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Input
+              defaultValue={settings.privacy_policy_url ?? "/privacy"}
+              label="Политика конфиденциальности (URL)"
+              name="privacy_policy_url"
+            />
+            <Input
+              defaultValue={settings.user_agreement_url ?? "/offer"}
+              label="Публичная оферта (URL)"
+              name="user_agreement_url"
+            />
+            <Input
+              defaultValue={settings.personal_data_consent_url ?? "/personal-data-consent"}
+              label="Согласие на обработку ПД (URL)"
+              name="personal_data_consent_url"
+            />
+          </div>
+        </div>
         <button
           className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-5 inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-bold transition disabled:opacity-60"
           disabled={isPending}

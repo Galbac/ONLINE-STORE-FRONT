@@ -11,6 +11,9 @@ export interface AdminSettingsResponse {
   phone?: string | null;
   pickup_enabled: boolean;
   shop_name: string;
+  privacy_policy_url?: string | null;
+  user_agreement_url?: string | null;
+  personal_data_consent_url?: string | null;
   updated_at?: string | null;
   working_hours?: string | null;
 }

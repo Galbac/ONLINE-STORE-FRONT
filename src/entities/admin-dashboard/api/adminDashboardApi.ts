@@ -6,6 +6,7 @@ import type {
   AdminLowStockParams,
   AdminLowStockResponse,
   AdminSalesResponse,
+  AdminAnalyticsResponse,
 } from "../types";
 
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
@@ -37,6 +38,17 @@ export const adminDashboardApi = {
     return adminApiClient.get<AdminLowStockResponse>(
       API_ENDPOINTS.ADMIN.DASHBOARD_LOW_STOCK,
       toLowStockQueryParams(params),
+      accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    );
+  },
+
+  getAnalytics: async (
+    params: { period?: string; date_from?: string; date_to?: string },
+    accessToken?: string | null,
+  ): Promise<AdminAnalyticsResponse> => {
+    return adminApiClient.get<AdminAnalyticsResponse>(
+      API_ENDPOINTS.ADMIN.DASHBOARD_ANALYTICS,
+      params,
       accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
     );
   },

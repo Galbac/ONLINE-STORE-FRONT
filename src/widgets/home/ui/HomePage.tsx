@@ -31,6 +31,7 @@ import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard, Section } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { QuickRepeatOrderBanner } from "./QuickRepeatOrderBanner";
+import { StoriesBar } from "./StoriesBar";
 import { Header } from "@/widgets/header";
 
 export const HomePage = async () => {
@@ -77,6 +78,7 @@ export const HomePage = async () => {
 
         <Container className="pt-2 sm:pt-4">
           <QuickRepeatOrderBanner />
+          <StoriesBar />
         </Container>
 
         {banners?.items && banners.items.length > 0 ? (

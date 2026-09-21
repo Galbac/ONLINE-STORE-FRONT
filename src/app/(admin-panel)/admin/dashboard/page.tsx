@@ -19,7 +19,7 @@ export default async function Page() {
   const dateRange = getSalesDateRange(DASHBOARD_SALES_DAYS);
 
   try {
-    const [dashboard, sales, lowStock] = await Promise.all([
+    const [dashboard, sales, lowStock, analytics] = await Promise.all([
       adminDashboardApi.getSummary(accessToken),
       adminDashboardApi.getSales(
         {
@@ -36,9 +36,10 @@ export default async function Page() {
         },
         accessToken,
       ),
+      adminDashboardApi.getAnalytics({ period: "week" }, accessToken).catch(() => null),
     ]);
 
-    return <AdminDashboardView dashboard={dashboard} lowStock={lowStock} sales={sales} />;
+    return <AdminDashboardView dashboard={dashboard} lowStock={lowStock} sales={sales} analytics={analytics} />;
   } catch {
     return (
       <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-soft sm:p-6">

@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
     DASHBOARD: "/api/admin/dashboard",
     DASHBOARD_LOW_STOCK: "/api/admin/dashboard/low-stock",
     DASHBOARD_SALES: "/api/admin/dashboard/sales",
+    DASHBOARD_ANALYTICS: "/api/admin/dashboard/analytics",
     DELIVERY_PICKUP_POINT_BY_ID: (pointId: number): string =>
       `/api/admin/delivery/pickup-points/${pointId}`,
     DELIVERY_PICKUP_POINTS: "/api/admin/delivery/pickup-points",

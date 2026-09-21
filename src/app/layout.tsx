@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 
 import { STORE_INFO } from "@/shared/config";
 import { CookieBanner, PwaInstallPrompt } from "@/shared/ui";
+import { OfflineIndicator } from "@/shared/ui/offline-indicator";
+import { PullToRefresh } from "@/shared/ui/pull-to-refresh";
 import { BottomNav } from "@/widgets/bottom-nav";
 import { CartDrawer } from "@/widgets/cart-drawer";
 import { Toaster } from "sonner";
@@ -63,12 +65,13 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ru" className={inter.variable}>
       <body className={`${inter.className} mobile-bottom-padding antialiased bg-slate-50/70 text-slate-900 selection:bg-emerald-500 selection:text-white`}>
-        {children}
+        <PullToRefresh>{children}</PullToRefresh>
         <BottomNav />
         <CartDrawer />
         <Toaster position="bottom-right" richColors closeButton />
         <CookieBanner />
         <PwaInstallPrompt />
+        <OfflineIndicator />
       </body>
     </html>
   );

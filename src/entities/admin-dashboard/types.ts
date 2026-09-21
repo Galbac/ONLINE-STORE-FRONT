@@ -130,6 +130,7 @@ export interface TopProductItem {
   current_stock: string | number;
   unit: string;
   abc_group?: string;
+  xyz_group?: string;
 }
 
 export interface HourlySalesItem {
@@ -169,11 +170,15 @@ export interface FinancialSummary {
   aov_pickup?: string | number;
   total_discount: string | number;
   total_promo_discount: string | number;
+  promo_depth_percent?: number;
   currency: string;
 }
 
 export interface OperationsAnalytics {
-  avg_delivery_minutes: number;
+  avg_delivery_minutes?: number;
+  picking_minutes?: number;
+  transit_minutes?: number;
+  total_lifecycle_minutes?: number;
   cancel_rate_percent: number;
   csat_score: number;
   total_reviews_count: number;
@@ -209,6 +214,37 @@ export interface DeadStockItem {
   unit: string;
 }
 
+
+export interface MarketBasketPairItem {
+  product_a: string;
+  product_b: string;
+  frequency: number;
+}
+
+export interface RfmSegmentationSummary {
+  vip_count: number;
+  regular_count: number;
+  at_risk_count: number;
+  newbies_count: number;
+}
+
+export interface SubstitutionSplitItem {
+  policy: string;
+  label: string;
+  count: number;
+  share_percent: number;
+}
+
+
+export interface RetentionCohortItem {
+  cohort_name: string;
+  users_count: number;
+  m0: number;
+  m1: number;
+  m2: number;
+  m3: number;
+}
+
 export interface AdminAnalyticsResponse {
   date_from: string;
   date_to: string;
@@ -224,6 +260,10 @@ export interface AdminAnalyticsResponse {
   promo_codes?: PromoCodeAnalyticsItem[];
   loyalty?: LoyaltyAnalyticsSummary;
   operations?: OperationsAnalytics;
+  market_basket?: MarketBasketPairItem[];
+  rfm_segments?: RfmSegmentationSummary;
+  retention_cohorts?: RetentionCohortItem[];
+  substitution_split?: SubstitutionSplitItem[];
   hourly_distribution: HourlySalesItem[];
   customers: CustomerAnalytics;
   inventory: InventorySummary;

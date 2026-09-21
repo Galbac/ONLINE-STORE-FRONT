@@ -16,6 +16,9 @@ import {
   ShoppingBasket,
   Sparkles,
   Star,
+  Crown,
+  Shuffle,
+  HeartHandshake,
   Tag,
   TrendingUp,
   Truck,
@@ -49,7 +52,7 @@ interface AdminDashboardViewProps {
   analytics?: AdminAnalyticsResponse | null;
 }
 
-type TabType = "overview" | "products" | "customers" | "operations";
+type TabType = "overview" | "products" | "customers_operations";
 
 const PERIODS = [
   { value: "today", label: "Сегодня" },
@@ -127,10 +130,9 @@ export const AdminDashboardView = ({
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[
-          { id: "overview", label: "Главный обзор", icon: TrendingUp },
-          { id: "products", label: "Товары и ABC-анализ", icon: Package },
-          { id: "customers", label: "Клиенты и Маркетинг", icon: Users },
-          { id: "operations", label: "Логистика и склад", icon: Truck },
+          { id: "overview", label: "1. Обзор (Overview)", icon: TrendingUp },
+          { id: "products", label: "2. Продажи и Товары (Product Analytics)", icon: Package },
+          { id: "customers_operations", label: "3. Клиенты и Заказы (Customer & Operations)", icon: Users },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -215,74 +217,30 @@ export const AdminDashboardView = ({
             <CategorySalesWidget categories={analytics?.category_sales || []} />
           </div>
 
-          {/* Dead Stock Shelf */}
-          {analytics?.dead_stock && analytics.dead_stock.length > 0 ? (
-            <DeadStockWidget items={analytics.dead_stock} />
-          ) : null}
-        </div>
-      )}
-
-      {/* 3. CUSTOMERS & MARKETING TAB */}
-      {activeTab === "customers" && (
-        <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Всего клиентов</p>
-              <p className="text-2xl font-black text-slate-900 mt-2">
-                {analytics?.customers.total_customers ?? dashboard.users.total}
-              </p>
-              <p className="text-xs text-slate-400 mt-1">В базе покупателей</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Повторные покупки (Retention)</p>
-              <p className="text-2xl font-black text-emerald-600 mt-2">
-                {analytics?.customers.repeat_purchase_rate ?? 65}%
-              </p>
-              <p className="text-xs text-slate-400 mt-1">Сделали 2+ заказов</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Скидки по акциям</p>
-              <p className="text-2xl font-black text-rose-600 mt-2">
-                {toPriceFormat(fin?.total_discount ?? 0)}
-              </p>
-              <p className="text-xs text-slate-400 mt-1">Сумма за период</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Скидки по промокодам</p>
-              <p className="text-2xl font-black text-purple-600 mt-2">
-                {toPriceFormat(fin?.total_promo_discount ?? 0)}
-              </p>
-              <p className="text-xs text-slate-400 mt-1">Промо-кампании</p>
-            </div>
-          </div>
-
           <div className="grid gap-6 lg:grid-cols-2">
-            <PromoCodesAnalyticsWidget items={analytics?.promo_codes || []} />
-            <LoyaltyAnalyticsWidget loyalty={analytics?.loyalty} />
+            {analytics?.market_basket && analytics.market_basket.length > 0 ? (
+              <MarketBasketWidget items={analytics.market_basket} />
+            ) : null}
+            {analytics?.dead_stock && analytics.dead_stock.length > 0 ? (
+              <DeadStockWidget items={analytics.dead_stock} />
+            ) : null}
           </div>
-
-          <HourlyHeatmapWidget items={analytics?.hourly_distribution || []} />
         </div>
       )}
 
-      {/* 4. OPERATIONS & WAREHOUSE TAB */}
-      {activeTab === "operations" && (
+      {/* 3. CUSTOMER & OPERATIONS TAB */}
+      {activeTab === "customers_operations" && (
         <div className="space-y-6">
-          {/* Operational KPIs */}
+          {/* Operations & Delivery KPIs */}
           <div className="grid gap-4 sm:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Капитализация склада</p>
-              <p className="text-xl font-black text-slate-900 mt-2">
-                {toPriceFormat(analytics?.inventory.total_stock_value ?? 0)}
-              </p>
-              <p className="text-xs text-slate-400 mt-1">Оборачиваемость: ~{analytics?.inventory.turnover_days ?? 14} дней</p>
-            </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               <p className="text-xs text-slate-500 font-medium">Скорость доставки</p>
               <p className="text-xl font-black text-emerald-600 mt-2">
-                ~{analytics?.operations?.avg_delivery_minutes ?? 25} мин
+                ~{analytics?.operations?.total_lifecycle_minutes ?? 30} мин
               </p>
-              <p className="text-xs text-slate-400 mt-1">От оформления до двери</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Сборка: {analytics?.operations?.picking_minutes ?? 12}м • В пути: {analytics?.operations?.transit_minutes ?? 18}м
+              </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               <p className="text-xs text-slate-500 font-medium">Оценка сервиса (CSAT)</p>
@@ -294,19 +252,46 @@ export const AdminDashboardView = ({
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
               <p className="text-xs text-slate-500 font-medium">Процент отмен (Cancel Rate)</p>
-              <p className="text-xl font-black text-slate-900 mt-2">
+              <p className="text-xl font-black text-rose-600 mt-2">
                 {analytics?.operations?.cancel_rate_percent ?? 1.2}%
               </p>
               <p className="text-xs text-slate-400 mt-1">Успешность 98.8%</p>
             </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+              <p className="text-xs text-slate-500 font-medium">Глубина скидок (Promo Depth)</p>
+              <p className="text-xl font-black text-purple-600 mt-2">
+                {fin?.promo_depth_percent ?? 18.5}%
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Доля выручки со скидкой</p>
+            </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          {/* Retention Cohorts Analysis */}
+          {analytics?.retention_cohorts && analytics.retention_cohorts.length > 0 ? (
+            <RetentionCohortWidget cohorts={analytics.retention_cohorts} />
+          ) : null}
+
+          {/* RFM Segmentation */}
+          {analytics?.rfm_segments ? (
+            <RfmSegmentationWidget rfm={analytics.rfm_segments} />
+          ) : null}
+
+          {/* Delivery & Substitution Splits */}
+          <div className="grid gap-6 lg:grid-cols-3">
             <ZoneSalesWidget items={analytics?.zone_sales || []} />
             <DeliverySplitWidget items={analytics?.delivery_breakdown || []} />
+            {analytics?.substitution_split && analytics.substitution_split.length > 0 ? (
+              <SubstitutionSplitWidget items={analytics.substitution_split} />
+            ) : null}
           </div>
 
-          <LowStockWidget lowStock={lowStock} />
+          {/* Marketing: Promo codes & Loyalty */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <PromoCodesAnalyticsWidget items={analytics?.promo_codes || []} />
+            <LoyaltyAnalyticsWidget loyalty={analytics?.loyalty} />
+          </div>
+
+          <HourlyHeatmapWidget items={analytics?.hourly_distribution || []} />
         </div>
       )}
     </div>
@@ -561,7 +546,7 @@ function TopProductsTable({ items }: { items: TopProductItem[] }) {
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase">
-              <th className="pb-2 font-medium">ABC</th>
+              <th className="pb-2 font-medium">ABC/XYZ</th>
               <th className="pb-2 font-medium">Товар</th>
               <th className="pb-2 text-right font-medium">Продано</th>
               <th className="pb-2 text-right font-medium">Выручка</th>
@@ -579,9 +564,9 @@ function TopProductsTable({ items }: { items: TopProductItem[] }) {
                   : "bg-slate-100 text-slate-600";
               return (
                 <tr key={p.id} className="hover:bg-slate-50 transition">
-                  <td className="py-2.5 pr-2">
-                    <span className={`inline-block size-6 rounded-lg font-black text-center leading-6 text-xs ${badgeBg}`}>
-                      {group}
+                  <td className="py-2.5 pr-2 whitespace-nowrap">
+                    <span className={`inline-block px-1.5 py-0.5 rounded-lg font-black text-center text-xs ${badgeBg}`}>
+                      {group}/{p.xyz_group || "X"}
                     </span>
                   </td>
                   <td className="py-2.5 font-bold text-slate-900 pr-2">
@@ -804,6 +789,131 @@ function LowStockWidget({ lowStock }: { lowStock: AdminLowStockResponse }) {
             </span>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function MarketBasketWidget({ items }: { items: any[] }) {
+  return (
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <HeartHandshake size={18} className="text-indigo-600" />
+          Частые товарные связки (Market Basket)
+        </h2>
+        <span className="text-xs text-slate-400 font-medium">Покупают вместе</span>
+      </div>
+      <div className="space-y-2.5">
+        {items.map((pair, idx) => (
+          <div key={idx} className="flex items-center justify-between rounded-xl bg-slate-50/70 p-3 border border-slate-100 text-xs">
+            <div className="flex items-center gap-2 min-w-0 pr-3">
+              <span className="font-bold text-slate-900 truncate">{pair.product_a}</span>
+              <span className="text-slate-400 font-black">+</span>
+              <span className="font-bold text-slate-900 truncate">{pair.product_b}</span>
+            </div>
+            <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-black text-indigo-700 shrink-0">
+              {pair.frequency} заказов
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RfmSegmentationWidget({ rfm }: { rfm?: any }) {
+  const segments = [
+    { label: "VIP / Чемпионы", count: rfm?.vip_count ?? 0, desc: "Чек > 10 000 ₽ или 5+ заказов", color: "border-amber-200 bg-amber-50/40 text-amber-900" },
+    { label: "Постоянные (Regular)", count: rfm?.regular_count ?? 0, desc: "Совершили 2-4 покупки", color: "border-emerald-200 bg-emerald-50/40 text-emerald-900" },
+    { label: "Новички", count: rfm?.newbies_count ?? 0, desc: "Сделали первый заказ", color: "border-blue-200 bg-blue-50/40 text-blue-900" },
+    { label: "В зоне риска (Спящие)", count: rfm?.at_risk_count ?? 0, desc: "Без покупок > 21 дня", color: "border-rose-200 bg-rose-50/40 text-rose-900" },
+  ];
+
+  return (
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <Crown size={18} className="text-amber-500" />
+          RFM-сегментация покупателей
+        </h2>
+        <span className="text-xs text-slate-400 font-medium">Сегменты LTV</span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {segments.map((s) => (
+          <div key={s.label} className={`rounded-2xl border p-4 shadow-2xs ${s.color}`}>
+            <p className="text-xs font-bold leading-tight">{s.label}</p>
+            <p className="text-2xl font-black mt-2">{s.count}</p>
+            <p className="text-[11px] opacity-75 mt-1">{s.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SubstitutionSplitWidget({ items }: { items: any[] }) {
+  return (
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+        <Shuffle size={18} className="text-emerald-600" />
+        Политика замен при сборке
+      </h2>
+      <div className="space-y-3">
+        {items.map((item) => (
+          <div key={item.policy} className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-slate-800">{item.label}</span>
+              <span className="text-slate-900">{item.count} заказов ({item.share_percent}%)</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-teal-500"
+                style={{ width: `${Math.min(item.share_percent, 100)}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RetentionCohortWidget({ cohorts }: { cohorts: any[] }) {
+  return (
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <Users size={18} className="text-emerald-600" />
+          Когортный анализ удержания (Retention Cohorts)
+        </h2>
+        <span className="text-xs text-slate-400 font-medium">Повторные покупки по месяцам</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-center text-xs">
+          <thead>
+            <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase">
+              <th className="pb-2 text-left font-medium">Когорта регистрации</th>
+              <th className="pb-2 font-medium">База</th>
+              <th className="pb-2 font-medium">M0 (Старт)</th>
+              <th className="pb-2 font-medium">M1 (+1 мес)</th>
+              <th className="pb-2 font-medium">M2 (+2 мес)</th>
+              <th className="pb-2 font-medium">M3 (+3 мес)</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {cohorts.map((c) => (
+              <tr key={c.cohort_name} className="hover:bg-slate-50 transition">
+                <td className="py-2.5 text-left font-bold text-slate-900">{c.cohort_name}</td>
+                <td className="py-2.5 font-semibold text-slate-600">{c.users_count} чел.</td>
+                <td className="py-2.5"><span className="rounded-lg bg-emerald-600 text-white font-bold px-2 py-0.5">{c.m0}%</span></td>
+                <td className="py-2.5"><span className={`rounded-lg px-2 py-0.5 font-bold ${c.m1 > 0 ? "bg-emerald-100 text-emerald-800" : "text-slate-300"}`}>{c.m1 > 0 ? `${c.m1}%` : "—"}</span></td>
+                <td className="py-2.5"><span className={`rounded-lg px-2 py-0.5 font-bold ${c.m2 > 0 ? "bg-emerald-50 text-emerald-700" : "text-slate-300"}`}>{c.m2 > 0 ? `${c.m2}%` : "—"}</span></td>
+                <td className="py-2.5"><span className={`rounded-lg px-2 py-0.5 font-bold ${c.m3 > 0 ? "bg-emerald-50 text-emerald-700" : "text-slate-300"}`}>{c.m3 > 0 ? `${c.m3}%` : "—"}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </section>
   );

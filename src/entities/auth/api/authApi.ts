@@ -9,6 +9,8 @@ import type {
   RefreshTokenRequest,
   RegisterAuthResponse,
   ResetPasswordRequest,
+  SendRegisterOtpRequest,
+  SendRegisterOtpResponse,
   TokenPairResponse,
   UserLoginRequest,
   UserRegisterRequest,
@@ -17,6 +19,13 @@ import type {
 export const authApi = {
   login: async (data: UserLoginRequest): Promise<AuthResponse> => {
     return apiClient.post<UserLoginRequest, AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, data);
+  },
+
+  sendRegisterOtp: async (data: SendRegisterOtpRequest): Promise<SendRegisterOtpResponse> => {
+    return apiClient.post<SendRegisterOtpRequest, SendRegisterOtpResponse>(
+      API_ENDPOINTS.AUTH.REGISTER_SEND_OTP,
+      data,
+    );
   },
 
   register: async (data: UserRegisterRequest): Promise<RegisterAuthResponse> => {

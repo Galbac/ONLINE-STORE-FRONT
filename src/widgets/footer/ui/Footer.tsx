@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { Clock, Mail, MapPin, Phone, ShieldCheck, Sparkles } from "lucide-react";
-
 import { ROUTES, STORE_INFO } from "@/shared/config";
-import { Container } from "@/shared/ui";
+import { Container, PwaInstallButton } from "@/shared/ui";
 
 interface FooterLink {
   href: string;
@@ -94,7 +93,9 @@ export const Footer = () => {
               </span>
               <div>
                 <h4 className="text-sm font-bold text-slate-900">Гарантия свежести</h4>
-                <p className="text-xs text-slate-500">Только проверенные поставщики и контроль срока</p>
+                <p className="text-xs text-slate-500">
+                  Только проверенные поставщики и контроль срока
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3.5">
@@ -130,11 +131,17 @@ export const Footer = () => {
               <span className="text-lg font-extrabold text-slate-900">{STORE_INFO.name}</span>
             </Link>
             <p className="mt-3 text-xs leading-relaxed text-slate-500">
-              {STORE_INFO.tagline}. Заказывайте любимые продукты онлайн в несколько кликов с быстрой доставкой.
+              {STORE_INFO.tagline}. Заказывайте любимые продукты онлайн в несколько кликов с быстрой
+              доставкой.
             </p>
             <div className="mt-4 flex items-center gap-2">
               <span className="inline-block size-2 rounded-full bg-emerald-500" />
-              <span className="text-xs font-semibold text-emerald-700">Магазин открыт ежедневно</span>
+              <span className="text-xs font-semibold text-emerald-700">
+                Магазин открыт ежедневно
+              </span>
+            </div>
+            <div className="mt-4">
+              <PwaInstallButton variant="footer" />
             </div>
           </div>
 
@@ -145,7 +152,7 @@ export const Footer = () => {
         </div>
 
         {/* Contacts & bottom row */}
-        <div className="mt-12 flex flex-col gap-6 border-t border-slate-100 pt-8 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500">
+        <div className="mt-12 flex flex-col gap-6 border-t border-slate-100 pt-8 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <p>© 2026 {STORE_INFO.name}. Все права защищены.</p>
             <p className="text-slate-400">
@@ -155,7 +162,7 @@ export const Footer = () => {
 
           <div className="flex flex-wrap items-center gap-4 text-xs font-medium">
             <a
-              className="inline-flex items-center gap-1.5 text-slate-700 hover:text-emerald-700 transition"
+              className="inline-flex items-center gap-1.5 text-slate-700 transition hover:text-emerald-700"
               href={STORE_INFO.phoneHref}
             >
               <Phone size={14} className="text-emerald-600" />
@@ -163,7 +170,7 @@ export const Footer = () => {
             </a>
             <span className="text-slate-300">•</span>
             <a
-              className="inline-flex items-center gap-1.5 text-slate-700 hover:text-emerald-700 transition"
+              className="inline-flex items-center gap-1.5 text-slate-700 transition hover:text-emerald-700"
               href={`mailto:${STORE_INFO.email}`}
             >
               <Mail size={14} className="text-emerald-600" />
@@ -201,11 +208,14 @@ interface FooterColumnProps {
 const FooterColumn = ({ title, links }: FooterColumnProps) => {
   return (
     <div>
-      <h3 className="mb-3.5 text-xs font-bold uppercase tracking-wider text-slate-900">{title}</h3>
+      <h3 className="mb-3.5 text-xs font-bold tracking-wider text-slate-900 uppercase">{title}</h3>
       <ul className="space-y-2.5 text-xs">
         {links.map((link) => (
           <li key={link.href}>
-            <Link className="text-slate-500 hover:text-emerald-700 transition-colors" href={link.href}>
+            <Link
+              className="text-slate-500 transition-colors hover:text-emerald-700"
+              href={link.href}
+            >
               {link.label}
             </Link>
           </li>

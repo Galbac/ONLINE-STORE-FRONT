@@ -168,3 +168,98 @@ body {
     padding-bottom: 0px;
   }
 }
+
+/* Autofill styling: keep input backgrounds clean white */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Rich Text & Legal Document Typography */
+.rich-text-content h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-text-primary, #0f172a);
+}
+.rich-text-content h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-primary, #0f172a);
+}
+.rich-text-content h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.rich-text-content p {
+  margin-bottom: 0.85rem;
+  line-height: 1.7;
+}
+.rich-text-content ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.rich-text-content ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.rich-text-content li {
+  margin-bottom: 0.35rem;
+}
+.rich-text-content strong, .rich-text-content b {
+  font-weight: 700;
+}
+.rich-text-content u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rich-text-content em, .rich-text-content i {
+  font-style: italic;
+}
+.rich-text-content blockquote {
+  border-left: 4px solid #10b981;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  opacity: 0.9;
+}
+.rich-text-content a {
+  color: #059669;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-text-content a:hover {
+  color: #047857;
+}
+.rich-text-content hr {
+  border: none;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  margin: 1.5rem 0;
+}
+.rich-text-content:empty:before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  font-style: italic;
+  pointer-events: none;
+}

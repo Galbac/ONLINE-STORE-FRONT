@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { legalDocumentApi } from "@/entities/legal-document";
 import { STORE_INFO } from "@/shared/config";
 import { LegalDocumentPage, type LegalSection } from "@/widgets/legal-docs";
 
@@ -7,7 +8,9 @@ export const metadata: Metadata = {
   title: `Публичная оферта - ${STORE_INFO.name}`,
 };
 
-const sections: LegalSection[] = [
+export const dynamic = "force-dynamic";
+
+const fallbackSections: LegalSection[] = [
   {
     title: "1. Продавец и реквизиты",
     paragraphs: [
@@ -55,14 +58,33 @@ const sections: LegalSection[] = [
   },
 ];
 
-export default function Page() {
+export default async function Page() {
+  let doc = null;
+  try {
+    doc = await legalDocumentApi.getPublic("offer");
+  } catch {
+    // API unavailable or document not found - use fallback
+  }
+
+  if (doc && doc.content_html) {
+    return (
+      <LegalDocumentPage
+        title={doc.title || "Публичная оферта"}
+        description={
+          doc.description ||
+          "Документ описывает основные условия заказа, оплаты, доставки, самовывоза, возврата и взаимодействия покупателя с продавцом."
+        }
+        contentHtml={doc.content_html}
+        updatedDate={doc.updated_date}
+      />
+    );
+  }
+
   return (
     <LegalDocumentPage
       title="Публичная оферта"
       description="Документ описывает основные условия заказа, оплаты, доставки, самовывоза, возврата и взаимодействия покупателя с продавцом."
-      sections={sections}
+      sections={fallbackSections}
     />
   );
 }
-
-export const dynamic = "force-static";

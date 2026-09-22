@@ -105,7 +105,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
           <label className="block text-xs font-bold text-slate-700 mb-1.5">
             Новый пароль <span className="text-rose-500">*</span>
           </label>
-          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+          <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
             <LockKeyhole size={17} className="text-slate-400 mr-2.5" />
             <input
               type={showPassword ? "text" : "password"}
@@ -116,7 +116,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
               className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             />
             <button type="button" onClick={() => setShowPassword((p) => !p)} className="text-slate-400 hover:text-slate-600 p-1">
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
             </button>
           </div>
         </div>
@@ -125,7 +125,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
           <label className="block text-xs font-bold text-slate-700 mb-1.5">
             Повторите пароль <span className="text-rose-500">*</span>
           </label>
-          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+          <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
             <LockKeyhole size={17} className="text-slate-400 mr-2.5" />
             <input
               type={showConfirm ? "text" : "password"}
@@ -136,7 +136,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
               className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             />
             <button type="button" onClick={() => setShowConfirm((p) => !p)} className="text-slate-400 hover:text-slate-600 p-1">
-              {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showConfirm ? <Eye size={16} /> : <EyeOff size={16} />}
             </button>
           </div>
         </div>

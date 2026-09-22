@@ -95,3 +95,27 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
 
   return isAllowed ? children : null;
 };
+
+interface GuestGuardProps {
+  children: ReactNode;
+}
+
+export const GuestGuard = ({ children }: GuestGuardProps) => {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const accessToken = getStoredAccessToken();
+
+    if (accessToken) {
+      setIsLoggedIn(true);
+      router.replace(ROUTES.HOME);
+    }
+  }, [router]);
+
+  if (isLoggedIn) {
+    return null;
+  }
+
+  return <>{children}</>;
+};

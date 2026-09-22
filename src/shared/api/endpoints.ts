@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
     ME: "/api/auth/me",
     REFRESH: "/api/auth/refresh",
     REGISTER: "/api/auth/register",
+    REGISTER_SEND_OTP: "/api/auth/register/send-otp",
     RESET_PASSWORD: "/api/auth/reset-password",
   },
   ADMIN_AUTH: {
@@ -72,6 +73,8 @@ export const API_ENDPOINTS = {
     PRODUCT_STOCK: (productId: number): string => `/api/admin/products/${productId}/stock`,
     ROLES: "/api/admin/roles",
     SETTINGS: "/api/admin/settings",
+    LEGAL_DOCUMENTS: "/api/admin/legal-documents",
+    LEGAL_DOCUMENT_BY_SLUG: (slug: string): string => `/api/admin/legal-documents/${slug}`,
     PUBLIC_SETTINGS: "/api/settings",
     STAFF: "/api/admin/staff",
     STAFF_BY_ID: (staffId: number): string => `/api/admin/staff/${staffId}`,
@@ -189,5 +192,8 @@ export const API_ENDPOINTS = {
   UPLOAD: {
     IMAGE: "/api/uploads/image",
     BY_ID: (fileId: number): string => `/api/uploads/${fileId}`,
+  },
+  LEGAL_DOCUMENT: {
+    BY_SLUG: (slug: string): string => `/api/legal-documents/${slug}`,
   },
 } as const;

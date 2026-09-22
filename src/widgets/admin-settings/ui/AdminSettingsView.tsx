@@ -140,7 +140,15 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
         </div>
 
         <div className="mt-6 border-t border-border pt-4">
-          <h3 className="text-sm font-bold text-text-primary mb-3">Юридические документы (152-ФЗ / Оферта)</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 className="text-sm font-bold text-text-primary">Юридические документы (152-ФЗ / Оферта)</h3>
+            <a
+              href="/admin/legal-documents"
+              className="text-xs font-bold text-accent-primary hover:underline inline-flex items-center gap-1"
+            >
+              Редактировать тексты документов в Word-редакторе →
+            </a>
+          </div>
           <div className="grid gap-4 md:grid-cols-3">
             <Input
               defaultValue={settings.privacy_policy_url ?? "/privacy"}

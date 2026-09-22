@@ -1,10 +1,23 @@
+export interface SendRegisterOtpRequest {
+  email: string;
+  phone?: string | null;
+}
+
+export interface SendRegisterOtpResponse {
+  message: string;
+  email: string;
+  expires_in: number;
+  cooldown_seconds: number;
+}
+
 export type UserRole = "customer" | "manager" | "admin" | string;
 
 export interface UserRegisterRequest {
   name: string;
   phone: string;
   password: string;
-  email?: string | null;
+  email: string;
+  otp_code: string;
   agreed_to_privacy?: boolean;
   marketing_consent?: boolean;
 }

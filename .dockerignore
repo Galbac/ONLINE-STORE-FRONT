@@ -53,12 +53,14 @@ homepage-*.png
 Thumbs.db
 .idea/
 .vscode/
+.gemini/
 *.swp
 *.swo
 
 # Local docs and generated artifacts
 README.md
 AGENTS.md
+GEMINI.md
 frontend_pages_api_full.md
 frontend_tz_from_openapi_actual.md
 openapi.json
@@ -67,3 +69,8 @@ img_test/
 # Docker-only local files
 docker-compose*.yml
 .dockerignore
+
+# SSL / Certificates
+*.pem
+*.key
+*.crt

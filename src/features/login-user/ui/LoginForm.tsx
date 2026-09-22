@@ -89,7 +89,7 @@ export const LoginForm = () => {
           <label className="block text-xs font-bold text-slate-700 mb-1.5">
             Email или номер телефона <span className="text-rose-500">*</span>
           </label>
-          <div className="relative flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 transition-all focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10">
+          <div className="relative flex items-center rounded-xl border border-slate-200 bg-white px-3.5 transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10">
             <UserRound className="text-slate-400 shrink-0 mr-2.5" size={18} />
             <input
               className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
@@ -115,7 +115,7 @@ export const LoginForm = () => {
               Забыли пароль?
             </Link>
           </div>
-          <div className="relative flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 transition-all focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10">
+          <div className="relative flex items-center rounded-xl border border-slate-200 bg-white px-3.5 transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10">
             <LockKeyhole className="text-slate-400 shrink-0 mr-2.5" size={18} />
             <input
               className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
@@ -132,7 +132,7 @@ export const LoginForm = () => {
               onClick={() => setShowPassword((isVisible) => !isVisible)}
               aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
             </button>
           </div>
         </div>

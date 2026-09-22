@@ -1,18 +1,43 @@
 import { type NextRequest, NextResponse } from "next/server";
-
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
 const protectedPathPrefixes = ["/profile", "/cart", "/checkout"] as const;
+const guestOnlyPathPrefixes = ["/login", "/register"] as const;
 const protectedAdminPathPrefix = "/admin";
 const adminLoginPath = "/admin/login";
 
 export const middleware = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
+
+  const isGuestOnlyPath = guestOnlyPathPrefixes.some((prefix) => {
+    return pathname === prefix || pathname.startsWith(`${prefix}/`);
+  });
+
+  if (isGuestOnlyPath) {
+    const accessToken = request.cookies.get("access_token")?.value;
+
+    if (accessToken) {
+      if (isAccessTokenValid(accessToken)) {
+        const homeUrl = request.nextUrl.clone();
+        homeUrl.pathname = "/";
+        homeUrl.search = "";
+        return NextResponse.redirect(homeUrl);
+      }
+
+      const response = NextResponse.next();
+      response.cookies.delete("access_token");
+      return response;
+    }
+
+    return NextResponse.next();
+  }
+
   const isProtectedPath = protectedPathPrefixes.some((prefix) => {
     return pathname === prefix || pathname.startsWith(`${prefix}/`);
   });
   const isProtectedAdminPath =
-    (pathname === protectedAdminPathPrefix || pathname.startsWith(`${protectedAdminPathPrefix}/`)) &&
+    (pathname === protectedAdminPathPrefix ||
+      pathname.startsWith(`${protectedAdminPathPrefix}/`)) &&
     pathname !== adminLoginPath;
 
   if (!isProtectedPath && !isProtectedAdminPath) {
@@ -53,5 +78,14 @@ export const middleware = (request: NextRequest) => {
 };
 
 export const config = {
-  matcher: ["/profile/:path*", "/cart/:path*", "/checkout/:path*", "/admin/:path*"],
+  matcher: [
+    "/profile/:path*",
+    "/cart/:path*",
+    "/checkout/:path*",
+    "/admin/:path*",
+    "/login",
+    "/login/:path*",
+    "/register",
+    "/register/:path*",
+  ],
 };

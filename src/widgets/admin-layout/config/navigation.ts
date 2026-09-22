@@ -1,4 +1,5 @@
 import {
+  FileText,
   BadgePercent,
   Headphones,
   MessageSquare,
@@ -135,6 +136,12 @@ export const adminNavigationItems: AdminNavigationItem[] = [
     icon: Activity,
     label: "Health",
     requiredPermissions: ["admin.system.health.read", "system.health.read", "system-health:view"],
+  },
+  {
+    href: ROUTES.ADMIN_LEGAL_DOCUMENTS,
+    icon: FileText,
+    label: "Оферта и документы",
+    requiredPermissions: ["admin.settings.read", "settings.read", "settings:view"],
   },
   {
     href: ROUTES.ADMIN_SETTINGS,

@@ -24,3 +24,46 @@ export const normalizePhoneNumber = (phone: string): string => {
 
   return cleaned;
 };
+
+
+/**
+ * Применяет маску +7 (XXX) XXX-XX-XX к вводимой строке.
+ */
+export const formatPhoneMask = (input: string): string => {
+  const digits = input.replace(/\D/g, "");
+  if (!digits) return "";
+
+  // Если номер начинается с 7 или 8, отбрасываем первую цифру, чтобы форматировать как +7 (...)
+  let localDigits = digits;
+  if (digits.startsWith("7") || digits.startsWith("8")) {
+    localDigits = digits.slice(1);
+  }
+
+  // Ограничиваем 10 цифрами после кода страны
+  localDigits = localDigits.slice(0, 10);
+
+  let formatted = "+7";
+  if (localDigits.length > 0) {
+    formatted += " (" + localDigits.slice(0, 3);
+  }
+  if (localDigits.length >= 3) {
+    formatted += ") ";
+  }
+  if (localDigits.length > 3) {
+    formatted += localDigits.slice(3, 6);
+  }
+  if (localDigits.length >= 6) {
+    formatted += "-";
+  }
+  if (localDigits.length > 6) {
+    formatted += localDigits.slice(6, 8);
+  }
+  if (localDigits.length >= 8) {
+    formatted += "-";
+  }
+  if (localDigits.length > 8) {
+    formatted += localDigits.slice(8, 10);
+  }
+
+  return formatted;
+};

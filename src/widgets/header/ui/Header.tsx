@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { LayoutGrid, MapPin, Phone, UserRound } from "lucide-react";
-
 import { ProductSearch } from "@/features/product-search";
 import { ROUTES, STORE_INFO } from "@/shared/config";
-import { Container, Logo } from "@/shared/ui";
-
+import { Container, Logo, PwaInstallButton } from "@/shared/ui";
 import { HeaderCartLink } from "./HeaderCartLink";
 import { HeaderFavoritesLink } from "./HeaderFavoritesLink";
 
@@ -35,21 +33,22 @@ export const Header = () => {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md transition-all">
       {/* Top micro bar */}
-      <div className="border-b border-slate-100 bg-slate-50/60 text-xs text-slate-500 py-1.5 hidden sm:block">
+      <div className="hidden border-b border-slate-100 bg-slate-50/60 py-1.5 text-xs text-slate-500 sm:block">
         <Container className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <span className="inline-flex items-center gap-1.5 font-medium text-slate-600">
               <MapPin size={13} className="text-emerald-600" />
               {STORE_INFO.city}
             </span>
-            <span className="hidden md:inline text-slate-400">•</span>
-            <span className="hidden md:inline text-slate-500">
+            <span className="hidden text-slate-400 md:inline">•</span>
+            <span className="hidden text-slate-500 md:inline">
               Ежедневная доставка с 08:00 до 22:00
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <PwaInstallButton variant="header" />
             <a
-              className="inline-flex items-center gap-1.5 font-bold text-slate-700 hover:text-emerald-700 transition"
+              className="inline-flex items-center gap-1.5 font-bold text-slate-700 transition hover:text-emerald-700"
               href={STORE_INFO.phoneHref}
             >
               <Phone size={13} className="text-emerald-600" />
@@ -61,24 +60,24 @@ export const Header = () => {
 
       {/* Main navigation */}
       <Container className="py-3.5">
-        <div className="grid grid-cols-[auto_auto_minmax(240px,1fr)_auto] items-center gap-3 lg:gap-5 max-lg:grid-cols-[1fr_auto]">
+        <div className="grid grid-cols-[auto_auto_minmax(240px,1fr)_auto] items-center gap-3 max-lg:grid-cols-[1fr_auto] lg:gap-5">
           <Logo />
 
           <Link
-            className="hidden lg:inline-flex h-11 items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 transition-all duration-200 hover:scale-102 hover:bg-emerald-700 active:scale-95"
+            className="hidden h-11 items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 transition-all duration-200 hover:scale-102 hover:bg-emerald-700 active:scale-95 lg:inline-flex"
             href={ROUTES.CATALOG}
           >
             <LayoutGrid size={18} />
             Каталог
           </Link>
 
-          <div className="max-lg:col-span-2 max-lg:order-3">
+          <div className="max-lg:order-3 max-lg:col-span-2">
             <ProductSearch />
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2 max-lg:justify-end">
+          <div className="flex items-center gap-1 max-lg:justify-end sm:gap-2">
             <Link
-              className="hidden lg:flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
+              className="hidden flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 lg:flex"
               href={ROUTES.PROFILE}
             >
               <UserRound size={20} className="mb-0.5" />
@@ -90,10 +89,10 @@ export const Header = () => {
         </div>
 
         {/* Categories / Quick Links Sub-bar on desktop */}
-        <nav className="hidden lg:flex items-center gap-6 border-t border-slate-100 mt-3 pt-2 text-xs font-semibold text-slate-600">
+        <nav className="mt-3 hidden items-center gap-6 border-t border-slate-100 pt-2 text-xs font-semibold text-slate-600 lg:flex">
           {navItems.map((item) => (
             <Link
-              className="hover:text-emerald-700 transition-colors py-1 inline-flex items-center gap-1"
+              className="inline-flex items-center gap-1 py-1 transition-colors hover:text-emerald-700"
               href={item.href}
               key={item.label}
             >

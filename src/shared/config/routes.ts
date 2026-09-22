@@ -29,6 +29,7 @@ export const ROUTES = {
     `/admin/promo-codes/${promoCodeId}`,
   ADMIN_PROMO_CODES: "/admin/promo-codes",
   ADMIN_REVIEWS: "/admin/reviews",
+  ADMIN_LEGAL_DOCUMENTS: "/admin/legal-documents",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_STAFF: "/admin/staff",
   ADMIN_STAFF_CREATE: "/admin/staff/create",
@@ -63,5 +64,6 @@ export const ROUTES = {
   PROFILE_ORDERS: "/profile/orders",
   PROFILE_UPLOADS: "/profile/uploads",
   REGISTER: "/register",
+  REGISTER_VERIFY: "/register/verify",
   RESET_PASSWORD: "/reset-password",
 } as const;

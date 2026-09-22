@@ -196,7 +196,7 @@ const PasswordField = ({
           onClick={onToggleVisibility}
           aria-label={isVisible ? "Скрыть пароль" : "Показать пароль"}
         >
-          {isVisible ? <EyeOff size={19} /> : <Eye size={19} />}
+          {isVisible ? <Eye size={19} /> : <EyeOff size={19} />}
         </button>
       </span>
       {hint ? <span className="text-text-secondary mt-3 block text-sm">{hint}</span> : null}

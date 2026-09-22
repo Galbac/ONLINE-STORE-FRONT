@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-
+import { Toaster } from "sonner";
 import { STORE_INFO } from "@/shared/config";
-import { CookieBanner, PwaInstallPrompt } from "@/shared/ui";
+import { CookieBanner, PwaInstallPrompt, PwaInstallModal } from "@/shared/ui";
 import { OfflineIndicator } from "@/shared/ui/offline-indicator";
 import { PullToRefresh } from "@/shared/ui/pull-to-refresh";
 import { BottomNav } from "@/widgets/bottom-nav";
 import { CartDrawer } from "@/widgets/cart-drawer";
-import { Toaster } from "sonner";
-
 import "./globals.css";
 
 const inter = Inter({
@@ -35,9 +33,7 @@ export const metadata: Metadata = {
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,
@@ -64,13 +60,16 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ru" className={inter.variable}>
-      <body className={`${inter.className} mobile-bottom-padding antialiased bg-slate-50/70 text-slate-900 selection:bg-emerald-500 selection:text-white`}>
+      <body
+        className={`${inter.className} mobile-bottom-padding bg-slate-50/70 text-slate-900 antialiased selection:bg-emerald-500 selection:text-white`}
+      >
         <PullToRefresh>{children}</PullToRefresh>
         <BottomNav />
         <CartDrawer />
         <Toaster position="bottom-right" richColors closeButton />
         <CookieBanner />
         <PwaInstallPrompt />
+        <PwaInstallModal />
         <OfflineIndicator />
       </body>
     </html>

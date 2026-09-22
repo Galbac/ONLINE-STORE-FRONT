@@ -56,6 +56,7 @@ catalog-*.png
 Thumbs.db
 .idea/
 .vscode/
+.gemini/
 *.swp
 *.swo
 
@@ -65,3 +66,8 @@ frontend_pages_api_full.md
 frontend_tz_from_openapi_actual.md
 openapi.json
 img_test/
+
+# SSL / Certificates
+*.pem
+*.key
+*.crt

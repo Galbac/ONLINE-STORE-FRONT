@@ -1,24 +1,58 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { cn, ROUTES } from "@/shared/config";
-import { storeAuthTokens } from "@/shared/ui";
 
-interface RegisterFormValues {
+const formatPhoneMask = (input: string): string => {
+  const digits = input.replace(/\D/g, "");
+  if (!digits) return "";
+
+  let localDigits = digits;
+  if (digits.startsWith("7") || digits.startsWith("8")) {
+    localDigits = digits.slice(1);
+  }
+  localDigits = localDigits.slice(0, 10);
+
+  let formatted = "+7";
+  if (localDigits.length > 0) {
+    formatted += " (" + localDigits.slice(0, 3);
+  }
+  if (localDigits.length >= 3) {
+    formatted += ") ";
+  }
+  if (localDigits.length > 3) {
+    formatted += localDigits.slice(3, 6);
+  }
+  if (localDigits.length >= 6) {
+    formatted += "-";
+  }
+  if (localDigits.length > 6) {
+    formatted += localDigits.slice(6, 8);
+  }
+  if (localDigits.length >= 8) {
+    formatted += "-";
+  }
+  if (localDigits.length > 8) {
+    formatted += localDigits.slice(8, 10);
+  }
+  return formatted;
+};
+
+export interface RegisterDraftData {
   name: string;
   phone: string;
   email: string;
   password: string;
-  confirmPassword: string;
   agreement: boolean;
   marketingConsent: boolean;
 }
 
-const initialValues: RegisterFormValues = {
+const initialValues: RegisterDraftData & { confirmPassword: string } = {
   name: "",
   phone: "",
   email: "",
@@ -29,57 +63,114 @@ const initialValues: RegisterFormValues = {
 };
 
 export const RegisterForm = () => {
-  const [values, setValues] = useState<RegisterFormValues>(initialValues);
+  const router = useRouter();
+  const [values, setValues] = useState(initialValues);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const handleChange = (field: keyof RegisterFormValues, value: string | boolean): void => {
+  // Restore draft from sessionStorage if user clicked "back"
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = sessionStorage.getItem("grocery_reg_draft");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setValues((prev) => ({
+          ...prev,
+          name: parsed.name || "",
+          phone: parsed.phone || "",
+          email: parsed.email || "",
+          password: parsed.password || "",
+          confirmPassword: parsed.password || "",
+          agreement: parsed.agreement ?? false,
+          marketingConsent: parsed.marketingConsent ?? false,
+        }));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const handleChange = (field: string, value: any): void => {
     setValues((currentValues) => ({
       ...currentValues,
       [field]: value,
     }));
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const raw = e.target.value;
+    const digits = raw.replace(/\D/g, "");
+    if (!digits || digits === "7" || digits === "8") {
+      handleChange("phone", "");
+      return;
+    }
+    const masked = formatPhoneMask(raw);
+    handleChange("phone", masked);
+  };
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    const validationMessage = validateForm(values);
+    const form = event.currentTarget;
+    const name = (form.elements.namedItem("name") as HTMLInputElement)?.value || values.name;
+    const phone = (form.elements.namedItem("phone") as HTMLInputElement)?.value || values.phone;
+    const email = (form.elements.namedItem("email") as HTMLInputElement)?.value || values.email;
+    const password = (form.elements.namedItem("password") as HTMLInputElement)?.value || values.password;
+    const confirmPassword = (form.elements.namedItem("confirmPassword") as HTMLInputElement)?.value || values.confirmPassword;
+    const agreement = (form.querySelector("#reg-agreement") as HTMLInputElement)?.checked ?? values.agreement;
+    const marketingConsent = (form.querySelector("#reg-marketing") as HTMLInputElement)?.checked ?? values.marketingConsent;
+
+    const dataToValidate = {
+      name,
+      phone,
+      email,
+      password,
+      confirmPassword,
+      agreement,
+    };
+
+    const validationMessage = validateForm(dataToValidate);
     if (validationMessage) {
       setErrorMessage(validationMessage);
-      setSuccessMessage(null);
       return;
     }
 
     startTransition(async () => {
       try {
         setErrorMessage(null);
-        setSuccessMessage(null);
 
-        const response = await authApi.register({
-          email: values.email.trim() || null,
-          name: values.name.trim(),
-          password: values.password,
-          phone: normalizePhoneNumber(values.phone),
-          agreed_to_privacy: values.agreement,
-          marketing_consent: values.marketingConsent,
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPhone = normalizePhoneNumber(phone);
+
+        // Step 1: Request OTP code via SMTP
+        await authApi.sendRegisterOtp({
+          email: cleanEmail,
+          phone: cleanPhone,
         });
 
-        storeAuthTokens({
-          accessToken: response.access_token,
-          refreshToken: response.refresh_token,
-          remember: true,
-        });
+        // Step 2: Save draft into sessionStorage
+        const draft: RegisterDraftData = {
+          name: name.trim(),
+          phone: cleanPhone,
+          email: cleanEmail,
+          password: password,
+          agreement: agreement,
+          marketingConsent: marketingConsent,
+        };
+        sessionStorage.setItem("grocery_reg_draft", JSON.stringify(draft));
 
-        await authApi.getMe(response.access_token);
-
-        setSuccessMessage("Регистрация успешна! Добро пожаловать.");
-        setValues(initialValues);
-        window.location.href = ROUTES.PROFILE;
-      } catch {
-        setErrorMessage("Не удалось зарегистрироваться. Пользователь с таким телефоном или email уже существует.");
+        // Step 3: Navigate to dedicated OTP verification page
+        router.push(ROUTES.REGISTER_VERIFY);
+      } catch (err: any) {
+        const detail = err?.response?.data?.detail;
+        if (typeof detail === "string") {
+          setErrorMessage(detail);
+        } else {
+          setErrorMessage("Не удалось отправить проверочный код. Проверьте правильность email или попробуйте позже.");
+        }
       }
     });
   };
@@ -99,7 +190,7 @@ export const RegisterForm = () => {
           <label className="block text-xs font-bold text-slate-700 mb-1">
             Ваше имя <span className="text-rose-500">*</span>
           </label>
-          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+          <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
             <UserRound size={17} className="text-slate-400 mr-2.5" />
             <input
               type="text"
@@ -117,15 +208,26 @@ export const RegisterForm = () => {
           <label className="block text-xs font-bold text-slate-700 mb-1">
             Номер телефона <span className="text-rose-500">*</span>
           </label>
-          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+          <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
             <Phone size={17} className="text-slate-400 mr-2.5" />
             <input
               type="tel"
               required
               name="phone"
-              placeholder="+7 (999) 000-00-00"
+              placeholder="+7 (___) ___-__-__"
+              maxLength={18}
               value={values.phone}
-              onChange={(e) => handleChange("phone", e.target.value)}
+              onFocus={() => {
+                if (!values.phone) {
+                  handleChange("phone", "+7 (");
+                }
+              }}
+              onBlur={() => {
+                if (values.phone === "+7 (" || values.phone === "+7") {
+                  handleChange("phone", "");
+                }
+              }}
+              onChange={handlePhoneChange}
               className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             />
           </div>
@@ -133,12 +235,13 @@ export const RegisterForm = () => {
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">
-            Электронная почта
+            Электронная почта <span className="text-rose-500">*</span>
           </label>
-          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+          <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
             <Mail size={17} className="text-slate-400 mr-2.5" />
             <input
               type="email"
+              required
               name="email"
               placeholder="ivan@example.com"
               value={values.email}
@@ -146,6 +249,9 @@ export const RegisterForm = () => {
               className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             />
           </div>
+          <p className="mt-1 text-[11px] text-slate-400">
+            После нажатия «Зарегистрироваться» на почту будет отправлен проверочный 4-значный код
+          </p>
         </div>
 
         <div className="grid gap-3.5 sm:grid-cols-2">
@@ -169,7 +275,7 @@ export const RegisterForm = () => {
                 onClick={() => setShowPassword((p) => !p)}
                 className="text-slate-400 hover:text-slate-600 p-1"
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
               </button>
             </div>
           </div>
@@ -194,7 +300,7 @@ export const RegisterForm = () => {
                 onClick={() => setShowConfirmPassword((p) => !p)}
                 className="text-slate-400 hover:text-slate-600 p-1"
               >
-                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showConfirmPassword ? <Eye size={16} /> : <EyeOff size={16} />}
               </button>
             </div>
           </div>
@@ -244,12 +350,6 @@ export const RegisterForm = () => {
         </div>
       ) : null}
 
-      {successMessage ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-700 animate-in fade-in-0 duration-150">
-          {successMessage}
-        </div>
-      ) : null}
-
       <button
         type="submit"
         disabled={isPending}
@@ -261,7 +361,7 @@ export const RegisterForm = () => {
         {isPending ? (
           <>
             <Loader2 size={16} className="animate-spin" />
-            <span>Регистрация...</span>
+            <span>Отправка кода...</span>
           </>
         ) : (
           <>
@@ -281,12 +381,23 @@ export const RegisterForm = () => {
   );
 };
 
-const validateForm = (values: RegisterFormValues): string | null => {
+const validateForm = (values: {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  agreement: boolean;
+}): string | null => {
   if (values.name.trim().length < 2) {
     return "Имя должно содержать минимум 2 символа.";
   }
-  if (!values.phone.trim()) {
-    return "Введите корректный номер телефона.";
+  const phoneDigits = values.phone.replace(/\D/g, "");
+  if (phoneDigits.length < 11) {
+    return "Введите номер телефона полностью в формате +7 (___) ___-__-__.";
+  }
+  if (!values.email.trim() || !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email.trim())) {
+    return "Электронная почта обязательна для регистрации. Укажите корректный email.";
   }
   if (values.password.length < 8) {
     return "Пароль должен содержать не менее 8 символов.";

@@ -30,26 +30,23 @@ const baseNavItems: NavItem[] = [
 ];
 
 export const HeaderNav = () => {
-  const [hasDiscounts, setHasDiscounts] = useState(false);
+  const [hasDiscounts, setHasDiscounts] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     apiClient
-      .get<{ total?: number }>("/api/discounts/products", { in_stock: true, limit: 1 })
+      .get<{ total?: number; items?: unknown[] }>("/api/products", {
+        has_discount: true,
+        limit: 1,
+      })
       .then((res) => {
-        if (isMounted && typeof res?.total === "number" && res.total > 0) {
-          setHasDiscounts(true);
-        }
+        if (!isMounted) return;
+        const count = typeof res?.total === "number" ? res.total : (res?.items?.length ?? 0);
+        setHasDiscounts(count > 0);
       })
       .catch(() => {
-        apiClient
-          .get<{ total?: number }>("/api/products", { has_discount: true, in_stock: true, limit: 1 })
-          .then((pRes) => {
-            if (isMounted && typeof pRes?.total === "number" && pRes.total > 0) {
-              setHasDiscounts(true);
-            }
-          })
-          .catch(() => {});
+        // Upon error keep default visible
+        if (isMounted) setHasDiscounts(true);
       });
 
     return () => {

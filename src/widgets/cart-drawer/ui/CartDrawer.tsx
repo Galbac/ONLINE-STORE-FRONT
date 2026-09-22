@@ -43,6 +43,11 @@ export const CartDrawer = () => {
 
   useEffect(() => {
     const handleDrawer = (e: Event) => {
+      const token = window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
+      if (!token || !isAccessTokenValid(token)) {
+        window.location.assign(`/login?next=${encodeURIComponent(ROUTES.CART)}`);
+        return;
+      }
       const detail = (e as CustomEvent<{ open?: boolean }>).detail;
       setIsOpen(detail?.open ?? true);
       if (detail?.open !== false) {
@@ -118,6 +123,12 @@ export const CartDrawer = () => {
   };
 
   if (!isOpen) return null;
+  const currentToken = typeof window !== "undefined"
+    ? (window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token"))
+    : null;
+  if (!currentToken || !isAccessTokenValid(currentToken)) {
+    return null;
+  }
 
   const items = cart?.items ?? [];
   const cartProductIds = new Set(items.map((i) => i.product_id));

@@ -46,7 +46,7 @@ import type { ProfileSummaryResponse } from "@/entities/profile";
 import type { UserMeResponse } from "@/entities/user";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
-import { Container, PwaInstallButton } from "@/shared/ui";
+import { Container } from "@/shared/ui";
 import { ProfileLogoutButton } from "./ProfileLogoutButton";
 
 interface ProfileViewProps {
@@ -137,8 +137,6 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
           </section>
         ) : null}
 
-        {/* Установка веб-приложения на смартфон */}
-        <PwaInstallButton variant="card" className="mt-6" />
 
         <section className="mt-10">
           <h2 className="text-text-primary text-2xl font-bold">Быстрые ссылки</h2>

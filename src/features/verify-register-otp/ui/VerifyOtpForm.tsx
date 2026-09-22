@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle, KeyRound, Loader2, RefreshCw, Send, ShieldCheck } from "lucide-react";
 import { authApi } from "@/entities/auth";
+import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { storeAuthTokens } from "@/shared/ui";
 import type { RegisterDraftData } from "@/features/register-user";
@@ -138,12 +139,7 @@ export const VerifyOtpForm = () => {
         sessionStorage.removeItem("grocery_reg_draft");
         window.location.href = ROUTES.PROFILE;
       } catch (err: any) {
-        const detail = err?.response?.data?.detail;
-        if (typeof detail === "string") {
-          setErrorMessage(detail);
-        } else {
-          setErrorMessage("Неверный проверочный код. Проверьте почту и повторите ввод.");
-        }
+        setErrorMessage(extractErrorMessage(err, "Неверный проверочный код. Проверьте почту и повторите ввод."));
       }
     });
   };
@@ -268,7 +264,7 @@ export const VerifyOtpForm = () => {
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-emerald-700 transition"
           >
             <ArrowLeft size={14} />
-            <span>Вернуться назад / Изменить email</span>
+            <span>Вернуться назад</span>
           </Link>
         </div>
       </div>

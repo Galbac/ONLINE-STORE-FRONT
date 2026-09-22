@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Clock, LayoutGrid, MapPin, Phone, UserRound } from "lucide-react";
+import { Clock, LayoutGrid, MapPin, Phone } from "lucide-react";
 import { ProductSearch } from "@/features/product-search";
 import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, Logo, PwaInstallButton } from "@/shared/ui";
 import { HeaderCartLink } from "./HeaderCartLink";
+import { HeaderUserLink } from "./HeaderUserLink";
 import { HeaderFavoritesLink } from "./HeaderFavoritesLink";
 
 const navItems = [
@@ -81,13 +82,7 @@ export const Header = () => {
           </div>
 
           <div className="flex items-center gap-1 max-lg:justify-end sm:gap-2">
-            <Link
-              className="hidden flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 lg:flex"
-              href={ROUTES.PROFILE}
-            >
-              <UserRound size={20} className="mb-0.5" />
-              Профиль
-            </Link>
+            <HeaderUserLink />
             <HeaderFavoritesLink />
             <HeaderCartLink />
           </div>

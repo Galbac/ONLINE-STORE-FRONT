@@ -118,14 +118,45 @@ interface TokenPairResponse {
 export class ApiError extends Error {
   readonly status: number;
   readonly statusText: string;
+  readonly data: any;
 
-  constructor(status: number, statusText: string) {
-    super(`API request failed: ${status} ${statusText}`);
+  constructor(status: number, statusText: string, data?: any) {
+    let detailMessage = "";
+    if (typeof data?.detail === "string") {
+      detailMessage = data.detail;
+    } else if (Array.isArray(data?.detail) && data.detail.length > 0) {
+      const first = data.detail[0];
+      detailMessage = first?.msg || first?.message || "Ошибка валидации данных";
+    }
+    super(detailMessage || `Ошибка запроса (${status})`);
     this.name = "ApiError";
     this.status = status;
     this.statusText = statusText;
+    this.data = data;
   }
 }
+
+export const extractErrorMessage = (error: unknown, fallback: string = "Произошла ошибка"): string => {
+  if (error instanceof ApiError) {
+    if (typeof error.data?.detail === "string") {
+      return error.data.detail;
+    }
+    if (Array.isArray(error.data?.detail) && error.data.detail.length > 0) {
+      const first = error.data.detail[0];
+      return first?.msg || first?.message || fallback;
+    }
+    if (error.message && !error.message.startsWith("Ошибка запроса (")) {
+      return error.message;
+    }
+  }
+  if (typeof (error as any)?.response?.data?.detail === "string") {
+    return (error as any).response.data.detail;
+  }
+  if (typeof (error as any)?.message === "string") {
+    return (error as any).message;
+  }
+  return fallback;
+};
 
 export const isApiErrorStatus = (error: unknown, status: number): boolean => {
   return error instanceof ApiError && error.status === status;
@@ -171,7 +202,9 @@ class ApiClient {
     const response = await this.fetchWithAuth(requestUrl, requestConfig);
 
     if (!response.ok) {
-      throw new ApiError(response.status, response.statusText);
+      let errData: any = null;
+      try { errData = await response.json(); } catch (_) {}
+      throw new ApiError(response.status, response.statusText, errData);
     }
 
     return (await response.json()) as TResponse;
@@ -200,7 +233,9 @@ class ApiClient {
     const response = await this.fetchWithAuth(`${this.baseUrl}${url}`, config);
 
     if (!response.ok) {
-      throw new ApiError(response.status, response.statusText);
+      let errData: any = null;
+      try { errData = await response.json(); } catch (_) {}
+      throw new ApiError(response.status, response.statusText, errData);
     }
 
     return (await response.json()) as TResponse;
@@ -223,7 +258,9 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new ApiError(response.status, response.statusText);
+      let errData: any = null;
+      try { errData = await response.json(); } catch (_) {}
+      throw new ApiError(response.status, response.statusText, errData);
     }
 
     return (await response.json()) as TResponse;
@@ -247,7 +284,9 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new ApiError(response.status, response.statusText);
+      let errData: any = null;
+      try { errData = await response.json(); } catch (_) {}
+      throw new ApiError(response.status, response.statusText, errData);
     }
 
     return (await response.json()) as TResponse;
@@ -276,7 +315,9 @@ class ApiClient {
     const response = await this.fetchWithAuth(`${this.baseUrl}${url}`, config);
 
     if (!response.ok) {
-      throw new ApiError(response.status, response.statusText);
+      let errData: any = null;
+      try { errData = await response.json(); } catch (_) {}
+      throw new ApiError(response.status, response.statusText, errData);
     }
 
     return (await response.json()) as TResponse;
@@ -285,7 +326,7 @@ class ApiClient {
   private async fetchWithAuth(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
     const response = await fetch(input, init);
 
-    if (response.status !== 401 || this.isRefreshRequest(input)) {
+    if (response.status !== 401 || this.isAuthOrGuestRequest(input)) {
       return response;
     }
 
@@ -304,10 +345,16 @@ class ApiClient {
     });
   }
 
-  private isRefreshRequest(input: RequestInfo | URL): boolean {
+  private isAuthOrGuestRequest(input: RequestInfo | URL): boolean {
     const url = String(input);
-
-    return url.endsWith(API_ENDPOINTS.AUTH.REFRESH);
+    return (
+      url.endsWith(API_ENDPOINTS.AUTH.REFRESH) ||
+      url.endsWith(API_ENDPOINTS.AUTH.LOGIN) ||
+      url.endsWith(API_ENDPOINTS.AUTH.REGISTER) ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/forgot-password") ||
+      url.includes("/auth/reset-password")
+    );
   }
 
   private async refreshBrowserTokens(): Promise<TokenPairResponse | null> {

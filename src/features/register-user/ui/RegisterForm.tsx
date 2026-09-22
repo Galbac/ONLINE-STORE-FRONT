@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
+import { extractErrorMessage } from "@/shared/api";
 import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { cn, ROUTES } from "@/shared/config";
 
@@ -63,7 +63,6 @@ const initialValues: RegisterDraftData & { confirmPassword: string } = {
 };
 
 export const RegisterForm = () => {
-  const router = useRouter();
   const [values, setValues] = useState(initialValues);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -80,7 +79,7 @@ export const RegisterForm = () => {
         setValues((prev) => ({
           ...prev,
           name: parsed.name || "",
-          phone: parsed.phone || "",
+          phone: parsed.phone ? formatPhoneMask(parsed.phone) : "",
           email: parsed.email || "",
           password: parsed.password || "",
           confirmPassword: parsed.password || "",
@@ -98,6 +97,7 @@ export const RegisterForm = () => {
       ...currentValues,
       [field]: value,
     }));
+    setErrorMessage(null);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -111,30 +111,60 @@ export const RegisterForm = () => {
     handleChange("phone", masked);
   };
 
+  // Live password matching check
+  const hasConfirmPassword = values.confirmPassword.length > 0;
+  const passwordsMatch = values.password === values.confirmPassword;
+  const showPasswordMismatch = hasConfirmPassword && !passwordsMatch;
+
+  // Check if all fields are valid for button activation
+  const phoneDigits = values.phone.replace(/\D/g, "");
+  const isEmailValid = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email.trim());
+  const isFormComplete =
+    values.name.trim().length >= 2 &&
+    phoneDigits.length === 11 &&
+    isEmailValid &&
+    values.password.length >= 8 &&
+    values.confirmPassword.length >= 8 &&
+    passwordsMatch &&
+    values.agreement;
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
     const form = event.currentTarget;
-    const name = (form.elements.namedItem("name") as HTMLInputElement)?.value || values.name;
+    const name = ((form.elements.namedItem("name") as HTMLInputElement)?.value || values.name).trim();
     const phone = (form.elements.namedItem("phone") as HTMLInputElement)?.value || values.phone;
-    const email = (form.elements.namedItem("email") as HTMLInputElement)?.value || values.email;
+    const email = ((form.elements.namedItem("email") as HTMLInputElement)?.value || values.email).trim().toLowerCase();
     const password = (form.elements.namedItem("password") as HTMLInputElement)?.value || values.password;
     const confirmPassword = (form.elements.namedItem("confirmPassword") as HTMLInputElement)?.value || values.confirmPassword;
     const agreement = (form.querySelector("#reg-agreement") as HTMLInputElement)?.checked ?? values.agreement;
     const marketingConsent = (form.querySelector("#reg-marketing") as HTMLInputElement)?.checked ?? values.marketingConsent;
 
-    const dataToValidate = {
-      name,
-      phone,
-      email,
-      password,
-      confirmPassword,
-      agreement,
-    };
+    const pDigits = phone.replace(/\D/g, "");
+    const emailValid = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email);
 
-    const validationMessage = validateForm(dataToValidate);
-    if (validationMessage) {
-      setErrorMessage(validationMessage);
+    if (name.length < 2) {
+      setErrorMessage("Имя должно содержать минимум 2 символа.");
+      return;
+    }
+    if (pDigits.length < 11) {
+      setErrorMessage("Введите номер телефона полностью в формате +7 (___) ___-__-__.");
+      return;
+    }
+    if (!emailValid) {
+      setErrorMessage("Электронная почта обязательна для регистрации. Укажите корректный email.");
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMessage("Пароль должен содержать не менее 8 символов.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage("Пароли не совпадают. Пожалуйста, проверьте введённые данные.");
+      return;
+    }
+    if (!agreement) {
+      setErrorMessage("Необходимо принять соглашение на обработку персональных данных.");
       return;
     }
 
@@ -142,35 +172,30 @@ export const RegisterForm = () => {
       try {
         setErrorMessage(null);
 
-        const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = normalizePhoneNumber(phone);
 
         // Step 1: Request OTP code via SMTP
         await authApi.sendRegisterOtp({
-          email: cleanEmail,
+          email,
           phone: cleanPhone,
         });
 
         // Step 2: Save draft into sessionStorage
         const draft: RegisterDraftData = {
-          name: name.trim(),
+          name,
           phone: cleanPhone,
-          email: cleanEmail,
-          password: password,
-          agreement: agreement,
-          marketingConsent: marketingConsent,
+          email,
+          password,
+          agreement,
+          marketingConsent,
         };
         sessionStorage.setItem("grocery_reg_draft", JSON.stringify(draft));
 
         // Step 3: Navigate to dedicated OTP verification page
-        router.push(ROUTES.REGISTER_VERIFY);
+        window.location.href = ROUTES.REGISTER_VERIFY;
       } catch (err: any) {
-        const detail = err?.response?.data?.detail;
-        if (typeof detail === "string") {
-          setErrorMessage(detail);
-        } else {
-          setErrorMessage("Не удалось отправить проверочный код. Проверьте правильность email или попробуйте позже.");
-        }
+        const message = extractErrorMessage(err, "Пользователь с таким телефоном или email уже существует");
+        setErrorMessage(message);
       }
     });
   };
@@ -179,6 +204,7 @@ export const RegisterForm = () => {
     <form
       className="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-10"
       onSubmit={handleSubmit}
+      noValidate
     >
       <div>
         <h2 className="text-xl font-bold text-slate-900">Создание аккаунта</h2>
@@ -191,7 +217,7 @@ export const RegisterForm = () => {
             Ваше имя <span className="text-rose-500">*</span>
           </label>
           <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
-            <UserRound size={17} className="text-slate-400 mr-2.5" />
+            <UserRound size={17} className="text-slate-400 mr-2.5 shrink-0" />
             <input
               type="text"
               required
@@ -199,7 +225,7 @@ export const RegisterForm = () => {
               placeholder="Иван Иванов"
               value={values.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              className="h-11 w-full bg-white text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             />
           </div>
         </div>
@@ -209,7 +235,7 @@ export const RegisterForm = () => {
             Номер телефона <span className="text-rose-500">*</span>
           </label>
           <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
-            <Phone size={17} className="text-slate-400 mr-2.5" />
+            <Phone size={17} className="text-slate-400 mr-2.5 shrink-0" />
             <input
               type="tel"
               required
@@ -228,7 +254,7 @@ export const RegisterForm = () => {
                 }
               }}
               onChange={handlePhoneChange}
-              className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              className="h-11 w-full bg-white text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             />
           </div>
         </div>
@@ -238,7 +264,7 @@ export const RegisterForm = () => {
             Электронная почта <span className="text-rose-500">*</span>
           </label>
           <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
-            <Mail size={17} className="text-slate-400 mr-2.5" />
+            <Mail size={17} className="text-slate-400 mr-2.5 shrink-0" />
             <input
               type="email"
               required
@@ -246,10 +272,9 @@ export const RegisterForm = () => {
               placeholder="ivan@example.com"
               value={values.email}
               onChange={(e) => handleChange("email", e.target.value)}
-              className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              className="h-11 w-full bg-white text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             />
           </div>
-
         </div>
 
         <div className="grid gap-3.5 sm:grid-cols-2">
@@ -257,8 +282,8 @@ export const RegisterForm = () => {
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Пароль <span className="text-rose-500">*</span>
             </label>
-            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
-              <LockKeyhole size={17} className="text-slate-400 mr-2.5" />
+            <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3.5 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+              <LockKeyhole size={17} className="text-slate-400 mr-2.5 shrink-0" />
               <input
                 type={showPassword ? "text" : "password"}
                 required
@@ -266,12 +291,12 @@ export const RegisterForm = () => {
                 placeholder="Минимум 8 знаков"
                 value={values.password}
                 onChange={(e) => handleChange("password", e.target.value)}
-                className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+                className="h-11 w-full bg-white text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((p) => !p)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 shrink-0 cursor-pointer"
               >
                 {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
               </button>
@@ -282,25 +307,35 @@ export const RegisterForm = () => {
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Повторите пароль <span className="text-rose-500">*</span>
             </label>
-            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
-              <LockKeyhole size={17} className="text-slate-400 mr-2.5" />
+            <div className={cn(
+              "flex items-center rounded-xl border bg-white px-3.5 transition-all",
+              showPasswordMismatch
+                ? "border-rose-400 ring-2 ring-rose-400/20"
+                : "border-slate-200 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10"
+            )}>
+              <LockKeyhole size={17} className={cn("mr-2.5 shrink-0", showPasswordMismatch ? "text-rose-400" : "text-slate-400")} />
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 required
                 name="confirmPassword"
-                placeholder="Повторите"
+                placeholder="Повторите пароль"
                 value={values.confirmPassword}
                 onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+                className="h-11 w-full bg-white text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword((p) => !p)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 shrink-0 cursor-pointer"
               >
                 {showConfirmPassword ? <Eye size={16} /> : <EyeOff size={16} />}
               </button>
             </div>
+            {showPasswordMismatch ? (
+              <p className="mt-1 text-xs font-semibold text-rose-600 animate-in fade-in-0 duration-150">
+                Пароли не совпадают
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -350,10 +385,12 @@ export const RegisterForm = () => {
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={!isFormComplete || isPending}
         className={cn(
-          "flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-xs font-extrabold uppercase tracking-wider text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/30 active:scale-[0.99] transition-all disabled:opacity-60",
-          isPending && "cursor-wait opacity-75",
+          "flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider text-white shadow-lg transition-all",
+          isFormComplete && !isPending
+            ? "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/30 active:scale-[0.99] cursor-pointer"
+            : "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none opacity-60"
         )}
       >
         {isPending ? (
@@ -377,34 +414,4 @@ export const RegisterForm = () => {
       </div>
     </form>
   );
-};
-
-const validateForm = (values: {
-  name: string;
-  phone: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  agreement: boolean;
-}): string | null => {
-  if (values.name.trim().length < 2) {
-    return "Имя должно содержать минимум 2 символа.";
-  }
-  const phoneDigits = values.phone.replace(/\D/g, "");
-  if (phoneDigits.length < 11) {
-    return "Введите номер телефона полностью в формате +7 (___) ___-__-__.";
-  }
-  if (!values.email.trim() || !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email.trim())) {
-    return "Электронная почта обязательна для регистрации. Укажите корректный email.";
-  }
-  if (values.password.length < 8) {
-    return "Пароль должен содержать не менее 8 символов.";
-  }
-  if (values.password !== values.confirmPassword) {
-    return "Пароли не совпадают.";
-  }
-  if (!values.agreement) {
-    return "Необходимо принять соглашение на обработку персональных данных.";
-  }
-  return null;
 };

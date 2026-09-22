@@ -1,4 +1,4 @@
-export { ApiError, apiClient, isApiErrorStatus } from "./client";
+export { ApiError, apiClient, isApiErrorStatus, extractErrorMessage } from "./client";
 export {
   AdminApiError,
   adminApiClient,

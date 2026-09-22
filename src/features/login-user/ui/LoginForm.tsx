@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
+import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { storeAuthTokens } from "@/shared/ui";
 
@@ -68,8 +69,8 @@ export const LoginForm = () => {
         setValues(initialValues);
         router.replace(getSafeNextPath(searchParams.get("next")));
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось войти. Проверьте email, телефон или пароль.");
+      } catch (err: any) {
+        setErrorMessage(extractErrorMessage(err, "Неверный email, телефон или пароль."));
       }
     });
   };

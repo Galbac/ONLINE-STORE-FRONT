@@ -16,3 +16,7 @@ export { Section } from "./section";
 export { ViewModeToggle } from "./view-mode-toggle";
 export type { ProductViewMode } from "./view-mode-toggle";
 export { PwaInstallPrompt, PwaInstallModal, PwaInstallButton } from "./pwa-install";
+
+export { ScrollRestorationKeeper } from "./scroll-keeper";
+
+export { BackButton } from "./back-button";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
@@ -67,7 +68,8 @@ export const RegisterForm = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
+  const router = useRouter();
 
   // Restore draft from sessionStorage if user clicked "back"
   useEffect(() => {
@@ -128,7 +130,7 @@ export const RegisterForm = () => {
     passwordsMatch &&
     values.agreement;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
 
     const form = event.currentTarget;
@@ -168,36 +170,39 @@ export const RegisterForm = () => {
       return;
     }
 
-    startTransition(async () => {
-      try {
-        setErrorMessage(null);
+    try {
+      setIsPending(true);
+      setErrorMessage(null);
 
-        const cleanPhone = normalizePhoneNumber(phone);
+      const cleanPhone = normalizePhoneNumber(phone);
 
-        // Step 1: Request OTP code via SMTP
-        await authApi.sendRegisterOtp({
-          email,
-          phone: cleanPhone,
-        });
+      // Step 1: Request OTP code via SMTP
+      await authApi.sendRegisterOtp({
+        email,
+        phone: cleanPhone,
+      });
 
-        // Step 2: Save draft into sessionStorage
-        const draft: RegisterDraftData = {
-          name,
-          phone: cleanPhone,
-          email,
-          password,
-          agreement,
-          marketingConsent,
-        };
+      // Step 2: Save draft into sessionStorage
+      const draft: RegisterDraftData = {
+        name,
+        phone: cleanPhone,
+        email,
+        password,
+        agreement,
+        marketingConsent,
+      };
+      if (typeof window !== "undefined") {
         sessionStorage.setItem("grocery_reg_draft", JSON.stringify(draft));
-
-        // Step 3: Navigate to dedicated OTP verification page
-        window.location.href = ROUTES.REGISTER_VERIFY;
-      } catch (err: any) {
-        const message = extractErrorMessage(err, "Пользователь с таким телефоном или email уже существует");
-        setErrorMessage(message);
       }
-    });
+
+      // Step 3: Navigate to dedicated OTP verification page without full reload
+      router.push(ROUTES.REGISTER_VERIFY);
+    } catch (err: any) {
+      const message = extractErrorMessage(err, "Пользователь с таким телефоном или email уже существует");
+      setErrorMessage(message);
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (

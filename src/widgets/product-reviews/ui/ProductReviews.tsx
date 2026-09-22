@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useState, useTransition } from "react";
 import { MessageSquare, Plus, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
@@ -55,6 +57,31 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
     }
   };
 
+  // Restore draft review if saved within 10 minutes (600,000 ms)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(`pending_review_${productId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const TEN_MINUTES_MS = 10 * 60 * 1000;
+        if (Date.now() - parsed.savedAt < TEN_MINUTES_MS) {
+          if (parsed.rating) setRating(parsed.rating);
+          if (parsed.text) setText(parsed.text);
+          if (parsed.pros) setPros(parsed.pros);
+          if (parsed.cons) setCons(parsed.cons);
+          setShowForm(true);
+          const token = getStoredAccessToken();
+          if (token) {
+            setSuccessMsg("Ваш черновик отзыва восстановлен. Вы можете отправить его прямо сейчас.");
+          }
+        } else {
+          localStorage.removeItem(`pending_review_${productId}`);
+        }
+      }
+    } catch (_) {}
+  }, [productId]);
+
   useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -75,7 +102,15 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
     e.preventDefault();
     const token = getStoredAccessToken();
     if (!token) {
-      setErrorMsg("Для отправки отзыва необходимо войти в аккаунт.");
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          `pending_review_${productId}`,
+          JSON.stringify({ rating, text, pros, cons, savedAt: Date.now() })
+        );
+      }
+      setErrorMsg(
+        "Для отправки отзыва необходимо войти в аккаунт. Мы сохранили ваш черновик на 10 минут!"
+      );
       return;
     }
     if (text.trim().length < 3) {
@@ -91,6 +126,9 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
           { rating, text, pros: pros.trim() || null, cons: cons.trim() || null },
           { Authorization: `Bearer ${token}` },
         );
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(`pending_review_${productId}`);
+        }
         setSuccessMsg("Спасибо! Ваш отзыв опубликован.");
         setText("");
         setPros("");
@@ -204,7 +242,19 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
             </div>
           </div>
 
-          {errorMsg ? <p className="text-xs font-semibold text-rose-500">{errorMsg}</p> : null}
+          {errorMsg ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs font-semibold text-rose-700 animate-in fade-in-0 duration-150">
+              <span>{errorMsg}</span>
+              {!getStoredAccessToken() ? (
+                <Link
+                  href="/login"
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                >
+                  Войти в аккаунт →
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="flex justify-end">
             <Button type="submit" disabled={isPending}>

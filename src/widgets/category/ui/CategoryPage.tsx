@@ -716,6 +716,7 @@ const PageLink = ({ active, children, disabled, page, searchParams, slug }: Page
           ? "border-accent-primary bg-accent-primary text-white"
           : "bg-bg-primary hover:bg-bg-hover",
       )}
+      scroll={false}
       href={buildCategoryHref(slug, { ...searchParams, page: String(page) })}
     >
       {children}

@@ -41,6 +41,7 @@ interface ViewModeLinkProps {
 const ViewModeLink = ({ active, ariaLabel, href, icon }: ViewModeLinkProps) => {
   return (
     <Link
+      scroll={false}
       aria-label={ariaLabel}
       aria-pressed={active}
       className={cn(

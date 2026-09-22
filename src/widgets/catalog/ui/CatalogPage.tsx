@@ -684,6 +684,7 @@ const PageLink = ({ active, children, disabled, page, searchParams }: PageLinkPr
           ? "border-accent-primary bg-accent-primary text-white"
           : "bg-bg-primary hover:bg-bg-hover",
       )}
+      scroll={false}
       href={buildCatalogHref({ ...searchParams, page: String(page) })}
     >
       {children}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle, KeyRound, Loader2, RefreshCw, Send, ShieldCheck } from "lucide-react";
@@ -19,7 +19,7 @@ export const VerifyOtpForm = () => {
 
   const [otpCooldown, setOtpCooldown] = useState(60);
   const [isResending, setIsResending] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export const VerifyOtpForm = () => {
     }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     const domDigits = Array.from(event.currentTarget.querySelectorAll("input[inputmode=\"numeric\"]")).map((el) => (el as HTMLInputElement).value).join("");
     const fullCode = domDigits.length === 4 ? domDigits : (otpCode.join("").length === 4 ? otpCode.join("") : domDigits);
@@ -118,30 +118,33 @@ export const VerifyOtpForm = () => {
       router.replace(ROUTES.REGISTER);
       return;
     }
-    startTransition(async () => {
-      try {
-        setErrorMessage(null);
-        const response = await authApi.register({
-          email: draft.email,
-          name: draft.name,
-          phone: draft.phone,
-          password: draft.password,
-          otp_code: fullCode,
-          agreed_to_privacy: draft.agreement,
-          marketing_consent: draft.marketingConsent,
-        });
-        storeAuthTokens({
-          accessToken: response.access_token,
-          refreshToken: response.refresh_token,
-          remember: true,
-        });
-        await authApi.getMe(response.access_token);
+    try {
+      setIsPending(true);
+      setErrorMessage(null);
+      const response = await authApi.register({
+        email: draft.email,
+        name: draft.name,
+        phone: draft.phone,
+        password: draft.password,
+        otp_code: fullCode,
+        agreed_to_privacy: draft.agreement,
+        marketing_consent: draft.marketingConsent,
+      });
+      storeAuthTokens({
+        accessToken: response.access_token,
+        refreshToken: response.refresh_token,
+        remember: true,
+      });
+      await authApi.getMe(response.access_token);
+      if (typeof window !== "undefined") {
         sessionStorage.removeItem("grocery_reg_draft");
-        window.location.href = ROUTES.PROFILE;
-      } catch (err: any) {
-        setErrorMessage(extractErrorMessage(err, "Неверный проверочный код. Проверьте почту и повторите ввод."));
       }
-    });
+      router.push(ROUTES.PROFILE);
+    } catch (err: any) {
+      setErrorMessage(extractErrorMessage(err, "Неверный проверочный код. Проверьте почту и повторите ввод."));
+    } finally {
+      setIsPending(false);
+    }
   };
 
   if (!draft) {

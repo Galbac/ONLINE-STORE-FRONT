@@ -59,20 +59,21 @@ export const HeaderCartLink = () => {
     };
   }, []);
 
+  const isAuth = hasValidStoredAccessToken();
+
   const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!hasValidStoredAccessToken()) {
-      window.location.href = `${ROUTES.LOGIN}?next=${encodeURIComponent(ROUTES.CART)}`;
-      return;
+    if (isAuth) {
+      e.preventDefault();
+      openCartDrawer();
     }
-    openCartDrawer();
+    // Если не авторизован, стандартный Next.js Link плавно переходит на /login?next=/cart без перезагрузки страницы!
   };
 
   return (
     <Link
       onClick={handleClick}
       className="group relative flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
-      href={ROUTES.CART}
+      href={isAuth ? ROUTES.CART : `${ROUTES.LOGIN}?next=${encodeURIComponent(ROUTES.CART)}`}
     >
       <span className="relative mb-0.5 block">
         <ShoppingBag size={20} className="transition-transform group-hover:scale-110" />

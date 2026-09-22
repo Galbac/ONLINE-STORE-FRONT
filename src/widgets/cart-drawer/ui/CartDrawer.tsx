@@ -18,7 +18,6 @@ export const openCartDrawer = () => {
   if (typeof window !== "undefined") {
     const token = window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
     if (!token || !isAccessTokenValid(token)) {
-      window.location.href = `${ROUTES.LOGIN}?next=${encodeURIComponent(ROUTES.CART)}`;
       return;
     }
     window.dispatchEvent(new CustomEvent(CART_DRAWER_EVENT, { detail: { open: true } }));

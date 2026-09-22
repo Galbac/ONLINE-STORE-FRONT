@@ -14,7 +14,7 @@ import { ProductPurchaseActions } from "@/features/product-purchase-actions";
 import { fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
-import { Container, ProductCard } from "@/shared/ui";
+import { Container, ProductCard, BackButton } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { ShieldCheck, Sparkles, ThermometerSnowflake } from "lucide-react";
 import { Header } from "@/widgets/header";
@@ -117,7 +117,10 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
       />
       <main>
         <Container className="py-6">
-          <ProductBreadcrumbs breadcrumbs={product.breadcrumbs} product={product} />
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <BackButton fallbackHref={product.category?.slug ? `/catalog/${product.category.slug}` : ROUTES.CATALOG} />
+            <ProductBreadcrumbs breadcrumbs={product.breadcrumbs} product={product} />
+          </div>
 
           <section className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]">
             <ProductGallery images={product.images} productName={product.name} />

@@ -5,30 +5,10 @@ import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, Logo, PwaInstallButton } from "@/shared/ui";
 import { HeaderCartLink } from "./HeaderCartLink";
 import { HeaderUserLink } from "./HeaderUserLink";
+import { HeaderNav } from "./HeaderNav";
 import { HeaderFavoritesLink } from "./HeaderFavoritesLink";
 
-const navItems = [
-  {
-    href: ROUTES.CATALOG,
-    label: "Каталог",
-  },
-  {
-    href: `${ROUTES.CATALOG}?has_discount=true`,
-    label: "Акции %",
-  },
-  {
-    href: `${ROUTES.CATALOG}?sort=newest`,
-    label: "Новинки",
-  },
-  {
-    href: ROUTES.CHECKOUT,
-    label: "Доставка и оплата",
-  },
-  {
-    href: ROUTES.PROFILE_ORDERS,
-    label: "Мои заказы",
-  },
-] as const;
+
 
 export const Header = () => {
   return (
@@ -88,18 +68,7 @@ export const Header = () => {
           </div>
         </div>
 
-        {/* Categories / Quick Links Sub-bar on desktop */}
-        <nav className="mt-3 hidden items-center gap-6 border-t border-slate-100 pt-2 text-xs font-semibold text-slate-600 lg:flex">
-          {navItems.map((item) => (
-            <Link
-              className="inline-flex items-center gap-1 py-1 transition-colors hover:text-emerald-700"
-              href={item.href}
-              key={item.label}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <HeaderNav />
       </Container>
     </header>
   );

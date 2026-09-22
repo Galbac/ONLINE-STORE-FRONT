@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 
 import { buildCatalogHref } from "../lib/catalogUrl";
@@ -24,6 +25,7 @@ export const CatalogPriceFilter = ({
   resetHref,
   sliderMax,
 }: CatalogPriceFilterProps) => {
+  const router = useRouter();
   const normalizedSliderMax = Math.max(sliderMax, MIN_PRICE + 1);
   const initialMinPrice = clampPrice(minPrice, MIN_PRICE, normalizedSliderMax, MIN_PRICE);
   const initialMaxPrice = clampPrice(
@@ -73,8 +75,26 @@ export const CatalogPriceFilter = ({
     fromPrice > MIN_PRICE ||
     toPrice < normalizedSliderMax;
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    Object.entries(currentParams).forEach(([k, v]) => {
+      if (v && k !== "min_price" && k !== "max_price" && k !== "page") {
+        params.set(k, v);
+      }
+    });
+    if (fromPrice > MIN_PRICE) {
+      params.set("min_price", String(fromPrice));
+    }
+    if (toPrice < normalizedSliderMax) {
+      params.set("max_price", String(toPrice));
+    }
+    const query = params.toString();
+    router.push(query ? `${action}?${query}` : action, { scroll: false });
+  };
+
   return (
-    <form className="space-y-5" action={action}>
+    <form className="space-y-5" onSubmit={handleSubmit}>
       {Object.entries(currentParams).map(([key, value]) => {
         if (!value || key === "min_price" || key === "max_price" || key === "page") {
           return null;
@@ -162,13 +182,14 @@ export const CatalogPriceFilter = ({
         >
           Показать товары
         </button>
-        <a
-          className="border-border text-text-secondary hover:bg-bg-hover grid size-10 place-items-center rounded-lg border transition"
-          href={targetResetHref}
+        <button
+          type="button"
+          onClick={() => router.push(targetResetHref, { scroll: false })}
+          className="border-border text-text-secondary hover:bg-bg-hover grid size-10 place-items-center rounded-lg border transition cursor-pointer"
           aria-label="Сбросить цену"
         >
-          <X size={16} className={hasActivePriceFilter ? "text-error" : undefined} />
-        </a>
+          <X size={16} className={hasActivePriceFilter ? "text-rose-500" : undefined} />
+        </button>
       </div>
     </form>
   );

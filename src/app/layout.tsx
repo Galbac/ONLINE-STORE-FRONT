@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { STORE_INFO } from "@/shared/config";
-import { CookieBanner, PwaInstallPrompt, PwaInstallModal } from "@/shared/ui";
+import { CookieBanner, PwaInstallPrompt, PwaInstallModal, ScrollRestorationKeeper } from "@/shared/ui";
 import { OfflineIndicator } from "@/shared/ui/offline-indicator";
 import { PullToRefresh } from "@/shared/ui/pull-to-refresh";
 import { BottomNav } from "@/widgets/bottom-nav";
@@ -65,6 +65,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       >
         <PullToRefresh>{children}</PullToRefresh>
         <BottomNav />
+        <ScrollRestorationKeeper />
         <CartDrawer />
         <Toaster position="bottom-right" richColors closeButton />
         <CookieBanner />

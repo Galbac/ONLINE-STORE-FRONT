@@ -46,7 +46,7 @@ export const LoginPage = () => {
               Главная
             </Link>
             <span>/</span>
-            <span className="text-slate-700">Вход в аккаунт</span>
+            <span className="text-slate-700">Вход</span>
           </nav>
 
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">

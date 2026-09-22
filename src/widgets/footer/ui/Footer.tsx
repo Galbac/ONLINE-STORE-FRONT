@@ -183,16 +183,28 @@ export const Footer = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-bold tracking-wider text-slate-600">
-              МИР
-            </span>
-            <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-bold tracking-wider text-slate-600">
-              СБП
-            </span>
-            <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-bold tracking-wider text-slate-600">
-              VISA / MC
-            </span>
+          <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
+            {/* МИР */}
+            <div className="inline-flex h-7 items-center gap-1 rounded-md border border-slate-200/90 bg-white px-2.5 py-0.5 shadow-2xs transition hover:border-emerald-300 hover:shadow-xs">
+              <span className="font-black italic tracking-tighter text-emerald-600 text-xs">МИР</span>
+            </div>
+            {/* СБП */}
+            <div className="inline-flex h-7 items-center gap-1.5 rounded-md border border-slate-200/90 bg-white px-2.5 py-0.5 shadow-2xs transition hover:border-indigo-300 hover:shadow-xs">
+              <span className="flex size-3.5 items-center justify-center rounded-sm bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 text-[8px] font-black text-white leading-none">⚡</span>
+              <span className="font-extrabold tracking-tight text-slate-800 text-xs">СБП</span>
+            </div>
+            {/* Visa */}
+            <div className="inline-flex h-7 items-center rounded-md border border-slate-200/90 bg-white px-2.5 py-0.5 shadow-2xs transition hover:border-blue-300 hover:shadow-xs">
+              <span className="font-black italic tracking-wider text-blue-700 text-xs">VISA</span>
+            </div>
+            {/* Mastercard */}
+            <div className="inline-flex h-7 items-center gap-1.5 rounded-md border border-slate-200/90 bg-white px-2.5 py-0.5 shadow-2xs transition hover:border-amber-300 hover:shadow-xs">
+              <div className="flex -space-x-1.5">
+                <span className="size-3 rounded-full bg-rose-500 opacity-90" />
+                <span className="size-3 rounded-full bg-amber-400 opacity-90" />
+              </div>
+              <span className="font-bold text-[10px] tracking-tight text-slate-700">Mastercard</span>
+            </div>
           </div>
         </div>
       </Container>

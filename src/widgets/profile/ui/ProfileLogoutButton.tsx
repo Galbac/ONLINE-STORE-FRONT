@@ -31,7 +31,7 @@ export const ProfileLogoutButton = () => {
   return (
     <button
       className={cn(
-        "border-border text-text-primary hover:border-accent-primary hover:text-accent-primary inline-flex h-14 min-w-40 items-center justify-center gap-3 rounded-lg border bg-white px-6 text-base font-bold transition disabled:cursor-wait disabled:opacity-70",
+        "inline-flex h-12 min-w-36 items-center justify-center gap-2.5 rounded-xl border border-rose-200/90 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-800 active:scale-[0.98] px-5 text-sm font-bold shadow-xs transition-all disabled:cursor-wait disabled:opacity-70",
         isPending && "cursor-wait opacity-70",
       )}
       type="button"

@@ -175,7 +175,7 @@ export const VerifyOtpForm = () => {
 
       <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5">
         <label className="block text-center text-xs font-bold text-slate-700 mb-3">
-          Код подтверждения (4 цифры)
+          Код подтверждения
         </label>
 
         <div className="flex items-center gap-3 sm:gap-4 justify-center py-2">

@@ -83,7 +83,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
             href={ROUTES.LOGIN}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white transition hover:bg-emerald-700"
           >
-            Войти в аккаунт
+            Войти
           </Link>
         </div>
       </div>

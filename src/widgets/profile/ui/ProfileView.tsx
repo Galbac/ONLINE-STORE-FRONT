@@ -1,3 +1,27 @@
+const PERMISSION_LABELS: Record<string, string> = {
+  "profile:read": "Просмотр профиля",
+  "profile:write": "Редактирование профиля",
+  "orders:read": "Просмотр истории заказов",
+  "orders:create": "Оформление заказов",
+  "orders:cancel": "Отмена заказов",
+  "cart:read": "Просмотр корзины",
+  "cart:write": "Управление корзиной",
+  "favorites:read": "Просмотр избранного",
+  "favorites:write": "Управление избранным",
+  "addresses:read": "Просмотр адресов доставки",
+  "addresses:write": "Управление адресами",
+  "notifications:read": "Получение уведомлений",
+  "admin:access": "Доступ к панели управления",
+  "admin:products": "Управление каталогом",
+  "admin:orders": "Управление заказами",
+  "admin:users": "Управление клиентами",
+  "admin:settings": "Настройки магазина",
+};
+
+const formatPermission = (permission: string): string => {
+  return PERMISSION_LABELS[permission] || permission;
+};
+
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -89,27 +113,29 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
           />
         </section>
 
-        {/* Мои регулярные покупки */}
-        <section className="mt-8 flex flex-col gap-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/80 to-teal-50/50 p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
-              <Sparkles size={28} />
-            </span>
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Мои регулярные покупки</h3>
-              <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-600">
-                Соберите вашу привычную недельную продуктовую корзину (хлеб, молоко, сыр, яйца,
-                свежие фрукты) в 1 клик!
-              </p>
+        {/* Мои регулярные покупки (показываются только после первой покупки) */}
+        {(profile.stats.orders_count > 0 || profile.recent_orders.length > 0) ? (
+          <section className="mt-8 flex flex-col gap-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/80 to-teal-50/50 p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
+                <Sparkles size={28} />
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Мои регулярные покупки</h3>
+                <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-600">
+                  Соберите вашу привычную недельную продуктовую корзину (хлеб, молоко, сыр, яйца,
+                  свежие фрукты) в 1 клик на основе ваших прошлых заказов!
+                </p>
+              </div>
             </div>
-          </div>
-          <Link
-            href={ROUTES.CART}
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
-          >
-            Собрать корзину ⚡
-          </Link>
-        </section>
+            <Link
+              href={ROUTES.CART}
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
+            >
+              Собрать корзину ⚡
+            </Link>
+          </section>
+        ) : null}
 
         {/* Установка веб-приложения на смартфон */}
         <PwaInstallButton variant="card" className="mt-6" />
@@ -204,10 +230,11 @@ const ProfileCard = ({ email, user }: ProfileCardProps) => {
           <div className="mt-3 flex flex-wrap gap-2">
             {user.permissions.map((permission) => (
               <span
-                className="bg-bg-hover text-text-secondary rounded-lg px-2.5 py-1 text-xs font-bold"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs"
                 key={permission}
               >
-                {permission}
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                {formatPermission(permission)}
               </span>
             ))}
           </div>

@@ -249,9 +249,7 @@ export const RegisterForm = () => {
               className="h-11 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             />
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">
-            После нажатия «Зарегистрироваться» на почту будет отправлен проверочный 4-значный код
-          </p>
+
         </div>
 
         <div className="grid gap-3.5 sm:grid-cols-2">

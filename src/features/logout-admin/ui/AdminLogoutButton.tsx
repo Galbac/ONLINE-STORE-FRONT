@@ -32,7 +32,7 @@ export const AdminLogoutButton = ({ className }: AdminLogoutButtonProps) => {
   return (
     <button
       className={cn(
-        "border-border text-text-secondary hover:bg-bg-hover hover:text-text-primary inline-flex h-10 items-center justify-center gap-2 rounded-lg border bg-bg-primary px-3 text-sm font-bold transition disabled:cursor-wait disabled:opacity-65",
+        "inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 px-3 text-sm font-bold transition disabled:cursor-wait disabled:opacity-65",
         className,
       )}
       type="button"

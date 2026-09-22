@@ -10,11 +10,17 @@ import { apiClient } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { CART_CHANGED_EVENT, notifyCartChanged } from "@/shared/lib/cart-events";
 import { toPriceFormat } from "@/shared/lib/format";
+import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
 export const CART_DRAWER_EVENT = "grocerystore:cart-drawer";
 
 export const openCartDrawer = () => {
   if (typeof window !== "undefined") {
+    const token = window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
+    if (!token || !isAccessTokenValid(token)) {
+      window.location.href = `${ROUTES.LOGIN}?next=${encodeURIComponent(ROUTES.CART)}`;
+      return;
+    }
     window.dispatchEvent(new CustomEvent(CART_DRAWER_EVENT, { detail: { open: true } }));
   }
 };

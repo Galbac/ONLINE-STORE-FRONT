@@ -177,7 +177,7 @@ export const LoginForm = () => {
           </>
         ) : (
           <>
-            <span>Войти в аккаунт</span>
+            <span>Войти</span>
             <ArrowRight size={15} />
           </>
         )}
@@ -204,10 +204,19 @@ const getSafeNextPath = (nextPath: string | null): string => {
 };
 
 const validateForm = (values: LoginFormValues): string | null => {
-  if (values.login.trim().length < 3) {
-    return "Введите корректный email или телефон.";
+  const loginTrimmed = values.login.trim();
+  const passwordTrimmed = values.password;
+
+  if (!loginTrimmed && !passwordTrimmed) {
+    return "Заполните email или номер телефона и введите пароль.";
   }
-  if (values.password.length < 1) {
+  if (!loginTrimmed) {
+    return "Введите email или номер телефона.";
+  }
+  if (loginTrimmed.length < 3) {
+    return "Введите корректный email или номер телефона.";
+  }
+  if (!passwordTrimmed) {
     return "Введите пароль.";
   }
   return null;

@@ -61,6 +61,10 @@ export const HeaderCartLink = () => {
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (!hasValidStoredAccessToken()) {
+      window.location.href = `${ROUTES.LOGIN}?next=${encodeURIComponent(ROUTES.CART)}`;
+      return;
+    }
     openCartDrawer();
   };
 

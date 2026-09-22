@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Download, Smartphone, Sparkles } from "lucide-react";
 import { cn } from "@/shared/config";
-import { isAppStandalone, openPwaInstallModal } from "@/shared/lib/pwa-install";
+import { toast } from "sonner";
+import { isAppStandalone, isIosDevice, getGlobalDeferredPrompt, openPwaInstallModal, triggerInstallPrompt } from "@/shared/lib/pwa-install";
 
 interface PwaInstallButtonProps {
   variant?: "card" | "compact" | "footer" | "header";
@@ -21,8 +22,17 @@ export const PwaInstallButton = ({ variant = "compact", className }: PwaInstallB
     return null;
   }
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
+    // На Android при наличии prompt сразу вызываем нативную установку
+    if (!isIosDevice() && getGlobalDeferredPrompt()) {
+      const outcome = await triggerInstallPrompt();
+      if (outcome === "accepted") {
+        toast.success("Приложение успешно установлено на ваш телефон!");
+        return;
+      }
+    }
+    // На iPhone или если браузер еще не выдал prompt - открываем подробную инструкцию
     openPwaInstallModal();
   };
 

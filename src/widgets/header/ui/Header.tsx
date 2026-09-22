@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutGrid, MapPin, Phone, UserRound } from "lucide-react";
+import { Clock, LayoutGrid, MapPin, Phone, UserRound } from "lucide-react";
 import { ProductSearch } from "@/features/product-search";
 import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, Logo, PwaInstallButton } from "@/shared/ui";
@@ -41,8 +41,13 @@ export const Header = () => {
               {STORE_INFO.city}
             </span>
             <span className="hidden text-slate-400 md:inline">•</span>
-            <span className="hidden text-slate-500 md:inline">
-              Ежедневная доставка с 08:00 до 22:00
+            <span className="hidden items-center gap-1.5 text-slate-600 md:inline-flex">
+              <Clock size={12} className="text-emerald-600" />
+              <span>
+                {STORE_INFO.workingHours.toLowerCase().includes("круглосут")
+                  ? "Круглосуточная доставка 24/7"
+                  : `Доставка: ${STORE_INFO.workingHours}`}
+              </span>
             </span>
           </div>
           <div className="flex items-center gap-4">

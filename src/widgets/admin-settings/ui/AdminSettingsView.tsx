@@ -132,11 +132,56 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Textarea defaultValue={settings.address ?? undefined} label="Адрес" name="address" />
-          <Textarea
-            defaultValue={settings.working_hours ?? undefined}
-            label="Режим работы"
-            name="working_hours"
-          />
+          <div>
+            <Textarea
+              defaultValue={settings.working_hours ?? undefined}
+              label="Режим работы и выходные"
+              name="working_hours"
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-text-secondary">
+              <span className="text-[11px] font-semibold text-slate-400">Быстрые шаблоны:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.querySelector("textarea[name=\"working_hours\"]") as HTMLTextAreaElement;
+                  if (el) el.value = "Круглосуточно (24/7)";
+                }}
+                className="cursor-pointer rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition"
+              >
+                ⚡ Круглосуточно
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.querySelector("textarea[name=\"working_hours\"]") as HTMLTextAreaElement;
+                  if (el) el.value = "Ежедневно с 08:00 до 22:00";
+                }}
+                className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                🕒 08:00 - 22:00
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.querySelector("textarea[name=\"working_hours\"]") as HTMLTextAreaElement;
+                  if (el) el.value = "Пн-Пт 08:00-21:00, Сб-Вс 09:00-20:00";
+                }}
+                className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                📅 Без выходных
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.querySelector("textarea[name=\"working_hours\"]") as HTMLTextAreaElement;
+                  if (el) el.value = "Пн-Пт 09:00-19:00, Сб-Вс выходной";
+                }}
+                className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                🏖️ С выходными (Сб-Вс)
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="mt-6 border-t border-border pt-4">

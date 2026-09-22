@@ -13,7 +13,12 @@ CMD ["yarn", "dev"]
 
 FROM node:22-alpine AS builder
 WORKDIR /app
+ARG DOMAIN_NAME
+ARG NEXT_PUBLIC_API_URL
+ENV DOMAIN_NAME=$DOMAIN_NAME
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN yarn build

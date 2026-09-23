@@ -238,7 +238,7 @@ const DiscountRow = ({
       </TableCell>
       <TableCell>
         <p>{getTargetTypeLabel(discount.type)}</p>
-        <p className="text-text-muted mt-1 text-xs">{discount.type}</p>
+        
       </TableCell>
       <TableCell>{formatDiscountValue(discount.discount_type, discount.discount_value)}</TableCell>
       <TableCell>

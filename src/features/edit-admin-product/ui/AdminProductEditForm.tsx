@@ -13,6 +13,7 @@ import type {
 } from "@/entities/admin-product";
 import { getStoredAdminAccessToken } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
+import { formatSyncStatus } from "@/shared/lib/format";
 
 interface AdminProductEditFormProps {
   categories: AdminCategoryListItemResponse[];
@@ -190,7 +191,7 @@ export const AdminProductEditForm = ({ categories, product }: AdminProductEditFo
             <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">Редактирование товара</h1>
             <p className="text-text-secondary mt-2">ID {product.id}</p>
             <div className="mt-3 flex flex-wrap gap-2 text-sm">
-              <StatusLabel label="sync_status" value={product.sync_status ?? "-"} />
+              <StatusLabel label="Синхронизация 1С" value={formatSyncStatus(product.sync_status)} />
               <StatusLabel label="1C" value={product.external_1c_id ?? "-"} />
             </div>
           </div>

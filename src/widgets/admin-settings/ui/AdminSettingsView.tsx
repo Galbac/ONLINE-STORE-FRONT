@@ -126,7 +126,7 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
           />
           <SelectBoolean
             defaultValue={settings.maintenance_mode}
-            label="Maintenance mode"
+            label="Режим техобслуживания (сайт на паузе)"
             name="maintenance_mode"
           />
         </div>

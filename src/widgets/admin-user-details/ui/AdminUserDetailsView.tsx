@@ -12,7 +12,7 @@ import {
   type AdminUserOrdersResponse,
 } from "@/entities/admin-user";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
+import { toPriceFormat, formatOrderStatus, formatPaymentStatus } from "@/shared/lib/format";
 
 interface AdminUserDetailsViewProps {
   initialOrders: AdminUserOrdersResponse;
@@ -317,8 +317,8 @@ const OrdersTable = ({ orders }: { orders: AdminUserOrderShortResponse[] }) => {
                 </Link>
                 <p className="text-text-muted mt-1 text-xs">{order.items_count ?? 0} поз.</p>
               </TableCell>
-              <TableCell>{order.status}</TableCell>
-              <TableCell>{order.payment_status ?? "-"}</TableCell>
+              <TableCell>{formatOrderStatus(order.status)}</TableCell>
+              <TableCell>{formatPaymentStatus(order.payment_status)}</TableCell>
               <TableCell>{order.delivery_type ?? "-"}</TableCell>
               <TableCell>{toPriceFormat(order.final_price)}</TableCell>
               <TableCell>{formatDate(order.created_at)}</TableCell>
@@ -343,7 +343,7 @@ const RecentOrderCard = ({ order }: { order: AdminUserOrderShortResponse }) => {
         </span>
       </div>
       <p className="text-text-muted mt-2 text-xs">
-        {order.status} · {formatDate(order.created_at)}
+        {formatOrderStatus(order.status)} · {formatDate(order.created_at)}
       </p>
     </Link>
   );

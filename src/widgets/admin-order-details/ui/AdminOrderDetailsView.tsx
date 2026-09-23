@@ -8,7 +8,7 @@ import { adminOrderApi, type AdminOrderDetailResponse } from "@/entities/admin-o
 import { paymentApi, type PaymentDetailResponse } from "@/entities/payment";
 import { getStoredAdminAccessToken } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
+import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus } from "@/shared/lib/format";
 
 interface AdminOrderDetailsViewProps {
   initialOrder: AdminOrderDetailResponse;
@@ -239,13 +239,13 @@ export const AdminOrderDetailsView = ({
       {error ? <Alert tone="error">{error}</Alert> : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Статус заказа" value={order.status} />
+        <SummaryCard label="Статус заказа" value={formatOrderStatus(order.status)} />
         <SummaryCard
           label="Статус оплаты"
-          value={order.payment_status ?? paymentSummary?.status ?? "-"}
+          value={formatPaymentStatus(order.payment_status ?? paymentSummary?.status)}
         />
         <SummaryCard label="Сумма" value={toPriceFormat(order.final_price)} />
-        <SummaryCard label="sync_status 1С" value={order.sync_status} />
+        <SummaryCard label="Синхронизация 1С" value={formatSyncStatus(order.sync_status)} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -377,7 +377,7 @@ export const AdminOrderDetailsView = ({
 
           <Card title="1С">
             <div className="space-y-3">
-              <DetailRow label="sync_status" value={order.sync_status} />
+              <DetailRow label="Синхронизация 1С" value={formatSyncStatus(order.sync_status)} />
               <DetailRow label="external_1c_id" value={order.external_1c_id ?? "-"} />
               <DetailRow label="Последняя синхронизация" value={formatDate(order.last_sync_at)} />
               <DetailRow label="Ошибка" value={order.sync_error ?? "-"} />

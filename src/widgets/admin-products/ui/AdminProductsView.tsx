@@ -4,7 +4,7 @@ import type { AdminCategoryListResponse } from "@/entities/admin-category";
 import type { AdminLowStockResponse } from "@/entities/admin-dashboard";
 import type { AdminProductListItemResponse, AdminProductListResponse } from "@/entities/admin-product";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
+import { toPriceFormat, formatSyncStatus } from "@/shared/lib/format";
 
 export interface AdminProductFilters {
   category_id: string;
@@ -89,7 +89,7 @@ export const AdminProductsView = ({
                   <TableHeader>Остаток</TableHeader>
                   <TableHeader>Активность</TableHeader>
                   <TableHeader>Наличие</TableHeader>
-                  <TableHeader>sync_status</TableHeader>
+                  <TableHeader>Синхронизация 1С</TableHeader>
                   <TableHeader />
                 </tr>
               </thead>
@@ -185,16 +185,12 @@ const ProductsFilters = ({
           <option value="false">Нет остатка</option>
         </FilterSelect>
 
-        <label>
-          <span className="mb-2 block text-sm font-bold">sync_status</span>
-          <input
-            className="border-border focus:border-accent-primary h-11 w-full rounded-lg border bg-transparent px-3 text-sm outline-none transition placeholder:text-text-muted"
-            defaultValue={filters.sync_status}
-            name="sync_status"
-            placeholder="Статус"
-            type="text"
-          />
-        </label>
+        <FilterSelect defaultValue={filters.sync_status} label="Синхронизация 1С" name="sync_status">
+          <option value="">Все</option>
+          <option value="synced">Синхронизирован</option>
+          <option value="pending">В очереди</option>
+          <option value="error">Ошибка</option>
+        </FilterSelect>
       </div>
 
       <input name="page" type="hidden" value="1" />
@@ -271,7 +267,7 @@ const ProductRow = ({ product }: { product: AdminProductListItemResponse }) => {
       <TableCell>
         <StatusPill active={product.is_available} falseLabel="Недоступен" trueLabel="Доступен" />
       </TableCell>
-      <TableCell>{product.sync_status ?? "-"}</TableCell>
+      <TableCell>{formatSyncStatus(product.sync_status)}</TableCell>
       <TableCell>
         <Link
           className="border-border hover:bg-bg-hover inline-flex size-9 items-center justify-center rounded-lg border transition"

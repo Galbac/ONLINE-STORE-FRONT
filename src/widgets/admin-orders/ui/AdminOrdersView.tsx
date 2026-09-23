@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Download, Eye, Search } from "lucide-react";
 import type { AdminOrderListItemResponse, AdminOrderListResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
+import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, SYNC_STATUS_LABELS, DELIVERY_TYPE_LABELS } from "@/shared/lib/format";
 
 export interface AdminOrderFilters {
   date_from: string;
@@ -73,7 +73,7 @@ export const AdminOrdersView = ({ filters, orders }: AdminOrdersViewProps) => {
                   <TableHeader>Статус</TableHeader>
                   <TableHeader>Оплата</TableHeader>
                   <TableHeader>Получение</TableHeader>
-                  <TableHeader>sync_status</TableHeader>
+                  <TableHeader>Синхронизация 1С</TableHeader>
                   <TableHeader>Создан</TableHeader>
                   <TableHeader />
                 </tr>
@@ -122,19 +122,30 @@ const OrdersFilters = ({ filters }: { filters: AdminOrderFilters }) => {
           </span>
         </label>
 
-        <FilterInput defaultValue={filters.status} label="Статус заказа" name="status" />
-        <FilterInput
+        <FilterSelect
+          defaultValue={filters.status}
+          label="Статус заказа"
+          name="status"
+          options={Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+        />
+        <FilterSelect
           defaultValue={filters.payment_status}
           label="Статус оплаты"
           name="payment_status"
+          options={Object.entries(PAYMENT_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
         />
-        <FilterInput
+        <FilterSelect
           defaultValue={filters.delivery_type}
-          label="Доставка"
+          label="Способ доставки"
           name="delivery_type"
-          placeholder="delivery / pickup"
+          options={Object.entries(DELIVERY_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
         />
-        <FilterInput defaultValue={filters.sync_status} label="sync_status" name="sync_status" />
+        <FilterSelect
+          defaultValue={filters.sync_status}
+          label="Синхронизация 1С"
+          name="sync_status"
+          options={Object.entries(SYNC_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+        />
         <FilterInput
           defaultValue={filters.date_from}
           label="Дата от"
@@ -171,6 +182,40 @@ interface FilterInputProps {
   placeholder?: string;
   type?: "date" | "search" | "text";
 }
+
+interface FilterSelectProps {
+  defaultValue?: string | null;
+  label: string;
+  name: string;
+  options: Array<{ label: string; value: string }>;
+  allLabel?: string;
+}
+
+const FilterSelect = ({
+  allLabel = "Все",
+  defaultValue,
+  label,
+  name,
+  options,
+}: FilterSelectProps) => {
+  return (
+    <label className="block">
+      <span className="text-text-secondary mb-2 block text-xs font-bold">{label}</span>
+      <select
+        className="border-border bg-bg-primary focus:border-accent-primary h-11 w-full rounded-lg border px-3 text-sm font-medium outline-none cursor-pointer"
+        defaultValue={defaultValue ?? ""}
+        name={name}
+      >
+        <option value="">{allLabel}</option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+};
 
 const FilterInput = ({
   defaultValue,
@@ -211,14 +256,14 @@ const OrderRow = ({ order }: { order: AdminOrderListItemResponse }) => {
       </TableCell>
       <TableCell>{toPriceFormat(order.final_price)}</TableCell>
       <TableCell>
-        <TextPill>{order.status}</TextPill>
+        <TextPill>{formatOrderStatus(order.status)}</TextPill>
       </TableCell>
       <TableCell>
-        <p className="text-text-primary font-bold">{order.payment_status ?? "-"}</p>
+        <p className="text-text-primary font-bold">{formatPaymentStatus(order.payment_status)}</p>
         <p className="text-text-muted mt-1 text-xs">{order.payment_method ?? "-"}</p>
       </TableCell>
       <TableCell>{order.delivery_type}</TableCell>
-      <TableCell>{order.sync_status}</TableCell>
+      <TableCell>{formatSyncStatus(order.sync_status)}</TableCell>
       <TableCell>{formatDate(order.created_at)}</TableCell>
       <TableCell>
         <Link

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { adminAuthApi } from "@/entities/admin-auth";
 import { AdminApiError, storeAdminAuthTokens } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
@@ -72,8 +72,7 @@ export const AdminLoginForm = () => {
         setValues(initialValues);
         setSuccessMessage("Доступ подтвержден.");
 
-        router.replace(ROUTES.ADMIN_DASHBOARD);
-        router.refresh();
+        window.location.href = ROUTES.ADMIN_DASHBOARD;
       } catch (error) {
         setSuccessMessage(null);
         setErrorMessage(getAuthErrorMessage(error));
@@ -83,24 +82,28 @@ export const AdminLoginForm = () => {
 
   return (
     <form
-      className="border-border bg-bg-primary w-full rounded-lg border p-5 shadow-soft sm:p-7 md:p-8"
+      className="w-full rounded-3xl border border-slate-200/80 bg-white/95 p-7 shadow-[0_12px_40px_rgba(0,0,0,0.06)] backdrop-blur-xl sm:p-9"
       onSubmit={handleSubmit}
     >
-      <div className="mb-8 flex items-center gap-4">
-        <span className="bg-bg-hover text-accent-primary grid size-12 shrink-0 place-items-center rounded-lg border border-green-100">
-          <ShieldCheck size={25} />
-        </span>
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">Вход в админку</h1>
-          <p className="text-text-secondary mt-2 text-sm">Доступ для сотрудников магазина</p>
+      {/* Шапка формы с элегантной иконкой */}
+      <div className="mb-7 flex flex-col items-center text-center">
+        <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/25">
+          <ShieldCheck size={26} strokeWidth={2.2} />
         </div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[26px]">
+          Вход в админку
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Доступ для сотрудников магазина
+        </p>
       </div>
 
-      <div className="space-y-5">
+      {/* Поля ввода */}
+      <div className="space-y-4">
         <FormField label="Email или телефон" required>
-          <span className="border-border focus-within:border-accent-primary flex h-13 items-center gap-3 rounded-lg border px-4 transition">
+          <div className="group relative flex h-12 items-center rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 transition-all duration-200 hover:border-slate-300 hover:bg-white focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10">
             <input
-              className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
+              className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
               autoComplete="username"
               name="login"
               placeholder="Введите email или телефон"
@@ -108,14 +111,14 @@ export const AdminLoginForm = () => {
               value={values.login}
               onChange={(event) => handleChange("login", event.target.value)}
             />
-            <UserRound className="text-text-muted shrink-0" size={19} />
-          </span>
+            <UserRound className="text-slate-400 transition-colors group-focus-within:text-emerald-600 shrink-0" size={18} />
+          </div>
         </FormField>
 
         <FormField label="Пароль" required>
-          <span className="border-border focus-within:border-accent-primary flex h-13 items-center gap-3 rounded-lg border px-4 transition">
+          <div className="group relative flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 transition-all duration-200 hover:border-slate-300 hover:bg-white focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10">
             <input
-              className="placeholder:text-text-muted min-w-0 flex-1 bg-transparent text-sm outline-none"
+              className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
               autoComplete="current-password"
               name="password"
               placeholder="Введите пароль"
@@ -123,47 +126,61 @@ export const AdminLoginForm = () => {
               value={values.password}
               onChange={(event) => handleChange("password", event.target.value)}
             />
-            <LockKeyhole className="text-text-muted shrink-0" size={18} />
+            <LockKeyhole className="text-slate-400 transition-colors group-focus-within:text-emerald-600 shrink-0" size={18} />
             <button
-              className="text-text-muted hover:text-text-primary shrink-0 transition"
+              className="text-slate-400 transition-colors hover:text-slate-700 shrink-0 cursor-pointer p-0.5"
               type="button"
               onClick={() => setShowPassword((isVisible) => !isVisible)}
               aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
             >
               {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
             </button>
-          </span>
+          </div>
         </FormField>
       </div>
 
-      <label className="mt-5 flex items-center gap-3 text-sm text-text-secondary">
+      {/* Запомнить этот браузер */}
+      <label className="mt-4 flex cursor-pointer items-center gap-2.5 select-none text-sm text-slate-600 transition-colors hover:text-slate-900">
         <input
-          className="border-border size-5 rounded accent-[var(--color-accent-primary)]"
+          className="size-4 rounded border-slate-300 text-emerald-600 transition focus:ring-emerald-500/20"
           checked={values.rememberMe}
           type="checkbox"
           onChange={(event) => handleChange("rememberMe", event.target.checked)}
         />
-        Запомнить этот браузер
+        <span>Запомнить этот браузер</span>
       </label>
 
+      {/* Сообщения об ошибках / успехе */}
       {errorMessage ? (
-        <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-error">{errorMessage}</p>
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-200/80 bg-rose-50/80 px-3.5 py-2.5 text-xs font-medium text-rose-700 animate-in fade-in slide-in-from-top-1">
+          <AlertCircle className="size-4 shrink-0 text-rose-500" />
+          <span>{errorMessage}</span>
+        </div>
       ) : null}
       {successMessage ? (
-        <p className="mt-5 rounded-lg bg-green-50 px-4 py-3 text-sm text-success">
-          {successMessage}
-        </p>
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-2.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-top-1">
+          <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+          <span>{successMessage}</span>
+        </div>
       ) : null}
 
+      {/* Кнопка отправки: Войти */}
       <button
         className={cn(
-          "bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-7 h-13 w-full rounded-lg text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-65",
-          isPending && "cursor-wait opacity-75",
+          "mt-6 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-700 hover:to-teal-700 hover:shadow-lg hover:shadow-emerald-600/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70",
+          isPending && "cursor-wait opacity-80",
         )}
         type="submit"
         disabled={isPending}
       >
-        {isPending ? "Проверяем доступ..." : "Войти в админку"}
+        {isPending ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            <span>Вход...</span>
+          </>
+        ) : (
+          "Войти"
+        )}
       </button>
     </form>
   );
@@ -172,8 +189,8 @@ export const AdminLoginForm = () => {
 const FormField = ({ children, label, required = false }: FormFieldProps) => {
   return (
     <label className="block">
-      <span className="mb-2.5 block text-sm font-bold">
-        {label} {required ? <span className="text-error">*</span> : null}
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-700">
+        {label} {required ? <span className="text-rose-500">*</span> : null}
       </span>
       {children}
     </label>

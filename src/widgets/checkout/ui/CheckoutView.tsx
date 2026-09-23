@@ -32,7 +32,8 @@ import type {
 } from "@/entities/delivery";
 import { orderApi, type OrderCreateRequest, type OrderCreateResponse } from "@/entities/order";
 import { paymentApi, type PaymentCreateResponse } from "@/entities/payment";
-import type { AddressListResponse, AddressResponse } from "@/entities/profile";
+import type { AddressListResponse, AddressResponse, ProfileUserResponse } from "@/entities/profile";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Button, Container } from "@/shared/ui";
@@ -45,6 +46,7 @@ interface CheckoutViewProps {
   pickupPoints: PickupPointListResponse;
   summary: CartSummaryResponse;
   timeSlots: DeliveryTimeSlotsResponse;
+  currentUser?: ProfileUserResponse | null;
 }
 
 interface ContactState {
@@ -74,17 +76,29 @@ export const CheckoutView = ({
   pickupPoints,
   summary,
   timeSlots,
+  currentUser,
 }: CheckoutViewProps) => {
   const defaultAddress =
     addresses.items.find((address) => address.is_default) ?? addresses.items[0];
   const defaultPickupPoint = pickupPoints.items[0];
   const firstAvailableSlot = timeSlots.items.find((slot) => slot.available) ?? timeSlots.items[0];
 
+  // Автозаполнение известных данных пользователя
   const [contact, setContact] = useState<ContactState>({
-    name: "",
-    phone: "",
-    email: "",
+    name: currentUser?.name || "",
+    phone: currentUser?.phone ? formatPhoneMask(currentUser.phone) : "",
+    email: currentUser?.email || "",
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setContact((prev) => ({
+        name: prev.name || currentUser.name || "",
+        phone: prev.phone || (currentUser.phone ? formatPhoneMask(currentUser.phone) : ""),
+        email: prev.email || currentUser.email || "",
+      }));
+    }
+  }, [currentUser]);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
   const [usePoints, setUsePoints] = useState<number>(0);
@@ -876,53 +890,82 @@ const DateAndSlotPicker = ({
   selectedSlotId,
   slots,
 }: DateAndSlotPickerProps) => {
-  const dateOptions = getDateOptions(selectedDate);
+  const dateOptions = getDateOptions();
+  const todayStr = formatDateValue(new Date());
+  const isToday = selectedDate === todayStr;
+
+  // Filter out past slots for Today
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes() + 30; // +30 мин на сборку заказа
+
+  const processedSlots = slots.map((slot) => {
+    let available = slot.available;
+    if (isToday && slot.start_time) {
+      const [h = 0, m = 0] = slot.start_time.split(":").map(Number);
+      const slotMinutes = h * 60 + m;
+      if (slotMinutes < currentMinutes) {
+        available = false;
+      }
+    }
+    return { ...slot, available };
+  });
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-[repeat(5,86px)_1fr]">
-        {dateOptions.map((option) => (
-          <button
-            className={cn(
-              "h-14 rounded-lg border px-3 text-sm font-semibold transition",
-              selectedDate === option.value
-                ? "border-accent-primary bg-bg-hover text-accent-primary"
-                : "border-border hover:bg-bg-secondary",
-            )}
-            type="button"
-            key={option.value}
-            onClick={() => onDateChange(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-        <button
-          className="border-border hover:bg-bg-secondary flex h-14 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition"
-          type="button"
-        >
-          <Calendar size={18} />
-          Выбрать дату
-        </button>
+      <div className="flex flex-wrap items-center gap-3">
+        {dateOptions.map((option) => {
+          const isSelected = selectedDate === option.value;
+          return (
+            <button
+              className={cn(
+                "flex h-14 min-w-32 flex-col items-center justify-center rounded-2xl border px-5 transition-all active:scale-98 cursor-pointer",
+                isSelected
+                  ? "border-emerald-500 bg-emerald-50/80 text-emerald-800 font-bold shadow-xs ring-2 ring-emerald-500/20"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              )}
+              type="button"
+              key={option.value}
+              onClick={() => onDateChange(option.value)}
+            >
+              <span className="text-sm font-bold">{option.label}</span>
+              <span className="text-xs text-slate-400">{option.subLabel}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        {slots.map((slot) => (
-          <button
-            className={cn(
-              "h-11 rounded-lg border px-3 text-sm transition",
-              selectedSlotId === slot.id
-                ? "border-accent-primary bg-bg-hover text-accent-primary font-bold"
-                : "border-border hover:bg-bg-secondary",
-              !slot.available && "cursor-not-allowed opacity-45",
-            )}
-            type="button"
-            disabled={!slot.available}
-            key={slot.id}
-            onClick={() => onSlotChange(slot.id)}
-          >
-            {slot.label}
-          </button>
-        ))}
+      <div>
+        <label className="block text-xs font-bold text-slate-700 mb-2.5">
+          Выберите удобный интервал доставки:
+        </label>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {processedSlots.map((slot) => {
+            const isSelected = selectedSlotId === slot.id;
+            return (
+              <button
+                className={cn(
+                  "flex h-12 items-center justify-center rounded-xl border px-3 text-xs font-bold transition-all active:scale-98",
+                  isSelected && slot.available
+                    ? "border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-700/20"
+                    : slot.available
+                      ? "border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30 cursor-pointer"
+                      : "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed line-through opacity-60"
+                )}
+                type="button"
+                disabled={!slot.available}
+                key={slot.id}
+                onClick={() => onSlotChange(slot.id)}
+              >
+                {slot.label}
+              </button>
+            );
+          })}
+        </div>
+        {isToday && processedSlots.every((s) => !s.available) ? (
+          <p className="mt-2.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/70 rounded-xl p-3">
+            🕒 Все интервалы доставки на сегодня уже завершены. Пожалуйста, выберите доставку на завтра.
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -1211,31 +1254,22 @@ const formatQuantity = (value: number | string): string => {
   return Number.isInteger(numberValue) ? String(numberValue) : numberValue.toFixed(1);
 };
 
-const getDateOptions = (selectedDate: string): Array<{ label: string; value: string }> => {
-  const [year = 2026, month = 5, day = 22] = selectedDate.split("-").map(Number);
-  const baseDate = new Date(year, month - 1, day);
+const getDateOptions = (): Array<{ label: string; subLabel: string; value: string }> => {
+  const now = new Date();
 
-  return Array.from({ length: 5 }, (_, index) => {
-    const date = new Date(baseDate);
-    date.setDate(baseDate.getDate() + index);
-    const label =
-      index === 0
-        ? "Сегодня"
-        : index === 1
-          ? "Завтра"
-          : new Intl.DateTimeFormat("ru-RU", {
-              timeZone: "Europe/Moscow",
-              weekday: "short",
-            }).format(date);
-    const dayMonth = new Intl.DateTimeFormat("ru-RU", {
-      timeZone: "Europe/Moscow",
+  return [0, 1].map((offset) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() + offset);
+    const label = offset === 0 ? "Сегодня" : "Завтра";
+    const subLabel = new Intl.DateTimeFormat("ru-RU", {
       day: "numeric",
       month: "short",
-    }).format(date);
+    }).format(d);
 
     return {
-      label: `${label}\n${dayMonth}`,
-      value: formatDateValue(date),
+      label,
+      subLabel,
+      value: formatDateValue(d),
     };
   });
 };

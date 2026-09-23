@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
 import type { AdminOrderDetailResponse, AdminOrderPrintResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
+import { toPriceFormat, formatPaymentStatus, formatOrderStatus } from "@/shared/lib/format";
 
 interface AdminOrderPrintViewProps {
   orderId: number;
@@ -67,8 +67,8 @@ const PrintableOrder = ({ order }: { order: AdminOrderDetailResponse }) => {
           <p className="mt-2 text-sm text-neutral-600">Создан {formatDate(order.created_at)}</p>
         </div>
         <div className="text-right text-sm">
-          <p className="font-bold">Статус: {order.status}</p>
-          <p className="mt-1 text-neutral-600">Оплата: {order.payment_status ?? "-"}</p>
+          <p className="font-bold">Статус: {formatOrderStatus(order.status)}</p>
+          <p className="mt-1 text-neutral-600">Оплата: {formatPaymentStatus(order.payment_status)}</p>
         </div>
       </header>
 

@@ -349,6 +349,7 @@ const ProductSection = ({
           <ProductCard
             key={product.id}
             product={product}
+            initialInCart={cartProductIds.has(product.id)}
             cartControl={
               <CatalogCartButton
                 initialInCart={cartProductIds.has(product.id)}

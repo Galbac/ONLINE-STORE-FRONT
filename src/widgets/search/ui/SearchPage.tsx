@@ -265,6 +265,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
                         key={product.id}
                         product={product}
                         variant={viewMode}
+                        initialInCart={cartProductIds.has(product.id)}
                         cartControl={
                           <CatalogCartButton
                             initialInCart={cartProductIds.has(product.id)}

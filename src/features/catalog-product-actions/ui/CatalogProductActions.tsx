@@ -17,6 +17,8 @@ interface CatalogCartButtonProps {
   initialInCart: boolean;
   minQuantity?: number | string | null | undefined;
   quantityStep?: number | string | null | undefined;
+  className?: string;
+  showText?: boolean;
 }
 
 export const CatalogCartButton = ({
@@ -25,6 +27,8 @@ export const CatalogCartButton = ({
   productName,
   minQuantity,
   quantityStep,
+  className,
+  showText = false,
 }: CatalogCartButtonProps) => {
   const step = quantityStep ? Number(quantityStep) : 1;
   const minQty = minQuantity ? Number(minQuantity) : (Number.isFinite(step) && step > 0 ? step : 1);
@@ -125,6 +129,8 @@ export const CatalogCartButton = ({
       <div
         className={cn(
           "flex h-10 items-center justify-between rounded-xl bg-emerald-600 px-1 text-white shadow-xs shadow-emerald-700/20 transition-all select-none min-w-[96px]",
+          showText && "h-12 px-2 min-w-[140px] text-sm",
+          className,
           isPending && "opacity-75 cursor-wait",
         )}
       >
@@ -132,22 +138,28 @@ export const CatalogCartButton = ({
           type="button"
           disabled={isPending}
           onClick={handleDecrement}
-          className="flex size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition"
+          className={cn(
+            "flex size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition",
+            showText && "size-8",
+          )}
           aria-label={`Уменьшить количество ${productName}`}
         >
-          <Minus size={14} />
+          <Minus size={showText ? 16 : 14} />
         </button>
-        <span className="text-xs font-extrabold px-1 tracking-tight">
+        <span className={cn("text-xs font-extrabold px-1 tracking-tight", showText && "text-sm font-bold px-2")}>
           {quantity}
         </span>
         <button
           type="button"
           disabled={isPending}
           onClick={handleIncrement}
-          className="flex size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition"
+          className={cn(
+            "flex size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition",
+            showText && "size-8",
+          )}
           aria-label={`Увеличить количество ${productName}`}
         >
-          <Plus size={14} />
+          <Plus size={showText ? 16 : 14} />
         </button>
       </div>
     );
@@ -157,6 +169,8 @@ export const CatalogCartButton = ({
     <button
       className={cn(
         "flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95 select-none",
+        showText && "h-12 px-6 w-auto gap-2.5 text-sm font-bold shadow-md shadow-emerald-600/20 hover:scale-[1.02]",
+        className,
         isPending && "cursor-wait opacity-70",
       )}
       type="button"
@@ -165,6 +179,7 @@ export const CatalogCartButton = ({
       aria-label={`Добавить ${productName} в корзину`}
     >
       <ShoppingCart size={18} />
+      {showText && <span>В корзину</span>}
     </button>
   );
 };

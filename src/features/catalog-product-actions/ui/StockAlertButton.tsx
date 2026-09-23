@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { Bell, Check, Loader2, X } from "lucide-react";
 import { apiClient } from "@/shared/api";
-import { Button } from "@/shared/ui";
+import { Button } from "@/shared/ui/button";
 
 interface StockAlertButtonProps {
   productId: number;
@@ -17,6 +18,11 @@ export const StockAlertButton = ({
   className,
 }: StockAlertButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [contact, setContact] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -62,7 +68,7 @@ export const StockAlertButton = ({
         <span>Уведомить</span>
       </button>
 
-      {isOpen && (
+      {mounted && isOpen ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150">
             <button
@@ -133,7 +139,7 @@ export const StockAlertButton = ({
             )}
           </div>
         </div>
-      )}
+      , document.body) : null}
     </>
   );
 };

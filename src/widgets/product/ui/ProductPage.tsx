@@ -205,6 +205,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
                 <ProductCard
                   key={similarProduct.id}
                   product={similarProduct}
+                  initialInCart={cartProductIds.has(similarProduct.id)}
                   cartControl={
                     <CatalogCartButton
                       initialInCart={cartProductIds.has(similarProduct.id)}

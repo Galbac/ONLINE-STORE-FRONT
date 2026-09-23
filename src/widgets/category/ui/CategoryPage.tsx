@@ -234,6 +234,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
                   >
                     {products.items.map((product) => (
                       <ProductCard
+                        initialInCart={cartProductIds.has(product.id)}
                         cartControl={
                           <CatalogCartButton
                             initialInCart={cartProductIds.has(product.id)}

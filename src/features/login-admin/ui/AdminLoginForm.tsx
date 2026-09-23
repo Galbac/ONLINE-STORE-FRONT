@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { adminAuthApi } from "@/entities/admin-auth";
 import { AdminApiError, storeAdminAuthTokens } from "@/shared/api";
@@ -26,7 +25,6 @@ const initialValues: AdminLoginFormValues = {
 };
 
 export const AdminLoginForm = () => {
-  const router = useRouter();
   const [values, setValues] = useState<AdminLoginFormValues>(initialValues);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);

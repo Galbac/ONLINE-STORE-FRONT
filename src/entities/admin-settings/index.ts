@@ -1,2 +1,2 @@
 export { adminSettingsApi } from "./api/adminSettingsApi";
-export type { AdminSettingsPayload, AdminSettingsResponse } from "./types";
+export type { AdminSettingsPayload, AdminSettingsResponse, DayScheduleItem } from "./types";

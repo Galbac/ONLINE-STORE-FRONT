@@ -36,6 +36,7 @@ interface CatalogSearchParams {
   page?: string;
   limit?: string;
   category_id?: string;
+  article?: string;
   in_stock?: string;
   has_discount?: string;
   min_price?: string;
@@ -105,6 +106,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   }
   if (tag !== undefined) {
     productParams.tag = tag;
+  }
+  const article = searchParams.article?.trim() || undefined;
+  if (article !== undefined) {
+    productParams.article = article;
   }
 
   const priceBoundsParams: ProductListParams = {
@@ -801,6 +806,7 @@ const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams
   setCatalogUrlParam(params, "min_price", searchParams.min_price);
   setCatalogUrlParam(params, "product_type", searchParams.product_type);
   setCatalogUrlParam(params, "tag", searchParams.tag);
+  setCatalogUrlParam(params, "article", searchParams.article);
   setCatalogUrlParam(params, "page", searchParams.page);
   setCatalogUrlParam(params, "sort", searchParams.sort);
   setCatalogUrlParam(params, "view", searchParams.view);

@@ -188,12 +188,14 @@ interface CatalogFavoriteButtonProps {
   productId: number;
   productName: string;
   initialFavorite: boolean;
+  className?: string;
 }
 
 export const CatalogFavoriteButton = ({
   initialFavorite,
   productId,
   productName,
+  className,
 }: CatalogFavoriteButtonProps) => {
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
   const [isPending, startTransition] = useTransition();
@@ -226,9 +228,10 @@ export const CatalogFavoriteButton = ({
   return (
     <button
       className={cn(
-        "absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95",
+        "flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95",
         isFavorite && "text-rose-500",
         isPending && "cursor-wait opacity-70",
+        className,
       )}
       type="button"
       disabled={isPending}
@@ -237,7 +240,7 @@ export const CatalogFavoriteButton = ({
         isFavorite ? `Убрать ${productName} из избранного` : `Добавить ${productName} в избранное`
       }
     >
-      <Heart fill={isFavorite ? "currentColor" : "none"} size={18} />
+      <Heart fill={isFavorite ? "currentColor" : "none"} size={15} className="sm:w-[18px] sm:h-[18px]" />
     </button>
   );
 };

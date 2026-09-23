@@ -25,6 +25,7 @@ export interface ProductShortResponse {
   id: number;
   name: string;
   slug: string;
+  article?: string | null;
   preview_image_url?: string | null;
   price: string;
   old_price?: string | null;
@@ -68,6 +69,7 @@ export interface ProductListParams {
   has_discount?: boolean;
   product_type?: "piece" | "weight";
   tag?: string;
+  article?: string;
   sort?: "price_asc" | "price_desc" | "newest" | "popular" | "name_asc" | "name_desc";
 }
 
@@ -90,6 +92,7 @@ export interface ProductSearchParams {
   has_discount?: boolean;
   product_type?: "piece" | "weight";
   tag?: string;
+  article?: string;
   sort?: "relevance" | "price_asc" | "price_desc" | "newest" | "popular";
 }
 
@@ -121,6 +124,7 @@ export interface ProductDetailResponse {
   id: number;
   name: string;
   slug: string;
+  article?: string | null;
   description?: string | null;
   category?: ProductCategoryShortResponse | null;
   price: string;

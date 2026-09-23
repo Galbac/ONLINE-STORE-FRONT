@@ -346,22 +346,29 @@ export const QuickViewButton = ({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsOpen(true);
-        }}
-        className={cn(
-          "flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 duration-200",
-          className,
-        )}
-        aria-label={`Быстрый просмотр ${product.name}`}
-        title="Быстрый просмотр"
-      >
-        <Eye size={16} />
-      </button>
+      <div className="relative inline-flex items-center">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(true);
+          }}
+          className={cn(
+            "peer flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur-md transition-all duration-200 border border-slate-200/70 hover:border-emerald-400 hover:scale-110 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 opacity-0 pointer-events-none -translate-x-1.5 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-x-0 focus-visible:opacity-100 focus-visible:pointer-events-auto focus-visible:translate-x-0 focus-visible:ring-2 focus-visible:ring-emerald-500",
+            className,
+          )}
+          aria-label={`Быстрый просмотр ${product.name}`}
+        >
+          <Eye size={15} className="sm:w-4 sm:h-4" />
+        </button>
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 rounded-lg bg-slate-900/90 px-2.5 py-1 text-[11px] font-medium text-white shadow-md backdrop-blur-xs whitespace-nowrap opacity-0 transition-all duration-150 peer-hover:opacity-100 z-30 hidden sm:block -translate-x-1 peer-hover:translate-x-0"
+        >
+          Быстрый просмотр
+        </span>
+      </div>
 
       {mounted ? createPortal(modalContent, document.body) : null}
     </>

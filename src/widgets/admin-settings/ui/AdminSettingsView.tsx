@@ -7,8 +7,10 @@ import {
   adminSettingsApi,
   type AdminSettingsPayload,
   type AdminSettingsResponse,
+  type DayScheduleItem,
 } from "@/entities/admin-settings";
 import { AdminApiError } from "@/shared/api";
+import { WeeklyScheduleEditor } from "./WeeklyScheduleEditor";
 
 interface AdminSettingsViewProps {
   settings: AdminSettingsResponse;
@@ -16,6 +18,8 @@ interface AdminSettingsViewProps {
 
 export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsViewProps) => {
   const [settings, setSettings] = useState(initialSettings);
+  const [schedule, setSchedule] = useState<DayScheduleItem[] | null>(initialSettings.schedule ?? null);
+  const [workingHours, setWorkingHours] = useState<string>(initialSettings.working_hours ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -27,7 +31,7 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
     setMessage(null);
     setError(null);
 
-    const payload = getSettingsPayload(formData, settings);
+    const payload = getSettingsPayload(formData, settings, schedule);
 
     if (Object.keys(payload).length === 0) {
       setIsPending(false);
@@ -39,6 +43,8 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
       .update(payload)
       .then((response) => {
         setSettings(response);
+        if (response.schedule) setSchedule(response.schedule);
+        if (response.working_hours) setWorkingHours(response.working_hours);
         setMessage("Общие настройки сохранены.");
       })
       .catch((updateError: unknown) => {
@@ -54,7 +60,7 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
       <section>
         <h1 className="text-text-primary text-2xl font-bold sm:text-3xl">Общие настройки</h1>
         <p className="text-text-secondary mt-2">
-          Данные магазина, способы получения и оплаты, минимальная сумма заказа.
+          Данные магазина, график работы по дням недели, способы получения и оплаты, минимальная сумма заказа.
         </p>
       </section>
 
@@ -64,7 +70,7 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Магазин" value={settings.shop_name} />
         <SummaryCard label="Город" value={settings.default_city ?? "Не указан"} />
-        <SummaryCard label="Валюта" value={settings.currency} />
+        <SummaryCard label="Режим работы" value={workingHours || settings.working_hours || "Ежедневно 08:00–22:00"} />
         <SummaryCard
           label="Maintenance"
           value={settings.maintenance_mode ? "Включен" : "Отключен"}
@@ -94,19 +100,27 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
             label="Город по умолчанию"
             name="default_city"
           />
-          <Input defaultValue={settings.currency} label="Валюта" name="currency" required />
+          <Input
+            defaultValue={settings.currency}
+            label="Валюта"
+            name="currency"
+            required
+          />
           <Input
             defaultValue={settings.min_order_amount}
-            label="Минимальная сумма заказа"
+            label="Мин. сумма заказа"
             min="0"
             name="min_order_amount"
             required
             step="0.01"
             type="number"
           />
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <SelectBoolean
             defaultValue={settings.delivery_enabled}
-            label="Доставка"
+            label="Доставка курьером"
             name="delivery_enabled"
           />
           <SelectBoolean
@@ -116,7 +130,7 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
           />
           <SelectBoolean
             defaultValue={settings.online_payment_enabled}
-            label="Онлайн-оплата"
+            label="Онлайн-оплата картой"
             name="online_payment_enabled"
           />
           <SelectBoolean
@@ -130,58 +144,22 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
             name="maintenance_mode"
           />
         </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+
+        <div className="mt-4">
           <Textarea defaultValue={settings.address ?? undefined} label="Адрес" name="address" />
-          <div>
-            <Textarea
-              defaultValue={settings.working_hours ?? undefined}
-              label="Режим работы и выходные"
-              name="working_hours"
-            />
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-text-secondary">
-              <span className="text-[11px] font-semibold text-slate-400">Быстрые шаблоны:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.querySelector("textarea[name=\"working_hours\"]") as HTMLTextAreaElement;
-                  if (el) el.value = "Круглосуточно (24/7)";
-                }}
-                className="cursor-pointer rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition"
-              >
-                ⚡ Круглосуточно
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.querySelector("textarea[name=\"working_hours\"]") as HTMLTextAreaElement;
-                  if (el) el.value = "Ежедневно с 08:00 до 22:00";
-                }}
-                className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-              >
-                🕒 08:00 - 22:00
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.querySelector("textarea[name=\"working_hours\"]") as HTMLTextAreaElement;
-                  if (el) el.value = "Пн-Пт 08:00-21:00, Сб-Вс 09:00-20:00";
-                }}
-                className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-              >
-                📅 Без выходных
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.querySelector("textarea[name=\"working_hours\"]") as HTMLTextAreaElement;
-                  if (el) el.value = "Пн-Пт 09:00-19:00, Сб-Вс выходной";
-                }}
-                className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-              >
-                🏖️ С выходными (Сб-Вс)
-              </button>
-            </div>
-          </div>
+        </div>
+
+        {/* График работы магазина по дням недели */}
+        <div className="mt-6 border-t border-border pt-5">
+          <WeeklyScheduleEditor
+            initialSchedule={settings.schedule}
+            workingHoursSummary={settings.working_hours}
+            onChange={(newSchedule, summaryText) => {
+              setSchedule(newSchedule);
+              setWorkingHours(summaryText);
+            }}
+          />
+          <input type="hidden" name="working_hours" value={workingHours} />
         </div>
 
         <div className="mt-6 border-t border-border pt-4">
@@ -212,6 +190,7 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
             />
           </div>
         </div>
+
         <button
           className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-5 inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-bold transition disabled:opacity-60"
           disabled={isPending}
@@ -333,6 +312,7 @@ const getBooleanFormValue = (formData: FormData, name: string): boolean => {
 const getSettingsPayload = (
   formData: FormData,
   currentSettings: AdminSettingsResponse,
+  schedule: DayScheduleItem[] | null,
 ): AdminSettingsPayload => {
   const nextSettings = {
     address: getNullableFormValue(formData, "address"),
@@ -404,6 +384,10 @@ const getSettingsPayload = (
     nextSettings.working_hours,
     currentSettings.working_hours ?? null,
   );
+
+  if (schedule && JSON.stringify(schedule) !== JSON.stringify(currentSettings.schedule ?? null)) {
+    payload.schedule = schedule;
+  }
 
   return payload;
 };

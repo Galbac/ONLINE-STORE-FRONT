@@ -11,6 +11,7 @@ export interface CatalogUrlParams {
   max_price?: string | undefined;
   product_type?: string | undefined;
   tag?: string | undefined;
+  article?: string | undefined;
   sort?: string | undefined;
   view?: string | undefined;
 }

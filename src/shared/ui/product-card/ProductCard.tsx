@@ -27,14 +27,20 @@ export const ProductCard = ({
   if (variant === "list") {
     return (
       <article className="group relative grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5 sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[170px_minmax(0,1fr)_auto]">
-        {product.discount_percent ? (
-          <span className="absolute top-3 left-3 z-10 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-xs font-black text-white shadow-sm shadow-rose-500/30">
-            -{product.discount_percent}%
-          </span>
-        ) : null}
+        {/* Top left badges & quick view */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5 pointer-events-none">
+          {product.discount_percent ? (
+            <span className="pointer-events-auto rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-xs font-black text-white shadow-sm shadow-rose-500/30">
+              -{product.discount_percent}%
+            </span>
+          ) : null}
+          <div className="hidden sm:block pointer-events-auto">
+            <QuickViewButton product={product} initialInCart={initialInCart} />
+          </div>
+        </div>
 
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-          <QuickViewButton product={product} initialInCart={initialInCart} />
+        {/* Top right: Favorite button */}
+        <div className="absolute top-3 right-3 z-10 flex items-center">
           {favoriteControl ?? (
             <button
               aria-label={`Добавить ${product.name} в избранное`}
@@ -86,6 +92,12 @@ export const ProductCard = ({
             <span className="rounded-lg bg-emerald-50/80 px-2 py-0.5 font-semibold text-emerald-800">
               {product.category?.name ?? "Каталог"}
             </span>
+            {product.article ? (
+              <>
+                <span className="text-slate-400">•</span>
+                <span className="text-slate-400 font-mono">Арт. {product.article}</span>
+              </>
+            ) : null}
             <span className="text-slate-400">•</span>
             <span>{getProductTypeLabel(product.product_type)}</span>
           </div>
@@ -122,16 +134,20 @@ export const ProductCard = ({
 
   return (
     <article className="group relative flex min-h-[300px] sm:min-h-[350px] flex-col rounded-2xl border border-slate-200/80 bg-white p-2.5 sm:p-4 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/35 hover:shadow-xl hover:shadow-slate-900/5">
-      {product.discount_percent ? (
-        <span className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 z-10 rounded-lg sm:rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-black text-white shadow-sm shadow-rose-500/30">
-          -{product.discount_percent}%
-        </span>
-      ) : null}
-
-      <div className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 z-10 flex items-center gap-1 sm:gap-1.5">
-        <div className="hidden sm:block">
+      {/* Top left badges & quick view */}
+      <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 z-10 flex flex-col items-start gap-1.5 pointer-events-none">
+        {product.discount_percent ? (
+          <span className="pointer-events-auto rounded-lg sm:rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-black text-white shadow-sm shadow-rose-500/30">
+            -{product.discount_percent}%
+          </span>
+        ) : null}
+        <div className="hidden sm:block pointer-events-auto">
           <QuickViewButton product={product} initialInCart={initialInCart} />
         </div>
+      </div>
+
+      {/* Top right: Favorite button */}
+      <div className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 z-10 flex items-center">
         {favoriteControl ?? (
           <button
             className="flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95"

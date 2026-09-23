@@ -116,6 +116,15 @@ export const ChangePasswordForm = () => {
           onToggleVisibility={() => handleToggleVisibility("newPasswordConfirm")}
         />
 
+        <div className="flex items-center justify-end">
+          <Link
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline transition"
+            href={ROUTES.FORGOT_PASSWORD}
+          >
+            Забыли старый пароль? Восстановление пароля
+          </Link>
+        </div>
+
         {errorMessage ? (
           <p className="text-error rounded-lg bg-red-50 px-4 py-3 text-sm">{errorMessage}</p>
         ) : null}

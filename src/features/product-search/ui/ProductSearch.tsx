@@ -20,6 +20,7 @@ interface SuggestionProduct {
   id: number;
   name: string;
   slug: string;
+  article?: string | null;
   price: string | number;
   preview_image_url?: string | null;
 }
@@ -314,9 +315,16 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
                           <ShoppingBag size={18} className="text-slate-400" />
                         )}
                       </div>
-                      <span className="line-clamp-1 text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition">
-                        {highlightMatch(p.name, query)}
-                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="line-clamp-1 text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition">
+                          {highlightMatch(p.name, query)}
+                        </span>
+                        {p.article ? (
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            Арт. {highlightMatch(p.article, query)}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                     <span className="shrink-0 text-xs font-extrabold text-slate-900">
                       {toPriceFormat(p.price)}

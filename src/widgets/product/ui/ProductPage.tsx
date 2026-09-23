@@ -130,8 +130,10 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               </p>
               <h1 className="text-text-primary text-4xl leading-tight font-bold">{product.name}</h1>
 
-              <div className="text-text-muted mt-5 text-sm">
-                Арт. {product.id.toString().padStart(6, "0")}
+              <div className="mt-4 flex items-center gap-2">
+                <span className="inline-flex items-center rounded bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-white tracking-wide shadow-2xs">
+                  Арт. {product.article || product.id.toString().padStart(6, "0")}
+                </span>
               </div>
 
               <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-5 shadow-2xs">

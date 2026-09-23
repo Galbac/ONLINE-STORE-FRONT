@@ -32,6 +32,7 @@ import {
   ClipboardList,
   Headphones,
   Heart,
+  KeyRound,
   MapPin,
   Package,
   Pencil,
@@ -137,10 +138,9 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
           </section>
         ) : null}
 
-
         <section className="mt-10">
           <h2 className="text-text-primary text-2xl font-bold">Быстрые ссылки</h2>
-          <div className="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <QuickLink
               href={ROUTES.PROFILE_LOYALTY}
               icon={<Sparkles size={30} className="text-emerald-600" />}
@@ -170,6 +170,12 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
               icon={<Bell size={30} />}
               title="Уведомления"
               text="Настройки уведомлений"
+            />
+            <QuickLink
+              href={ROUTES.FORGOT_PASSWORD}
+              icon={<KeyRound size={30} />}
+              title="Восстановление пароля"
+              text="Сброс и восстановление доступа"
             />
           </div>
         </section>
@@ -239,8 +245,37 @@ const ProfileCard = ({ email, user }: ProfileCardProps) => {
         </div>
       ) : null}
 
+      {/* Настройки безопасности и аккаунта */}
+      <div className="mt-8 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 text-emerald-700">
+              <KeyRound size={20} />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-slate-900">Безопасность аккаунта</p>
+              <p className="text-xs text-slate-500">Восстановление или изменение пароля</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-emerald-300 hover:text-emerald-700"
+              href={ROUTES.PROFILE_CHANGE_PASSWORD}
+            >
+              Сменить пароль
+            </Link>
+            <Link
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3.5 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
+              href={ROUTES.FORGOT_PASSWORD}
+            >
+              Восстановление пароля
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <Link
-        className="border-accent-primary text-accent-primary hover:bg-bg-hover mt-10 inline-flex h-14 w-full items-center justify-center gap-3 rounded-lg border px-6 text-base font-bold transition"
+        className="border-accent-primary text-accent-primary hover:bg-bg-hover mt-6 inline-flex h-14 w-full items-center justify-center gap-3 rounded-lg border px-6 text-base font-bold transition"
         href={ROUTES.PROFILE_ADDRESSES}
       >
         <Pencil size={20} />

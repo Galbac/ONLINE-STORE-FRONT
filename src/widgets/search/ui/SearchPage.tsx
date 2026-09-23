@@ -28,6 +28,7 @@ interface SearchPageProps {
 
 interface SearchPageParams {
   q?: string;
+  article?: string;
   page?: string;
   limit?: string;
   category_id?: string;
@@ -43,6 +44,7 @@ interface SearchPageParams {
 
 interface SearchUrlParams {
   q?: string | undefined;
+  article?: string | undefined;
   page?: string | undefined;
   limit?: string | undefined;
   category_id?: string | undefined;
@@ -128,6 +130,10 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   }
   if (tag !== undefined) {
     searchPayload.tag = tag;
+  }
+  const article = searchParams.article?.trim() || undefined;
+  if (article !== undefined) {
+    searchPayload.article = article;
   }
 
   const [categoryListResponse, products, cart, favorites] = await Promise.all([
@@ -781,6 +787,7 @@ const toSearchUrlParams = (searchParams: SearchPageParams): SearchUrlParams => {
   setSearchUrlParam(params, "tag", searchParams.tag);
   setSearchUrlParam(params, "page", searchParams.page);
   setSearchUrlParam(params, "q", searchParams.q);
+  setSearchUrlParam(params, "article", searchParams.article);
   setSearchUrlParam(params, "sort", searchParams.sort);
   setSearchUrlParam(params, "view", searchParams.view);
   return params;

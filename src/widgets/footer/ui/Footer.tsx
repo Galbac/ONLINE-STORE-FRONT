@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Clock, Mail, MapPin, Phone, ShieldCheck, Sparkles } from "lucide-react";
 import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, PwaInstallButton } from "@/shared/ui";
+import { StoreScheduleBadge } from "./StoreScheduleBadge";
 
 interface FooterLink {
   href: string;
@@ -9,14 +10,6 @@ interface FooterLink {
 }
 
 const buyerLinks: FooterLink[] = [
-  {
-    href: ROUTES.CATALOG,
-    label: "Каталог товаров",
-  },
-  {
-    href: ROUTES.CART,
-    label: "Корзина",
-  },
   {
     href: ROUTES.CHECKOUT,
     label: "Оформление заказа",
@@ -27,29 +20,10 @@ const buyerLinks: FooterLink[] = [
   },
 ];
 
-const companyLinks: FooterLink[] = [
-  {
-    href: `${ROUTES.CATALOG}?has_discount=true`,
-    label: "Акции и скидки",
-  },
-  {
-    href: `${ROUTES.CATALOG}?sort=newest`,
-    label: "Новинки",
-  },
-  {
-    href: ROUTES.PROFILE_FAVORITES,
-    label: "Избранное",
-  },
-];
-
 const helpLinks: FooterLink[] = [
   {
     href: ROUTES.FEEDBACK,
     label: "Служба поддержки",
-  },
-  {
-    href: ROUTES.FORGOT_PASSWORD,
-    label: "Восстановление пароля",
   },
   {
     href: ROUTES.PROFILE_ADDRESSES,
@@ -122,8 +96,8 @@ export const Footer = () => {
 
       {/* Main footer content */}
       <Container className="py-12">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          <div className="lg:col-span-1">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
             <Link className="flex items-center gap-2.5" href={ROUTES.HOME}>
               <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-700 to-teal-500 text-white shadow-xs">
                 <Sparkles size={18} />
@@ -134,19 +108,13 @@ export const Footer = () => {
               {STORE_INFO.tagline}. Заказывайте любимые продукты онлайн в несколько кликов с быстрой
               доставкой.
             </p>
-            <div className="mt-4 flex items-center gap-2">
-              <span className="inline-block size-2 rounded-full bg-emerald-500" />
-              <span className="text-xs font-semibold text-emerald-700">
-                Магазин открыт ежедневно
-              </span>
-            </div>
+            <StoreScheduleBadge />
             <div className="mt-4">
               <PwaInstallButton variant="footer" />
             </div>
           </div>
 
           <FooterColumn links={buyerLinks} title="Покупателям" />
-          <FooterColumn links={companyLinks} title="Каталог" />
           <FooterColumn links={helpLinks} title="Помощь" />
           <FooterColumn links={legalLinks} title="Документы" />
         </div>

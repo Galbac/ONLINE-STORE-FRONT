@@ -196,7 +196,7 @@ const Hero = () => {
 
         <div className="mt-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-8 sm:gap-6">
           <div>
-            <span className="block text-2xl font-black text-emerald-400 sm:text-3xl">5 000+</span>
+            <span className="block text-2xl font-black text-emerald-400 sm:text-3xl">1 000+</span>
             <span className="mt-1 block text-xs font-medium text-slate-400 sm:text-sm">
               Товаров в каталоге
             </span>
@@ -246,7 +246,7 @@ const CategorySection = ({ categories }: CategorySectionProps) => {
               </span>
               {category.products_count ? (
                 <span className="mt-1 text-[11px] font-medium text-slate-400">
-                  {category.products_count} товаров
+                  {category.products_count} {formatProductsCount(category.products_count)}
                 </span>
               ) : null}
             </Link>
@@ -493,4 +493,13 @@ const PromoBanners = ({ banners }: { banners: BannerItem[] }) => {
       ))}
     </section>
   );
+};
+
+const formatProductsCount = (count: number): string => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod100 >= 11 && mod100 <= 19) return "товаров";
+  if (mod10 === 1) return "товар";
+  if (mod10 >= 2 && mod10 <= 4) return "товара";
+  return "товаров";
 };

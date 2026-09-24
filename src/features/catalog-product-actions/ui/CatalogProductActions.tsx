@@ -157,8 +157,8 @@ export const CatalogCartButton = ({
     return (
       <div
         className={cn(
-          "flex h-8 sm:h-9 items-center justify-between rounded-xl bg-emerald-600 px-1 text-white shadow-xs shadow-emerald-700/20 transition-all select-none min-w-[84px] sm:min-w-[96px]",
-          showText && "h-12 px-2 min-w-[140px] text-sm",
+          "flex h-9 sm:h-9.5 items-center justify-between rounded-xl bg-emerald-600 px-1.5 text-white shadow-xs shadow-emerald-700/20 transition-all select-none min-w-[96px] sm:min-w-[108px] shrink-0",
+          showText && "h-12 px-2.5 min-w-[140px] text-sm",
           className,
           isPending && "opacity-75 cursor-wait",
         )}
@@ -168,7 +168,7 @@ export const CatalogCartButton = ({
           disabled={isPending}
           onClick={handleDecrement}
           className={cn(
-            "flex size-6 sm:size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition",
+            "flex size-6 sm:size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition cursor-pointer",
             showText && "size-8",
           )}
           aria-label={`Уменьшить на ${step}${unitLabel} ${productName}`}
@@ -183,7 +183,7 @@ export const CatalogCartButton = ({
           disabled={isPending}
           onClick={handleIncrement}
           className={cn(
-            "flex size-6 sm:size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition",
+            "flex size-6 sm:size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition cursor-pointer",
             showText && "size-8",
           )}
           aria-label={`Увеличить на ${step}${unitLabel} ${productName}`}
@@ -197,7 +197,7 @@ export const CatalogCartButton = ({
   return (
     <button
       className={cn(
-        "flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95 select-none",
+        "inline-flex h-9 sm:h-9.5 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 sm:px-3.5 text-xs font-bold text-white shadow-sm shadow-emerald-700/20 transition-all hover:bg-emerald-700 active:scale-95 select-none shrink-0 cursor-pointer",
         showText && "h-12 px-6 w-auto gap-2.5 text-sm font-bold shadow-md shadow-emerald-600/20 hover:scale-[1.02]",
         className,
         isPending && "cursor-wait opacity-70",
@@ -207,8 +207,8 @@ export const CatalogCartButton = ({
       onClick={handleAddToCart}
       aria-label={`Добавить ${productName} в корзину`}
     >
-      <ShoppingCart size={18} />
-      {showText && <span>В корзину</span>}
+      <ShoppingCart size={15} className="shrink-0" />
+      <span>В корзину</span>
     </button>
   );
 };

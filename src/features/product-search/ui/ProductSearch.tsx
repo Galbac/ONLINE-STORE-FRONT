@@ -183,7 +183,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
             className="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none"
             id="site-search"
             name="q"
-            placeholder="Найти среди 5000+ свежих продуктов..."
+            placeholder="Найти свежие продукты, мясо, молоко..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setIsOpen(true)}
@@ -201,7 +201,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
             </button>
           ) : null}
         </div>
-        <Button className="h-11 rounded-none px-6 text-xs uppercase tracking-wider font-bold" type="submit">
+        <Button className="h-11 rounded-none px-6 text-sm font-semibold" type="submit">
           Найти
         </Button>
       </form>

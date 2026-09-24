@@ -182,7 +182,7 @@ export const ProductPurchaseActions = ({
 
 
 
-const toPositiveNumber = (value: string, fallback: number): number => {
+const toPositiveNumber = (value: string | number | null | undefined, fallback: number): number => {
   const parsed = Number(value);
 
   if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -200,7 +200,8 @@ const formatQuantityValue = (value: number): string => {
   return Number.isInteger(value) ? String(value) : String(normalizeQuantity(value));
 };
 
-const unitLabel = (unit: string): string => {
+const unitLabel = (unit?: string | null): string => {
+  if (!unit) return "";
   const firstPart = unit.split(" ")[1];
 
   return firstPart ?? unit;

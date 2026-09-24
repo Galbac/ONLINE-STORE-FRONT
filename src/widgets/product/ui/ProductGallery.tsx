@@ -11,8 +11,8 @@ interface ProductGalleryProps {
   productName: string;
 }
 
-export const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
-  const sortedImages = images.slice().sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id));
+export const ProductGallery = ({ images = [], productName }: ProductGalleryProps) => {
+  const sortedImages = (images ?? []).slice().sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id));
   const [activeIdx, setActiveIdx] = useState(0);
   const currentImage = sortedImages[activeIdx] ?? sortedImages[0];
 

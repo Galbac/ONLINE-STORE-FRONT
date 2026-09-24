@@ -1,5 +1,6 @@
 import { ProductReviews } from "@/widgets/product-reviews";
 import { ProductGallery } from "./ProductGallery";
+import { ProductArticleCopy } from "./ProductArticleCopy";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
@@ -127,9 +128,9 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               <h1 className="text-text-primary text-4xl leading-tight font-bold">{product.name}</h1>
 
               <div className="mt-4 flex items-center gap-2">
-                <span className="inline-flex items-center rounded bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-white tracking-wide shadow-2xs">
-                  Арт. {product.article || product.id.toString().padStart(6, "0")}
-                </span>
+                <ProductArticleCopy
+                  article={product.article || product.id.toString().padStart(6, "0")}
+                />
               </div>
 
               <div className="mt-6 flex items-center justify-between gap-4">
@@ -431,7 +432,8 @@ const formatQuantity = (value: string): string => {
   return Number.isInteger(parsed) ? String(parsed) : String(parsed);
 };
 
-const unitLabel = (unit: string): string => {
+const unitLabel = (unit?: string | null): string => {
+  if (!unit) return "";
   const [, unitName] = unit.split(" ");
 
   return unitName ?? unit;

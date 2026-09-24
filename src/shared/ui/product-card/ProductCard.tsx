@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag, Star } from "lucide-react";
+import { Heart, ShoppingBag } from "lucide-react";
 import type { ProductShortResponse } from "@/entities/product";
 import { CatalogCartButton, StockAlertButton } from "@/features/catalog-product-actions";
 import { QuickViewButton } from "@/features/quick-view";
@@ -182,14 +182,10 @@ export const ProductCard = ({
       <div className="mb-2 flex h-5 items-center justify-between gap-1.5 text-xs">
         <div className="flex min-w-0 items-center gap-1.5">
           <span
-            className="truncate max-w-[100px] sm:max-w-[125px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]"
+            className="truncate max-w-[140px] sm:max-w-[170px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]"
             title={product.category?.name ?? "Каталог"}
           >
             {product.category?.name ?? "Каталог"}
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-0.5 text-amber-500 font-bold text-[11px]">
-            <Star size={11} className="fill-amber-400 text-amber-400" />
-            4.9
           </span>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1 font-medium text-slate-500">

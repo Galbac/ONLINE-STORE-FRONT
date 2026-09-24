@@ -278,6 +278,8 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
                             productId={product.id}
                             productName={product.name}
                             minQuantity={product.min_quantity}
+                            quantityStep={product.quantity_step}
+                            unit={product.unit}
                           />
                         }
                         favoriteControl={

@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag, ShoppingCart, Star } from "lucide-react";
+import { Heart, ShoppingBag, Star } from "lucide-react";
 import type { ProductShortResponse } from "@/entities/product";
-import { StockAlertButton } from "@/features/catalog-product-actions";
+import { CatalogCartButton, StockAlertButton } from "@/features/catalog-product-actions";
 import { QuickViewButton } from "@/features/quick-view";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -118,13 +118,14 @@ export const ProductCard = ({
             <StockAlertButton productId={product.id} productName={product.name} />
           ) : (
             cartControl ?? (
-              <button
-                aria-label={`Добавить ${product.name} в корзину`}
-                className="flex size-11 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
-                type="button"
-              >
-                <ShoppingCart size={19} />
-              </button>
+              <CatalogCartButton
+                initialInCart={initialInCart}
+                productId={product.id}
+                productName={product.name}
+                minQuantity={product.min_quantity}
+                quantityStep={product.quantity_step}
+                unit={product.unit}
+              />
             )
           )}
         </div>
@@ -178,19 +179,22 @@ export const ProductCard = ({
         )}
       </Link>
 
-      <div className="mb-2 flex items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-1.5">
-          <span className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]">
+      <div className="mb-2 flex h-5 items-center justify-between gap-1.5 text-xs">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span
+            className="truncate max-w-[100px] sm:max-w-[125px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]"
+            title={product.category?.name ?? "Каталог"}
+          >
             {product.category?.name ?? "Каталог"}
           </span>
-          <span className="inline-flex items-center gap-0.5 text-amber-500 font-bold text-[11px]">
+          <span className="inline-flex shrink-0 items-center gap-0.5 text-amber-500 font-bold text-[11px]">
             <Star size={11} className="fill-amber-400 text-amber-400" />
             4.9
           </span>
         </div>
-        <span className="inline-flex items-center gap-1 font-medium text-slate-500">
+        <span className="inline-flex shrink-0 items-center gap-1 font-medium text-slate-500">
           <span
-            className={`size-1.5 rounded-full ${
+            className={`size-1.5 rounded-full shrink-0 ${
               product.is_available ? (isLowStock ? "bg-amber-500" : "bg-emerald-500") : "bg-rose-400"
             }`}
           />
@@ -201,8 +205,9 @@ export const ProductCard = ({
       </div>
 
       <Link
-        className="line-clamp-2 min-h-10 text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700 leading-snug"
+        className="line-clamp-2 h-10 text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700 leading-snug"
         href={ROUTES.PRODUCT(product.slug)}
+        title={product.name}
       >
         {product.name}
       </Link>
@@ -231,13 +236,14 @@ export const ProductCard = ({
           />
         ) : (
           cartControl ?? (
-            <button
-              className="flex size-8.5 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-700/20 transition-all hover:scale-105 hover:bg-emerald-700 active:scale-95"
-              type="button"
-              aria-label={`Добавить ${product.name} в корзину`}
-            >
-              <ShoppingCart size={16} className="sm:w-[18px] sm:h-[18px]" />
-            </button>
+            <CatalogCartButton
+              initialInCart={initialInCart}
+              productId={product.id}
+              productName={product.name}
+              minQuantity={product.min_quantity}
+              quantityStep={product.quantity_step}
+              unit={product.unit}
+            />
           )
         )}
       </div>

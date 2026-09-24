@@ -10,6 +10,7 @@ import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { toast } from "sonner";
 import { openCartDrawer } from "@/widgets/cart-drawer";
 import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
+import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
 interface CatalogCartButtonProps {
   productId: number;
@@ -17,6 +18,7 @@ interface CatalogCartButtonProps {
   initialInCart: boolean;
   minQuantity?: number | string | null | undefined;
   quantityStep?: number | string | null | undefined;
+  unit?: string | null | undefined;
   className?: string;
   showText?: boolean;
 }
@@ -27,6 +29,7 @@ export const CatalogCartButton = ({
   productName,
   minQuantity,
   quantityStep,
+  unit,
   className,
   showText = false,
 }: CatalogCartButtonProps) => {
@@ -36,7 +39,29 @@ export const CatalogCartButton = ({
   const [cartItemId, setCartItemId] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const checkAuth = (): boolean => {
+    const token = typeof window !== "undefined"
+      ? (window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token"))
+      : null;
+    if (!token || !isAccessTokenValid(token)) {
+      toast.error("Войдите в аккаунт, чтобы добавить товар в корзину", {
+        action: {
+          label: "Войти",
+          onClick: () => {
+            if (typeof window !== "undefined") {
+              window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+            }
+          },
+        },
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleAddToCart = (): void => {
+    if (!checkAuth()) return;
+
     const qty = minQty;
     const finalQuantity = Number.isFinite(qty) && qty > 0 ? (Number.isInteger(qty) ? qty : Number(qty.toFixed(2))) : 1;
 
@@ -62,6 +87,7 @@ export const CatalogCartButton = ({
         });
       } catch {
         setQuantity(0);
+        toast.error(`Не удалось добавить «${productName}» в корзину`);
       }
     });
   };
@@ -73,6 +99,7 @@ export const CatalogCartButton = ({
   };
 
   const handleIncrement = (): void => {
+    if (!checkAuth()) return;
     triggerHaptic();
     const prevQty = quantity;
     const nextQty = Number((quantity + step).toFixed(2));
@@ -97,6 +124,7 @@ export const CatalogCartButton = ({
   };
 
   const handleDecrement = (): void => {
+    if (!checkAuth()) return;
     triggerHaptic();
     const prevQty = quantity;
     const nextQty = Number((quantity - step).toFixed(2));
@@ -125,10 +153,11 @@ export const CatalogCartButton = ({
   };
 
   if (quantity > 0) {
+    const unitLabel = unit ? ` ${unit}` : "";
     return (
       <div
         className={cn(
-          "flex h-10 items-center justify-between rounded-xl bg-emerald-600 px-1 text-white shadow-xs shadow-emerald-700/20 transition-all select-none min-w-[96px]",
+          "flex h-8 sm:h-9 items-center justify-between rounded-xl bg-emerald-600 px-1 text-white shadow-xs shadow-emerald-700/20 transition-all select-none min-w-[84px] sm:min-w-[96px]",
           showText && "h-12 px-2 min-w-[140px] text-sm",
           className,
           isPending && "opacity-75 cursor-wait",
@@ -139,27 +168,27 @@ export const CatalogCartButton = ({
           disabled={isPending}
           onClick={handleDecrement}
           className={cn(
-            "flex size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition",
+            "flex size-6 sm:size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition",
             showText && "size-8",
           )}
-          aria-label={`Уменьшить количество ${productName}`}
+          aria-label={`Уменьшить на ${step}${unitLabel} ${productName}`}
         >
-          <Minus size={showText ? 16 : 14} />
+          <Minus size={showText ? 16 : 13} />
         </button>
-        <span className={cn("text-xs font-extrabold px-1 tracking-tight", showText && "text-sm font-bold px-2")}>
-          {quantity}
+        <span className={cn("text-[11px] sm:text-xs font-extrabold px-1 tracking-tight whitespace-nowrap", showText && "text-sm font-bold px-2")}>
+          {quantity}{unitLabel}
         </span>
         <button
           type="button"
           disabled={isPending}
           onClick={handleIncrement}
           className={cn(
-            "flex size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition",
+            "flex size-6 sm:size-7 items-center justify-center rounded-lg hover:bg-emerald-700 active:scale-90 transition",
             showText && "size-8",
           )}
-          aria-label={`Увеличить количество ${productName}`}
+          aria-label={`Увеличить на ${step}${unitLabel} ${productName}`}
         >
-          <Plus size={showText ? 16 : 14} />
+          <Plus size={showText ? 16 : 13} />
         </button>
       </div>
     );

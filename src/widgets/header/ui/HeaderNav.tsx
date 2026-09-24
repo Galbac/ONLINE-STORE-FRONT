@@ -12,8 +12,8 @@ interface NavItem {
 
 const baseNavItems: NavItem[] = [
   {
-    href: ROUTES.CATALOG,
-    label: "Каталог",
+    href: `${ROUTES.CATALOG}?sort=popular`,
+    label: "Популярное",
   },
   {
     href: `${ROUTES.CATALOG}?sort=newest`,
@@ -56,8 +56,8 @@ export const HeaderNav = () => {
 
   const items: NavItem[] = hasDiscounts
     ? [
-        { href: ROUTES.CATALOG, label: "Каталог" },
         { href: `${ROUTES.CATALOG}?has_discount=true`, label: "Акции %" },
+        { href: `${ROUTES.CATALOG}?sort=popular`, label: "Популярное" },
         { href: `${ROUTES.CATALOG}?sort=newest`, label: "Новинки" },
         { href: ROUTES.CHECKOUT, label: "Доставка и оплата" },
         { href: ROUTES.PROFILE_ORDERS, label: "Мои заказы" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 
@@ -45,17 +45,46 @@ export const CatalogPriceFilter = ({
     [fromPrice, normalizedSliderMax, toPrice],
   );
 
+  const isUserAction = useRef(false);
+
   useEffect(() => {
+    isUserAction.current = false;
     setFromPrice(initialMinPrice);
     setToPrice(normalizedInitialMaxPrice);
   }, [initialMinPrice, normalizedInitialMaxPrice]);
 
+  useEffect(() => {
+    if (!isUserAction.current) return;
+
+    const timer = setTimeout(() => {
+      isUserAction.current = false;
+      const params = new URLSearchParams();
+      Object.entries(currentParams).forEach(([k, v]) => {
+        if (v && k !== "min_price" && k !== "max_price" && k !== "page") {
+          params.set(k, v);
+        }
+      });
+      if (fromPrice > MIN_PRICE) {
+        params.set("min_price", String(fromPrice));
+      }
+      if (toPrice < normalizedSliderMax) {
+        params.set("max_price", String(toPrice));
+      }
+      const query = params.toString();
+      router.push(query ? `${action}?${query}` : action, { scroll: false });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [fromPrice, toPrice, action, normalizedSliderMax, currentParams, router]);
+
   const handleFromChange = (value: string): void => {
+    isUserAction.current = true;
     const nextPrice = clampPrice(value, MIN_PRICE, toPrice, MIN_PRICE);
     setFromPrice(nextPrice);
   };
 
   const handleToChange = (value: string): void => {
+    isUserAction.current = true;
     const nextPrice = clampPrice(value, fromPrice, normalizedSliderMax, normalizedSliderMax);
     setToPrice(nextPrice);
   };

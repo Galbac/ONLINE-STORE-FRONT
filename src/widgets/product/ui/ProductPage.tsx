@@ -214,6 +214,8 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
                       productId={similarProduct.id}
                       productName={similarProduct.name}
                       minQuantity={similarProduct.min_quantity}
+                      quantityStep={similarProduct.quantity_step}
+                      unit={similarProduct.unit}
                     />
                   }
                   favoriteControl={

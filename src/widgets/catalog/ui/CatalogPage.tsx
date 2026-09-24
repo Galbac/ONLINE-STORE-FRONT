@@ -172,7 +172,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
               maxPrice={maxPrice}
               minPrice={minPrice}
               sliderMax={getPriceSliderMax(priceBounds.items, minPrice, maxPrice)}
-              sort={sort}
             />
             <section>
               <CatalogToolbar
@@ -193,39 +192,19 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                   {
                     id: "all",
                     label: "Все товары",
-                    active: !hasDiscount && !productType && inStock && sort === "popular",
-                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), has_discount: undefined, product_type: undefined, in_stock: undefined, sort: undefined, page: undefined }),
+                    active: !categoryId,
+                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), category_id: undefined, page: undefined }),
                   },
-                  {
-                    id: "discount",
-                    label: "🔥 Скидки",
-                    active: hasDiscount,
-                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), has_discount: hasDiscount ? undefined : "true", page: undefined }),
-                  },
-                  {
-                    id: "popular",
-                    label: "⭐ Популярное",
-                    active: sort === "popular",
-                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), sort: "popular", page: undefined }),
-                  },
-                  {
-                    id: "newest",
-                    label: "🆕 Новинки",
-                    active: sort === "newest",
-                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), sort: "newest", page: undefined }),
-                  },
-                  {
-                    id: "weight",
-                    label: "⚖️ На развес",
-                    active: productType === "weight",
-                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), product_type: productType === "weight" ? undefined : "weight", page: undefined }),
-                  },
-                  {
-                    id: "piece",
-                    label: "📦 Штучные",
-                    active: productType === "piece",
-                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), product_type: productType === "piece" ? undefined : "piece", page: undefined }),
-                  },
+                  ...categories.items.map((cat) => ({
+                    id: String(cat.id),
+                    label: cat.name,
+                    active: categoryId === cat.id,
+                    href: buildCatalogHref({
+                      ...toCatalogUrlParams(searchParams),
+                      category_id: categoryId === cat.id ? undefined : String(cat.id),
+                      page: undefined,
+                    }),
+                  })),
                 ]}
                 className="py-1"
               />
@@ -250,6 +229,8 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                             productId={product.id}
                             productName={product.name}
                             minQuantity={product.min_quantity}
+                            quantityStep={product.quantity_step}
+                            unit={product.unit}
                           />
                         }
                         favoriteControl={
@@ -291,7 +272,6 @@ interface CatalogFiltersProps {
   minPrice?: string | undefined;
   maxPrice?: string | undefined;
   sliderMax: number;
-  sort: NonNullable<ProductListParams["sort"]>;
 }
 
 const CatalogFilters = ({
@@ -303,13 +283,12 @@ const CatalogFilters = ({
   maxPrice,
   minPrice,
   sliderMax,
-  sort,
 }: CatalogFiltersProps) => {
   return (
     <aside className="min-w-0 space-y-4">
       <FilterPanel title="Категории">
-        <ul className="space-y-3">
-          {categories.slice(0, 8).map((category) => {
+        <ul className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+          {categories.map((category) => {
             const Icon = getCategoryIcon(category.name);
 
             return (
@@ -434,31 +413,7 @@ const CatalogFilters = ({
         />
       </FilterPanel>
 
-      <FilterPanel title="Сортировка">
-        <ul className="space-y-3 text-sm">
-          {sortOptions.map((option) => (
-            <li key={option.value}>
-              <Link
-                className="flex items-center gap-2"
-                href={buildCatalogHref({ ...currentParams, sort: option.value, page: undefined })}
-                aria-current={option.value === sort ? "true" : undefined}
-              >
-                <span
-                  className={cn(
-                    "grid size-4 place-items-center rounded-full border",
-                    option.value === sort ? "border-accent-primary" : "border-text-muted",
-                  )}
-                >
-                  {option.value === sort ? (
-                    <span className="bg-accent-primary size-2 rounded-full" />
-                  ) : null}
-                </span>
-                {option.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </FilterPanel>
+
 
       {hasDiscount ? (
         <Link
@@ -500,6 +455,7 @@ const FilterPanel = ({ children, title }: FilterPanelProps) => {
 };
 
 interface CatalogToolbarProps {
+  sort: NonNullable<ProductListParams["sort"]>;
   currentParams: CatalogUrlParams;
   hasDiscount: boolean;
   productsTotal: number;
@@ -507,7 +463,6 @@ interface CatalogToolbarProps {
   inStock: boolean;
   minPrice?: string | undefined;
   maxPrice?: string | undefined;
-  sort: NonNullable<ProductListParams["sort"]>;
   viewMode: ProductViewMode;
 }
 

@@ -178,49 +178,27 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
                 viewMode={viewMode}
               />
 
-              <div className="my-6">
-              <QuickFilterChips
-                chips={[
-                  {
-                    id: "all",
-                    label: "Все товары",
-                    active: !hasDiscount && !productType && inStock && sort === "popular",
-                    href: buildCategoryHref(slug, { ...urlParamsRecord, has_discount: undefined, product_type: undefined, in_stock: undefined, sort: undefined, page: undefined }),
-                  },
-                  {
-                    id: "discount",
-                    label: "🔥 Скидки",
-                    active: hasDiscount,
-                    href: buildCategoryHref(slug, { ...urlParamsRecord, has_discount: hasDiscount ? undefined : "true", page: undefined }),
-                  },
-                  {
-                    id: "popular",
-                    label: "⭐ Популярное",
-                    active: sort === "popular",
-                    href: buildCategoryHref(slug, { ...urlParamsRecord, sort: "popular", page: undefined }),
-                  },
-                  {
-                    id: "newest",
-                    label: "🆕 Новинки",
-                    active: sort === "newest",
-                    href: buildCategoryHref(slug, { ...urlParamsRecord, sort: "newest", page: undefined }),
-                  },
-                  {
-                    id: "weight",
-                    label: "⚖️ На развес",
-                    active: productType === "weight",
-                    href: buildCategoryHref(slug, { ...urlParamsRecord, product_type: productType === "weight" ? undefined : "weight", page: undefined }),
-                  },
-                  {
-                    id: "piece",
-                    label: "📦 Штучные",
-                    active: productType === "piece",
-                    href: buildCategoryHref(slug, { ...urlParamsRecord, product_type: productType === "piece" ? undefined : "piece", page: undefined }),
-                  },
-                ]}
-                className="py-1"
-              />
-              </div>
+              {category.children && category.children.length > 0 ? (
+                <div className="my-6">
+                  <QuickFilterChips
+                    chips={[
+                      {
+                        id: "all",
+                        label: `Все в «${category.name}»`,
+                        active: true,
+                        href: buildCategoryHref(slug, { ...urlParamsRecord, page: undefined }),
+                      },
+                      ...category.children.map((child) => ({
+                        id: String(child.id),
+                        label: child.name,
+                        active: false,
+                        href: ROUTES.CATEGORY(child.slug),
+                      })),
+                    ]}
+                    className="py-1"
+                  />
+                </div>
+              ) : null}
 
               {products.items.length > 0 ? (
                 <>
@@ -241,6 +219,8 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
                             productId={product.id}
                             productName={product.name}
                             minQuantity={product.min_quantity}
+                            quantityStep={product.quantity_step}
+                            unit={product.unit}
                           />
                         }
                         favoriteControl={

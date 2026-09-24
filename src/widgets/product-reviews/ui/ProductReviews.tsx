@@ -147,17 +147,28 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
         <div>
           <h2 className="text-2xl font-black text-slate-900">Отзывы покупателей</h2>
           <div className="mt-2 flex items-center gap-3">
-            <div className="flex items-center gap-1 text-amber-500">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  size={18}
-                  className={star <= Math.round(average) ? "fill-amber-400 text-amber-400" : "text-slate-200"}
-                />
-              ))}
+          {total > 0 ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-amber-500">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={18}
+                    className={star <= Math.round(average) ? "fill-amber-400 text-amber-400" : "text-slate-200"}
+                  />
+                ))}
+              </div>
+              <span className="text-lg font-black text-slate-900">{average.toFixed(1)}</span>
+              <span className="text-xs text-slate-400">• {total} отзывов</span>
             </div>
-            <span className="text-lg font-black text-slate-900">{average.toFixed(1)}</span>
-            <span className="text-xs text-slate-400">• {total} отзывов</span>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                Нет оценок
+              </span>
+              <span className="text-xs text-slate-400">Будьте первым, кто оставит отзыв!</span>
+            </div>
+          )}
           </div>
         </div>
 

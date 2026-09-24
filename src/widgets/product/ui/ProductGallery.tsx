@@ -12,20 +12,20 @@ interface ProductGalleryProps {
 }
 
 export const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
-  const sortedImages = images.slice().sort((left, right) => left.sort_order - right.sort_order);
+  const sortedImages = images.slice().sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id));
   const [activeIdx, setActiveIdx] = useState(0);
   const currentImage = sortedImages[activeIdx] ?? sortedImages[0];
 
   return (
     <div>
-      <div className="relative flex min-h-[380px] sm:min-h-[460px] lg:min-h-[520px] items-center justify-center rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm transition-all overflow-hidden group">
+      <div className="relative flex aspect-square sm:aspect-4/3 w-full items-center justify-center rounded-3xl border border-slate-200/80 bg-white p-2 shadow-sm transition-all overflow-hidden group">
         {currentImage ? (
           <Image
             alt={productName}
-            className="h-full max-h-[460px] w-full object-contain transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-105"
             height={520}
             src={currentImage.url}
-            width={600}
+            width={650}
             priority
           />
         ) : (
@@ -72,7 +72,7 @@ export const ProductGallery = ({ images, productName }: ProductGalleryProps) => 
             >
               <Image
                 alt={`${productName} фото ${index + 1}`}
-                className="h-full w-full object-contain"
+                className="h-full w-full object-cover rounded-lg"
                 height={70}
                 src={image.url}
                 width={70}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useCallback, useEffect, useState, useTransition } from "react";
 import {
   CheckCircle2,
   ExternalLink,
@@ -103,7 +103,7 @@ export const AdminLegalDocumentsView: React.FC<AdminLegalDocumentsViewProps> = (
     toast.info("Изменения сброшены до сохраненных");
   };
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!selectedSlug || !title.trim()) {
       toast.error("Укажите название документа");
       return;
@@ -142,7 +142,7 @@ export const AdminLegalDocumentsView: React.FC<AdminLegalDocumentsViewProps> = (
         toast.error(msg);
       }
     });
-  };
+  }, [selectedSlug, title, description, contentHtml, isActive]);
 
   // Keyboard shortcut Ctrl+S / Cmd+S
   useEffect(() => {

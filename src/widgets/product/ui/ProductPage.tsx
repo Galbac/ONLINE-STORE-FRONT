@@ -2,7 +2,7 @@ import { ProductReviews } from "@/widgets/product-reviews";
 import { ProductGallery } from "./ProductGallery";
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { cartApi, emptyCartResponse, emptyCartSummaryResponse } from "@/entities/cart";
+import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import {
   productApi,
@@ -13,10 +13,9 @@ import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-pro
 import { ProductPurchaseActions } from "@/features/product-purchase-actions";
 import { fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard, BackButton } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { ShieldCheck, Sparkles, ThermometerSnowflake } from "lucide-react";
+import { MapPin, RotateCcw, ShieldCheck, Sparkles, Store, ThermometerSnowflake, Truck } from "lucide-react";
 import { Header } from "@/widgets/header";
 
 interface ProductPageProps {
@@ -25,21 +24,16 @@ interface ProductPageProps {
 
 export const ProductPage = async ({ slug }: ProductPageProps) => {
   const accessToken = await getAccessToken();
-  const productBySlug = await productApi.getBySlug(slug, {
+  const product = await productApi.getBySlug(slug, {
     with_breadcrumbs: true,
     with_similar: false,
   });
 
-  const [product, similarProducts, cartSummary, cart, favorites] = await Promise.all([
-    productApi.getById(productBySlug.id, {
-      with_breadcrumbs: true,
-      with_similar: false,
-    }),
-    productApi.getSimilar(productBySlug.id, {
+  const [similarProducts, cart, favorites] = await Promise.all([
+    productApi.getSimilar(product.id, {
       limit: 6,
       in_stock: true,
     }),
-    fallbackOnUnauthorized(cartApi.getSummary(), emptyCartSummaryResponse),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
@@ -108,10 +102,12 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
     <>
       <Header />
       <script
+        id="product-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <script
+        id="breadcrumb-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
@@ -136,34 +132,13 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
                 </span>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-5 shadow-2xs">
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none">
-                    {toPriceFormat(product.price)}
-                  </span>
-                  {product.old_price ? (
-                    <span className="text-lg text-slate-400 line-through leading-none font-medium">
-                      {toPriceFormat(product.old_price)}
-                    </span>
-                  ) : null}
-                  {product.discount_percent ? (
-                    <span className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1 text-xs font-black text-white shadow-xs">
-                      -{product.discount_percent}%
-                    </span>
-                  ) : null}
-                </div>
-                <div className="rounded-xl bg-white/90 border border-emerald-200/60 px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs">
-                  {toPriceFormat(product.price)} / {product.unit}
-                </div>
-              </div>
-
-              <div className="mt-8 flex items-center justify-between gap-4">
+              <div className="mt-6 flex items-center justify-between gap-4">
                 <span className="text-success flex items-center gap-2 text-sm font-semibold">
                   <span className="bg-success size-2 rounded-full" />
                   {product.stock_display}
                 </span>
                 {isLowStock(product.stock_quantity) ? (
-                  <span className="text-error text-sm">
+                  <span className="text-error text-sm font-semibold">
                     Осталось {formatQuantity(product.stock_quantity)} {unitLabel(product.unit)}
                   </span>
                 ) : null}
@@ -172,7 +147,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               <ProductUnitInfo product={product} />
 
               {/* Freshness & Trust Guarantee */}
-              <div className="my-5 flex items-center gap-3.5 rounded-2xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-4 shadow-2xs">
+              <div className="my-4 flex items-center gap-3.5 rounded-2xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-4 shadow-2xs">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
                   <ShieldCheck size={20} />
                 </span>
@@ -185,10 +160,12 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               </div>
 
               <ProductPurchaseActions
-                cartSummary={cartSummary}
+                                discountPercent={product.discount_percent}
                 initialFavorite={favoriteProductIds.has(product.id)}
                 isAvailable={product.is_available}
                 minQuantity={product.min_quantity}
+                oldPrice={product.old_price}
+                price={product.price}
                 productId={product.id}
                 productName={product.name}
                 quantityStep={product.quantity_step}
@@ -319,36 +296,41 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
         )}
       </section>
       {/* Nutrition & Storage */}
-      <section className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4.5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">Пищевая ценность (на 100 г)</h3>
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
-            <Sparkles size={12} /> Свежий урожай
-          </span>
-        </div>
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
-            <span className="block text-[11px] font-medium text-slate-400">Калории</span>
-            <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">~120 ккал</span>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
-            <span className="block text-[11px] font-medium text-slate-400">Белки</span>
-            <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">3.5 г</span>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
-            <span className="block text-[11px] font-medium text-slate-400">Жиры</span>
-            <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">1.2 г</span>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
-            <span className="block text-[11px] font-medium text-slate-400">Углеводы</span>
-            <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">22.0 г</span>
-          </div>
-        </div>
-        <div className="mt-3.5 pt-3 border-t border-slate-200/60 flex items-center gap-2 text-xs text-slate-500">
-          <ThermometerSnowflake size={14} className="text-cyan-600 shrink-0" />
-          <span>Хранить при температуре от +2°C до +6°C в сухом прохладном месте</span>
-        </div>
-      </section>
+      {(() => {
+        const nutrition = getProductNutrition(product.category?.slug, product.slug);
+        return (
+          <section className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4.5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">Пищевая ценность (на 100 г)</h3>
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                <Sparkles size={12} /> {nutrition.badge}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+                <span className="block text-[11px] font-medium text-slate-400">Калории</span>
+                <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">{nutrition.calories}</span>
+              </div>
+              <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+                <span className="block text-[11px] font-medium text-slate-400">Белки</span>
+                <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">{nutrition.proteins}</span>
+              </div>
+              <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+                <span className="block text-[11px] font-medium text-slate-400">Жиры</span>
+                <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">{nutrition.fats}</span>
+              </div>
+              <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+                <span className="block text-[11px] font-medium text-slate-400">Углеводы</span>
+                <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">{nutrition.carbs}</span>
+              </div>
+            </div>
+            <div className="mt-3.5 pt-3 border-t border-slate-200/60 flex items-center gap-2 text-xs text-slate-500">
+              <ThermometerSnowflake size={14} className="text-cyan-600 shrink-0" />
+              <span>{nutrition.storage}</span>
+            </div>
+          </section>
+        );
+      })()}
 
       <section>
         <h2 className="mb-4 text-base font-bold">Характеристики</h2>
@@ -363,6 +345,49 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
             value={`${formatQuantity(product.stock_quantity)} ${unitLabel(product.unit)}`}
           />
         </dl>
+      </section>
+
+      {/* Delivery in City Widget */}
+      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs space-y-3.5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+            <MapPin size={18} className="text-emerald-600 shrink-0" />
+            <span>Доставка в г. Кизляр</span>
+          </div>
+          <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+            от 45 минут
+          </span>
+        </div>
+
+        <div className="space-y-3 text-xs">
+          <div className="flex items-start gap-3">
+            <Truck size={17} className="text-emerald-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-slate-800">Быстрая курьерская доставка</p>
+              <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+                Сегодня, ближайший интервал 14:00 – 16:00. Бесплатно при заказе от 1 500 ₽.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <Store size={17} className="text-slate-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-slate-800">Самовывоз из супермаркета</p>
+              <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+                ул. Ленина, 14. Готов к выдаче через 15 минут после оформления, бесплатно.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <RotateCcw size={17} className="text-slate-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-slate-800">Гарантия 100% свежести и возврата</p>
+              <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+                Если вас не устроит качество или свежесть продуктов — вернем деньги или заменим в течение 24 часов.
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );
@@ -411,3 +436,73 @@ const unitLabel = (unit: string): string => {
 
   return unitName ?? unit;
 };
+
+const getProductNutrition = (catSlug?: string | null, prodSlug?: string) => {
+  const cat = (catSlug ?? "").toLowerCase();
+  const slug = (prodSlug ?? "").toLowerCase();
+
+  if (cat.includes("myaso") || cat.includes("мясо") || slug.includes("farsh") || slug.includes("steik") || slug.includes("file") || slug.includes("kurin") || slug.includes("bekon") || slug.includes("sosiski")) {
+    return {
+      badge: "🥩 Натуральное мясо",
+      calories: "~254 ккал",
+      proteins: "18.0 г",
+      fats: "20.0 г",
+      carbs: "0.0 г",
+      storage: "Хранить при температуре от 0°C до +4°C не более 48 часов",
+    };
+  }
+
+  if (cat.includes("ryba") || cat.includes("рыба")) {
+    return {
+      badge: "🐟 Дикий вылов / Аквакультура",
+      calories: "~142 ккал",
+      proteins: "20.5 г",
+      fats: "6.8 г",
+      carbs: "0.0 г",
+      storage: "Хранить при температуре от 0°C до +2°C на льду",
+    };
+  }
+
+  if (cat.includes("molochnye") || cat.includes("молоч") || slug.includes("milk") || slug.includes("tvorog") || slug.includes("cheese")) {
+    return {
+      badge: "🥛 Натуральное молоко",
+      calories: "~64 ккал",
+      proteins: "3.2 г",
+      fats: "3.2 г",
+      carbs: "4.7 г",
+      storage: "Хранить при температуре от +2°C до +6°C в сухом месте",
+    };
+  }
+
+  if (cat.includes("khleb") || cat.includes("хлеб") || cat.includes("vypechka") || slug.includes("baget") || slug.includes("croissant")) {
+    return {
+      badge: "🥖 Свежая выпечка",
+      calories: "~265 ккал",
+      proteins: "8.5 г",
+      fats: "1.8 г",
+      carbs: "51.0 г",
+      storage: "Хранить в сухом прохладном месте при температуре до +25°C",
+    };
+  }
+
+  if (cat.includes("krupy") || cat.includes("круп") || cat.includes("makaron")) {
+    return {
+      badge: "🌾 Отборные злаки",
+      calories: "~340 ккал",
+      proteins: "12.0 г",
+      fats: "2.0 г",
+      carbs: "68.0 г",
+      storage: "Хранить в сухом месте с относительной влажностью не более 70%",
+    };
+  }
+
+  return {
+    badge: "🌿 Свежий урожай",
+    calories: "~42 ккал",
+    proteins: "1.2 г",
+    fats: "0.3 г",
+    carbs: "8.5 г",
+    storage: "Хранить при температуре от +4°C до +8°C в вентилируемом отсеке",
+  };
+};
+

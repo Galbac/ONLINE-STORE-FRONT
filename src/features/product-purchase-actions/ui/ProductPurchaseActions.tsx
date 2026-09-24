@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
-import { ChevronDown, Heart, Minus, Plus, ShoppingCart } from "lucide-react";
-import { cartApi, type CartSummaryResponse } from "@/entities/cart";
+import { useState, useTransition } from "react";
+import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
+import { cartApi } from "@/entities/cart";
 import { favoriteApi } from "@/entities/favorite";
 import { isApiErrorStatus } from "@/shared/api";
-import { cn, ROUTES } from "@/shared/config";
+import { cn } from "@/shared/config";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -14,20 +13,24 @@ import { toPriceFormat } from "@/shared/lib/format";
 interface ProductPurchaseActionsProps {
   productId: number;
   productName: string;
+  price: string;
+  oldPrice?: string | null | undefined;
+  discountPercent?: number | null | undefined;
   minQuantity: string;
   quantityStep: string;
   stockQuantity: string;
   unit: string;
   isAvailable: boolean;
   initialFavorite: boolean;
-  cartSummary: CartSummaryResponse;
 }
 
 export const ProductPurchaseActions = ({
-  cartSummary,
+  discountPercent,
   initialFavorite,
   isAvailable,
   minQuantity,
+  oldPrice,
+  price,
   productId,
   productName,
   quantityStep,
@@ -39,35 +42,13 @@ export const ProductPurchaseActions = ({
   const stock = toPositiveNumber(stockQuantity, 0);
   const [quantity, setQuantity] = useState(min);
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
-  const [summary, setSummary] = useState(cartSummary);
   const [isCartPending, startCartTransition] = useTransition();
   const [isFavoritePending, startFavoriteTransition] = useTransition();
 
-  useEffect(() => {
-    if (!hasStoredAccessToken()) {
-      return;
-    }
+  const currentTotal = Number((Number(price) * quantity).toFixed(2));
+  const currentOldTotal = oldPrice ? Number((Number(oldPrice) * quantity).toFixed(2)) : null;
 
-    let isMounted = true;
 
-    const refreshCartSummary = async (): Promise<void> => {
-      try {
-        const nextSummary = await cartApi.getSummary();
-
-        if (isMounted) {
-          setSummary(nextSummary);
-        }
-      } catch {
-        // Auth refresh and redirects are handled by apiClient.
-      }
-    };
-
-    void refreshCartSummary();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const canDecrease = quantity - step >= min;
   const canIncrease = stock === 0 || quantity + step <= stock;
@@ -91,18 +72,7 @@ export const ProductPurchaseActions = ({
         quantity: formatQuantityValue(quantity),
       });
 
-      setSummary({
-        items_count: response.cart.items_count,
-        total_quantity: response.cart.total_quantity,
-        subtotal: response.cart.subtotal,
-        discount_amount: response.cart.discount_amount,
-        promo_discount_amount: response.cart.promo_discount_amount,
-        delivery_price: response.cart.delivery_price ?? null,
-        final_price: response.cart.final_price,
-        has_warnings: response.cart.warnings.length > 0,
-        warnings_count: response.cart.warnings.length,
-        promo_code: null,
-      });
+
       notifyCartChanged({ itemsCount: response.cart.items_count });
     });
   };
@@ -129,13 +99,35 @@ export const ProductPurchaseActions = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Dynamic Price Block calculated per selected quantity */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-5 shadow-2xs">
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none">
+            {toPriceFormat(currentTotal)}
+          </span>
+          {currentOldTotal ? (
+            <span className="text-lg text-slate-400 line-through leading-none font-medium">
+              {toPriceFormat(currentOldTotal)}
+            </span>
+          ) : null}
+          {discountPercent ? (
+            <span className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1 text-xs font-black text-white shadow-xs">
+              -{discountPercent}%
+            </span>
+          ) : null}
+        </div>
+        <div className="rounded-xl bg-white/90 border border-emerald-200/60 px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs">
+          {toPriceFormat(price)} / {unit}
+        </div>
+      </div>
+
       <div>
-        <p className="mb-2 text-sm">Количество</p>
-        <div className="grid gap-4 sm:grid-cols-[170px_minmax(180px,1fr)]">
-          <div className="border-border flex h-12 items-center justify-between overflow-hidden rounded-lg border">
+        <p className="mb-2 text-xs font-bold text-slate-600 uppercase tracking-wider">Количество для заказа</p>
+        <div className="grid gap-3 sm:grid-cols-[170px_minmax(180px,1fr)]">
+          <div className="flex h-12 items-center justify-between overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
             <button
-              className="hover:bg-bg-hover grid h-full w-12 place-items-center disabled:cursor-not-allowed disabled:opacity-45"
+              className="grid h-full w-12 place-items-center hover:bg-slate-50 transition active:scale-90 disabled:cursor-not-allowed disabled:opacity-40"
               type="button"
               disabled={!canDecrease || isCartPending}
               onClick={handleDecrease}
@@ -143,11 +135,11 @@ export const ProductPurchaseActions = ({
             >
               <Minus size={18} />
             </button>
-            <span className="text-base font-bold">
+            <span className="text-base font-extrabold text-slate-900">
               {formatQuantityValue(quantity)} {unitLabel(unit)}
             </span>
             <button
-              className="hover:bg-bg-hover grid h-full w-12 place-items-center disabled:cursor-not-allowed disabled:opacity-45"
+              className="grid h-full w-12 place-items-center hover:bg-slate-50 transition active:scale-90 disabled:cursor-not-allowed disabled:opacity-40"
               type="button"
               disabled={!canIncrease || isCartPending}
               onClick={handleIncrease}
@@ -158,22 +150,23 @@ export const ProductPurchaseActions = ({
           </div>
           <button
             className={cn(
-              "bg-accent-primary text-accent-contrast hover:bg-accent-hover h-12 rounded-lg px-6 text-base font-bold transition disabled:cursor-not-allowed disabled:opacity-55",
+              "flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-base font-bold text-white shadow-sm shadow-emerald-700/20 transition-all hover:bg-emerald-700 hover:scale-[1.01] active:scale-98 disabled:cursor-not-allowed disabled:opacity-55",
               isCartPending && "cursor-wait opacity-75",
             )}
             type="button"
             disabled={!isAvailable || isCartPending}
             onClick={handleAddToCart}
           >
-            В корзину
+            <ShoppingCart size={18} />
+            {isCartPending ? "Добавление..." : "В корзину"}
           </button>
         </div>
       </div>
 
       <button
         className={cn(
-          "border-border hover:bg-bg-hover flex h-12 w-full items-center justify-center gap-2 rounded-lg border text-base font-bold transition",
-          isFavorite ? "text-accent-primary" : "text-text-primary",
+          "flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-base font-bold shadow-2xs transition hover:bg-slate-50 active:scale-98",
+          isFavorite ? "text-rose-500 border-rose-200 bg-rose-50/50" : "text-slate-700",
           isFavoritePending && "cursor-wait opacity-75",
         )}
         type="button"
@@ -183,38 +176,11 @@ export const ProductPurchaseActions = ({
         <Heart fill={isFavorite ? "currentColor" : "none"} size={20} />
         {isFavorite ? "В избранном" : "В избранное"}
       </button>
-
-      <Link
-        className="border-border hover:bg-bg-hover grid min-h-16 grid-cols-[auto_1fr_auto_auto] items-center gap-4 rounded-lg border px-5 transition"
-        href={ROUTES.CART}
-      >
-        <ShoppingCart className="text-accent-primary" size={26} />
-        <span>
-          <span className="block text-sm font-bold">В корзине</span>
-          <span className="text-text-secondary text-sm">
-            {summary.items_count} {getProductCountLabel(summary.items_count)}
-          </span>
-        </span>
-        <span className="border-border border-l pl-4">
-          <span className="text-text-secondary block text-sm">Сумма</span>
-          <span className="font-bold">{toPriceFormat(summary.final_price)}</span>
-        </span>
-        <ChevronDown size={18} />
-      </Link>
     </div>
   );
 };
 
-const hasStoredAccessToken = (): boolean => {
-  if (typeof window === "undefined") {
-    return false;
-  }
 
-  return (
-    window.localStorage.getItem("access_token") !== null ||
-    window.sessionStorage.getItem("access_token") !== null
-  );
-};
 
 const toPositiveNumber = (value: string, fallback: number): number => {
   const parsed = Number(value);
@@ -240,21 +206,4 @@ const unitLabel = (unit: string): string => {
   return firstPart ?? unit;
 };
 
-const getProductCountLabel = (count: number): string => {
-  const lastTwoDigits = count % 100;
-  const lastDigit = count % 10;
 
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-    return "товаров";
-  }
-
-  if (lastDigit === 1) {
-    return "товар";
-  }
-
-  if (lastDigit >= 2 && lastDigit <= 4) {
-    return "товара";
-  }
-
-  return "товаров";
-};

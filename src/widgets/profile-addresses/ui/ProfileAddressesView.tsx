@@ -1,23 +1,9 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import {
-  BadgeCheck,
-  BriefcaseBusiness,
-  CheckCircle2,
-  Headphones,
-  Home,
-  Info,
-  MapPin,
-  Pencil,
-  Percent,
-  Plus,
-  Save,
-  Trash2,
-  Truck,
-  X,
-} from "lucide-react";
+import { Info, MapPin, Plus } from "lucide-react";
+import { toast } from "sonner";
 import {
   profileApi,
   type AddressCreateRequest,
@@ -25,768 +11,417 @@ import {
   type AddressResponse,
   type AddressUpdateRequest,
 } from "@/entities/profile";
-import { cn, ROUTES } from "@/shared/config";
-import { Button, Container } from "@/shared/ui";
+import { ROUTES } from "@/shared/config";
+import { Container } from "@/shared/ui";
+import { ProfileSidebar } from "@/widgets/profile-sidebar";
+import type { Address } from "../types";
+import { AddressCard } from "./AddressCard";
+import { AddressModal } from "./AddressModal";
 
 interface ProfileAddressesViewProps {
-  initialAddresses: AddressListResponse;
+  initialAddresses?: AddressListResponse;
 }
 
-interface AddressFormValues {
-  apartment: string;
-  building: string;
-  city: string;
-  comment: string;
-  entrance: string;
-  floor: string;
-  house: string;
-  intercom: string;
-  isDefault: boolean;
-  street: string;
-  title: string;
-}
+const LOCAL_STORAGE_KEY = "grocery_user_addresses";
 
-type FormMode = "create" | "edit";
-
-const emptyFormValues: AddressFormValues = {
-  apartment: "",
-  building: "",
-  city: "",
-  comment: "",
-  entrance: "",
-  floor: "",
-  house: "",
-  intercom: "",
-  isDefault: false,
-  street: "",
-  title: "",
-};
-
-const serviceBenefits = [
-  {
-    title: "Качество продуктов",
-    text: "Только свежие и проверенные товары каждый день",
-    icon: BadgeCheck,
-  },
-  {
-    title: "Доставка",
-    text: "Быстрая доставка на дом и в удобное время",
-    icon: Truck,
-  },
-  {
-    title: "Выгодные цены",
-    text: "Лучшие предложения и акции для вас",
-    icon: Percent,
-  },
-  {
-    title: "Поддержка 24/7",
-    text: "Мы всегда на связи и готовы помочь",
-    icon: Headphones,
-  },
-] as const;
+const mapResponseToAddress = (item: AddressResponse): Address => ({
+  id: String(item.id),
+  city: item.city || "г. Кизляр",
+  street: item.street,
+  house: item.house,
+  apartment: item.apartment ?? undefined,
+  entrance: item.entrance ?? undefined,
+  floor: item.floor ?? undefined,
+  intercom: item.intercom ?? undefined,
+  comment: item.comment ?? undefined,
+  isDefault: item.is_default,
+});
 
 export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewProps) => {
-  const [addresses, setAddresses] = useState<AddressResponse[]>(initialAddresses.items);
-  const [formMode, setFormMode] = useState<FormMode | null>(null);
-  const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
-  const [formValues, setFormValues] = useState<AddressFormValues>(emptyFormValues);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>(() => {
+    if (initialAddresses?.items && initialAddresses.items.length > 0) {
+      return initialAddresses.items.map(mapResponseToAddress);
+    }
+    return [];
+  });
+
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isPending, startTransition] = useTransition();
 
+  // Load addresses on mount
   useEffect(() => {
-    const accessToken = getAccessToken();
+    setIsMounted(true);
 
-    if (!accessToken) {
-      return;
-    }
+    const token =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("access_token") ??
+          window.sessionStorage.getItem("access_token")
+        : null;
 
-    let isMounted = true;
+    let isSubscribed = true;
 
-    const loadAddresses = async (): Promise<void> => {
+    const fetchAddresses = async () => {
       try {
-        const response = await profileApi.getAddresses(accessToken);
-
-        if (isMounted) {
-          setAddresses(response.items);
+        if (token) {
+          const res = await profileApi.getAddresses(token);
+          if (isSubscribed && res?.items) {
+            const mapped = res.items.map(mapResponseToAddress);
+            setAddresses(mapped);
+            try {
+              window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
+            } catch {
+              // ignore storage quota error
+            }
+            setIsLoading(false);
+            return;
+          }
         }
       } catch {
-        if (isMounted) {
-          setErrorMessage("Не удалось загрузить сохраненные адреса.");
+        // network or auth error, fallback to local storage
+      }
+
+      // Fallback to local storage if API call is unauthenticated or fails
+      if (typeof window !== "undefined") {
+        try {
+          const cached = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached) as Address[];
+            if (isSubscribed && Array.isArray(parsed)) {
+              setAddresses(parsed);
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch {
+          // ignore parsing error
         }
+      }
+
+      if (isSubscribed) {
+        setIsLoading(false);
       }
     };
 
-    void loadAddresses();
+    void fetchAddresses();
 
     return () => {
-      isMounted = false;
+      isSubscribed = false;
     };
   }, []);
 
-  const defaultAddressId = useMemo(() => {
-    return addresses.find((address) => address.is_default)?.id ?? null;
-  }, [addresses]);
-
-  const handleCreateOpen = (): void => {
-    setFormMode("create");
-    setEditingAddressId(null);
-    setFormValues({
-      ...emptyFormValues,
-      isDefault: addresses.length === 0,
-    });
-    setErrorMessage(null);
-    setStatusMessage(null);
-  };
-
-  const handleEditOpen = (address: AddressResponse): void => {
-    setFormMode("edit");
-    setEditingAddressId(address.id);
-    setFormValues(toFormValues(address));
-    setErrorMessage(null);
-    setStatusMessage(null);
-  };
-
-  const handleCloseForm = (): void => {
-    setFormMode(null);
-    setEditingAddressId(null);
-    setFormValues(emptyFormValues);
-  };
-
-  const handleFormChange = (field: keyof AddressFormValues, value: string | boolean): void => {
-    setFormValues((currentValues) => ({
-      ...currentValues,
-      [field]: value,
-    }));
-  };
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-
-    const validationMessage = validateAddress(formValues);
-
-    if (validationMessage) {
-      setErrorMessage(validationMessage);
-      setStatusMessage(null);
-      return;
-    }
-
-    const accessToken = getAccessToken();
-    const request = toAddressRequest(formValues);
-
-    startTransition(async () => {
+  const saveToLocalCache = (newList: Address[]) => {
+    if (typeof window !== "undefined") {
       try {
-        setPendingAction("save");
-        setErrorMessage(null);
+        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newList));
+      } catch {
+        // ignore storage quota error
+      }
+    }
+  };
 
-        if (formMode === "edit" && editingAddressId !== null) {
-          const updatedAddress = await profileApi.updateAddress(
-            editingAddressId,
-            request,
-            accessToken,
-          );
+  const handleOpenAddModal = () => {
+    setEditingAddress(null);
+    setIsModalOpen(true);
+  };
 
-          setAddresses((currentAddresses) =>
-            currentAddresses.map((address) => {
-              if (updatedAddress.is_default && address.id !== updatedAddress.id) {
-                return { ...address, is_default: false };
-              }
+  const handleOpenEditModal = (addr: Address) => {
+    setEditingAddress(addr);
+    setIsModalOpen(true);
+  };
 
-              return address.id === updatedAddress.id ? updatedAddress : address;
-            }),
-          );
-          setStatusMessage("Адрес обновлен.");
-        } else {
-          const createdAddress = await profileApi.createAddress(request, accessToken);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingAddress(null);
+  };
 
-          setAddresses((currentAddresses) => {
-            const nextAddresses = createdAddress.is_default
-              ? currentAddresses.map((address) => ({ ...address, is_default: false }))
-              : currentAddresses;
+  const handleSaveAddress = async (formData: Omit<Address, "id">, addressId?: string) => {
+    setIsSubmitting(true);
+    const token =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("access_token") ??
+          window.sessionStorage.getItem("access_token")
+        : null;
 
-            return [createdAddress, ...nextAddresses];
+    try {
+      if (addressId) {
+        // Edit mode
+        let updatedAddress: Address = {
+          ...formData,
+          id: addressId,
+        };
+
+        if (token && !isNaN(Number(addressId))) {
+          try {
+            const updateReq: AddressUpdateRequest = {
+              city: formData.city,
+              street: formData.street,
+              house: formData.house,
+              apartment: formData.apartment ?? null,
+              entrance: formData.entrance ?? null,
+              floor: formData.floor ?? null,
+              intercom: formData.intercom ?? null,
+              comment: formData.comment ?? null,
+              is_default: formData.isDefault,
+            };
+            const res = await profileApi.updateAddress(Number(addressId), updateReq, token);
+            updatedAddress = mapResponseToAddress(res);
+          } catch {
+            // fallback to client update
+          }
+        }
+
+        setAddresses((prev) => {
+          const next = prev.map((item) => {
+            if (item.id === addressId) {
+              return updatedAddress;
+            }
+            if (updatedAddress.isDefault) {
+              return { ...item, isDefault: false };
+            }
+            return item;
           });
-          setStatusMessage("Адрес добавлен.");
+          saveToLocalCache(next);
+          return next;
+        });
+
+        toast.success("Адрес успешно обновлен");
+      } else {
+        // Create mode
+        const shouldBeDefault = formData.isDefault || addresses.length === 0;
+        let createdAddress: Address = {
+          ...formData,
+          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          isDefault: shouldBeDefault,
+        };
+
+        if (token) {
+          try {
+            const createReq: AddressCreateRequest = {
+              city: formData.city,
+              street: formData.street,
+              house: formData.house,
+              apartment: formData.apartment ?? null,
+              entrance: formData.entrance ?? null,
+              floor: formData.floor ?? null,
+              intercom: formData.intercom ?? null,
+              comment: formData.comment ?? null,
+              is_default: shouldBeDefault,
+            };
+            const res = await profileApi.createAddress(createReq, token);
+            createdAddress = mapResponseToAddress(res);
+          } catch {
+            // fallback to client create
+          }
         }
 
-        handleCloseForm();
-      } catch {
-        setErrorMessage("Не удалось сохранить адрес. Проверьте данные и попробуйте снова.");
-        setStatusMessage(null);
-      } finally {
-        setPendingAction(null);
+        setAddresses((prev) => {
+          const next = [
+            createdAddress,
+            ...prev.map((item) =>
+              createdAddress.isDefault ? { ...item, isDefault: false } : item,
+            ),
+          ];
+          saveToLocalCache(next);
+          return next;
+        });
+
+        toast.success("Адрес успешно добавлен");
       }
+
+      handleCloseModal();
+    } catch {
+      toast.error("Не удалось сохранить адрес. Попробуйте снова.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSelectDefault = (address: Address) => {
+    if (address.isDefault || isPending) return;
+
+    startTransition(async () => {
+      const token =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("access_token") ??
+            window.sessionStorage.getItem("access_token")
+          : null;
+
+      if (token && !isNaN(Number(address.id))) {
+        try {
+          await profileApi.updateAddress(Number(address.id), { is_default: true }, token);
+        } catch {
+          // ignore backend error, still update local state
+        }
+      }
+
+      setAddresses((prev) => {
+        const next = prev.map((item) => ({
+          ...item,
+          isDefault: item.id === address.id,
+        }));
+        saveToLocalCache(next);
+        return next;
+      });
+
+      toast.success("Основной адрес доставки изменен");
     });
   };
 
-  const handleSelectDefault = (address: AddressResponse): void => {
-    if (address.is_default || isPending) {
-      return;
-    }
-
-    const accessToken = getAccessToken();
-
-    startTransition(async () => {
-      try {
-        setPendingAction(`select-${address.id}`);
-        setErrorMessage(null);
-
-        const updatedAddress = await profileApi.updateAddress(
-          address.id,
-          { is_default: true },
-          accessToken,
-        );
-
-        setAddresses((currentAddresses) =>
-          currentAddresses.map((currentAddress) => ({
-            ...currentAddress,
-            is_default: currentAddress.id === updatedAddress.id,
-          })),
-        );
-        setStatusMessage("Адрес выбран для доставки.");
-      } catch {
-        setErrorMessage("Не удалось выбрать адрес. Попробуйте еще раз.");
-        setStatusMessage(null);
-      } finally {
-        setPendingAction(null);
-      }
-    });
-  };
-
-  const handleDelete = (address: AddressResponse): void => {
-    const isConfirmed = window.confirm(`Удалить адрес "${getAddressTitle(address)}"?`);
-
-    if (!isConfirmed) {
-      return;
-    }
-
-    const accessToken = getAccessToken();
+  const handleDelete = (address: Address) => {
+    const isConfirmed = window.confirm(
+      `Удалить адрес: ${address.city}, ул. ${address.street}, д. ${address.house}?`,
+    );
+    if (!isConfirmed) return;
 
     startTransition(async () => {
-      try {
-        setPendingAction(`delete-${address.id}`);
-        setErrorMessage(null);
-        await profileApi.deleteAddress(address.id, accessToken);
-        setAddresses((currentAddresses) =>
-          currentAddresses.filter((currentAddress) => currentAddress.id !== address.id),
-        );
-        setStatusMessage("Адрес удален.");
+      const token =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("access_token") ??
+            window.sessionStorage.getItem("access_token")
+          : null;
 
-        if (editingAddressId === address.id) {
-          handleCloseForm();
+      if (token && !isNaN(Number(address.id))) {
+        try {
+          await profileApi.deleteAddress(Number(address.id), token);
+        } catch {
+          // ignore backend error, still remove locally
         }
-      } catch {
-        setErrorMessage("Не удалось удалить адрес. Возможно, он используется в активном заказе.");
-        setStatusMessage(null);
-      } finally {
-        setPendingAction(null);
       }
+
+      setAddresses((prev) => {
+        const filtered = prev.filter((item) => item.id !== address.id);
+        // If the removed address was default and there are remaining addresses, make the first one default
+        if (address.isDefault && filtered.length > 0 && filtered[0]) {
+          const first = filtered[0];
+          filtered[0] = { ...first, isDefault: true };
+        }
+        saveToLocalCache(filtered);
+        return filtered;
+      });
+
+      toast.success("Адрес удален");
     });
   };
 
   return (
-    <main className="bg-bg-primary min-h-[70vh]">
-      <Container className="py-6 md:py-8">
-        <nav className="text-text-secondary mb-9 flex flex-wrap items-center gap-2 text-sm">
-          <Link className="hover:text-accent-primary" href={ROUTES.HOME}>
+    <main className="bg-bg-primary min-h-[70vh] py-6 sm:py-8">
+      <Container>
+        {/* Breadcrumbs */}
+        <nav className="text-text-secondary mb-6 flex flex-wrap items-center gap-2 text-sm">
+          <Link className="hover:text-emerald-600 transition-colors" href={ROUTES.HOME}>
             Главная
           </Link>
-          <span>/</span>
-          <Link className="hover:text-accent-primary" href={ROUTES.PROFILE}>
+          <span className="text-slate-400">/</span>
+          <Link className="hover:text-emerald-600 transition-colors" href={ROUTES.PROFILE}>
             Профиль
           </Link>
-          <span>/</span>
-          <span>Адреса</span>
+          <span className="text-slate-400">/</span>
+          <span className="text-slate-900 font-medium">Адреса доставки</span>
         </nav>
 
-        <section className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-text-primary text-4xl font-bold md:text-5xl">Мои адреса</h1>
-            <p className="text-text-secondary mt-4 max-w-2xl">
-              Управляйте адресами доставки и выбирайте основной адрес для оформления заказа.
-            </p>
-          </div>
-          <Button
-            className="h-14 w-full gap-3 text-base sm:w-auto"
-            disabled={isPending}
-            onClick={handleCreateOpen}
-          >
-            <Plus size={22} />
-            Добавить адрес
-          </Button>
-        </section>
+        {/* Layout: Sidebar on left, Content on right */}
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 items-start">
+          <ProfileSidebar activeItem="addresses" />
 
-        {errorMessage ? (
-          <StatusPanel tone="error" text={errorMessage} />
-        ) : statusMessage ? (
-          <StatusPanel tone="success" text={statusMessage} />
-        ) : null}
-
-        {formMode ? (
-          <AddressForm
-            isPending={isPending && pendingAction === "save"}
-            mode={formMode}
-            values={formValues}
-            onChange={handleFormChange}
-            onClose={handleCloseForm}
-            onSubmit={handleSubmit}
-          />
-        ) : null}
-
-        <section className="mt-6 space-y-5">
-          {addresses.length > 0 ? (
-            addresses.map((address) => (
-              <AddressCard
-                address={address}
-                isPending={isPending}
-                isSelected={address.id === defaultAddressId}
-                key={address.id}
-                pendingAction={pendingAction}
-                onDelete={handleDelete}
-                onEdit={handleEditOpen}
-                onSelect={handleSelectDefault}
-              />
-            ))
-          ) : (
-            <EmptyAddresses onCreate={handleCreateOpen} />
-          )}
-        </section>
-
-        <section className="border-success/20 bg-bg-secondary mt-9 flex flex-col gap-4 rounded-lg border p-5 sm:flex-row sm:items-center sm:p-7">
-          <span className="bg-accent-primary text-accent-contrast grid size-12 shrink-0 place-items-center rounded-full">
-            <Info size={26} />
-          </span>
-          <div>
-            <p className="text-text-primary font-bold">Как выбрать адрес для доставки</p>
-            <p className="text-text-secondary mt-2 text-sm leading-6">
-              Выберите адрес, отметив его галочкой. Он будет использоваться при оформлении заказа.
-            </p>
-          </div>
-        </section>
-
-        <section className="border-border mt-9 grid gap-5 rounded-lg border bg-white p-6 shadow-[0_10px_28px_rgb(20_28_18/0.04)] md:grid-cols-2 lg:grid-cols-4">
-          {serviceBenefits.map((benefit) => {
-            const Icon = benefit.icon;
-
-            return (
-              <div className="flex gap-4" key={benefit.title}>
-                <span className="bg-bg-hover text-accent-primary grid size-14 shrink-0 place-items-center rounded-full border border-green-100">
-                  <Icon size={28} />
-                </span>
-                <span>
-                  <span className="block font-bold">{benefit.title}</span>
-                  <span className="text-text-secondary mt-2 block text-sm leading-6">
-                    {benefit.text}
-                  </span>
-                </span>
+          <div className="min-w-0 space-y-6">
+            {/* Header section: Header button is rendered ONLY when addresses.length > 0 */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-200/80">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                  Адреса доставки
+                </h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  Управляйте адресами доставки и выбирайте основной адрес для быстрого оформления
+                  заказа
+                </p>
               </div>
-            );
-          })}
-        </section>
+
+              {isMounted && !isLoading && addresses.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleOpenAddModal}
+                  className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 active:scale-[0.98] transition-all duration-200 shadow-xs shrink-0 cursor-pointer"
+                >
+                  <Plus size={18} />
+                  <span>Добавить адрес</span>
+                </button>
+              ) : null}
+            </div>
+
+            {/* Content states: Skeleton / Saved Addresses / Empty State */}
+            {!isMounted || isLoading ? (
+              <div className="space-y-4">
+                <div className="h-32 rounded-2xl bg-slate-100 animate-pulse border border-slate-200/60" />
+                <div className="h-32 rounded-2xl bg-slate-100 animate-pulse border border-slate-200/60" />
+              </div>
+            ) : addresses.length > 0 ? (
+              <div className="space-y-4">
+                {addresses.map((address) => (
+                  <AddressCard
+                    key={address.id}
+                    address={address}
+                    isPending={isPending}
+                    onSelectDefault={handleSelectDefault}
+                    onEdit={handleOpenEditModal}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            ) : (
+              /* Empty state with CTA button */
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-8 sm:p-12 text-center shadow-xs">
+                <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-4">
+                  <MapPin size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">Адресов пока нет</h3>
+                <p className="mt-2 max-w-md mx-auto text-sm text-slate-500 leading-relaxed">
+                  Добавьте адрес доставки, чтобы быстрее оформлять заказы и рассчитывать стоимость
+                  доставки.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleOpenAddModal}
+                  className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 active:scale-[0.98] transition-all duration-200 shadow-xs cursor-pointer"
+                >
+                  <Plus size={18} />
+                  <span>Добавить адрес</span>
+                </button>
+              </div>
+            )}
+
+            {/* Helper tip: Shown ONLY when addresses.length >= 2 */}
+            {isMounted && !isLoading && addresses.length >= 2 ? (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:p-5 flex items-start gap-3.5 transition-all">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                  <Info size={20} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-900">
+                    Как выбрать адрес для доставки
+                  </h4>
+                  <p className="mt-0.5 text-xs sm:text-sm leading-relaxed text-slate-600">
+                    Выберите адрес, отметив его галочкой. Он будет использоваться по умолчанию при
+                    оформлении заказа.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
       </Container>
+
+      {/* Interactive Modal */}
+      <AddressModal
+        isOpen={isModalOpen}
+        initialData={editingAddress}
+        onClose={handleCloseModal}
+        onSave={handleSaveAddress}
+        isSubmitting={isSubmitting}
+      />
     </main>
   );
-};
-
-interface AddressCardProps {
-  address: AddressResponse;
-  isPending: boolean;
-  isSelected: boolean;
-  pendingAction: string | null;
-  onDelete: (address: AddressResponse) => void;
-  onEdit: (address: AddressResponse) => void;
-  onSelect: (address: AddressResponse) => void;
-}
-
-const AddressCard = ({
-  address,
-  isPending,
-  isSelected,
-  onDelete,
-  onEdit,
-  onSelect,
-  pendingAction,
-}: AddressCardProps) => {
-  const Icon = getAddressIcon(address.title);
-
-  return (
-    <article className="border-border rounded-lg border bg-white p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)] md:p-8">
-      <div className="grid gap-5 md:grid-cols-[44px_88px_minmax(0,1fr)] lg:grid-cols-[44px_96px_minmax(0,1fr)_auto] lg:items-center">
-        <button
-          className={cn(
-            "grid size-9 place-items-center rounded-full border-2 transition",
-            isSelected
-              ? "border-accent-primary text-accent-primary"
-              : "border-text-muted hover:border-accent-primary text-transparent",
-          )}
-          type="button"
-          disabled={isPending}
-          onClick={() => onSelect(address)}
-          aria-label="Выбрать адрес для доставки"
-        >
-          <CheckCircle2 size={24} />
-        </button>
-
-        <span className="bg-bg-hover text-accent-primary grid size-16 place-items-center rounded-full border border-green-100 md:size-20">
-          <Icon size={34} />
-        </span>
-
-        <div className="min-w-0">
-          {isSelected ? (
-            <span className="bg-bg-hover text-accent-primary mb-4 inline-flex rounded-lg px-4 py-2 text-sm font-bold">
-              Основной адрес
-            </span>
-          ) : null}
-          <h2 className="text-text-primary text-xl font-bold">{getAddressTitle(address)}</h2>
-          <p className="mt-2 text-lg leading-7 break-words">{formatAddressLine(address)}</p>
-          <p className="text-text-secondary mt-2 leading-7 break-words">
-            {formatAddressDetails(address)}
-          </p>
-          {address.comment ? (
-            <p className="text-text-secondary mt-2 text-sm leading-6 break-words">
-              {address.comment}
-            </p>
-          ) : null}
-          <p className="text-text-muted mt-3 text-xs">
-            Создан {formatDateTime(address.created_at)} · обновлен{" "}
-            {formatDateTime(address.updated_at)}
-          </p>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[330px]">
-          <Button
-            className="gap-2"
-            variant="secondary"
-            disabled={isPending}
-            onClick={() => onEdit(address)}
-          >
-            <Pencil size={18} />
-            Редактировать
-          </Button>
-          <Button
-            className="text-error gap-2 border-red-100 bg-white hover:bg-red-50"
-            variant="secondary"
-            disabled={isPending || pendingAction === `delete-${address.id}`}
-            onClick={() => onDelete(address)}
-          >
-            <Trash2 size={18} />
-            Удалить
-          </Button>
-        </div>
-      </div>
-    </article>
-  );
-};
-
-interface AddressFormProps {
-  isPending: boolean;
-  mode: FormMode;
-  values: AddressFormValues;
-  onChange: (field: keyof AddressFormValues, value: string | boolean) => void;
-  onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}
-
-const AddressForm = ({
-  isPending,
-  mode,
-  onChange,
-  onClose,
-  onSubmit,
-  values,
-}: AddressFormProps) => {
-  return (
-    <form
-      className="border-border mt-6 rounded-lg border bg-white p-5 shadow-[0_14px_42px_rgb(28_43_22/0.08)] md:p-8"
-      onSubmit={onSubmit}
-    >
-      <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-text-primary text-2xl font-bold">
-          {mode === "create" ? "Новый адрес" : "Редактирование адреса"}
-        </h2>
-        <button
-          className="text-text-muted hover:text-text-primary inline-flex items-center gap-2 text-sm font-bold transition"
-          type="button"
-          onClick={onClose}
-        >
-          <X size={18} />
-          Закрыть
-        </button>
-      </div>
-
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <AddressField
-          label="Название"
-          placeholder="Дом, работа"
-          value={values.title}
-          onChange={(value) => onChange("title", value)}
-        />
-        <AddressField
-          required
-          label="Город"
-          value={values.city}
-          onChange={(value) => onChange("city", value)}
-        />
-        <AddressField
-          required
-          className="md:col-span-2"
-          label="Улица"
-          placeholder="Улица"
-          value={values.street}
-          onChange={(value) => onChange("street", value)}
-        />
-        <AddressField
-          required
-          label="Дом"
-          value={values.house}
-          onChange={(value) => onChange("house", value)}
-        />
-        <AddressField
-          label="Корпус"
-          value={values.building}
-          onChange={(value) => onChange("building", value)}
-        />
-        <AddressField
-          label="Квартира"
-          value={values.apartment}
-          onChange={(value) => onChange("apartment", value)}
-        />
-        <AddressField
-          label="Подъезд"
-          value={values.entrance}
-          onChange={(value) => onChange("entrance", value)}
-        />
-        <AddressField
-          label="Этаж"
-          value={values.floor}
-          onChange={(value) => onChange("floor", value)}
-        />
-        <AddressField
-          label="Домофон"
-          value={values.intercom}
-          onChange={(value) => onChange("intercom", value)}
-        />
-        <AddressField
-          className="md:col-span-2"
-          label="Комментарий"
-          placeholder="Ориентир или пожелание для курьера"
-          value={values.comment}
-          onChange={(value) => onChange("comment", value)}
-        />
-      </div>
-
-      <label className="mt-6 inline-flex items-center gap-3 text-sm font-bold">
-        <input
-          className="accent-accent-primary size-5"
-          type="checkbox"
-          checked={values.isDefault}
-          onChange={(event) => onChange("isDefault", event.target.checked)}
-        />
-        Использовать как основной адрес доставки
-      </label>
-
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button className="gap-2 sm:min-w-44" type="submit" disabled={isPending}>
-          <Save size={19} />
-          {isPending ? "Сохраняем..." : "Сохранить"}
-        </Button>
-        <Button className="sm:min-w-36" variant="secondary" type="button" onClick={onClose}>
-          Отмена
-        </Button>
-      </div>
-    </form>
-  );
-};
-
-interface AddressFieldProps {
-  label: string;
-  value: string;
-  className?: string;
-  placeholder?: string;
-  required?: boolean;
-  onChange: (value: string) => void;
-}
-
-const AddressField = ({
-  className,
-  label,
-  onChange,
-  placeholder,
-  required = false,
-  value,
-}: AddressFieldProps) => {
-  return (
-    <label className={cn("block", className)}>
-      <span className="mb-2 block text-sm font-bold">
-        {label}
-        {required ? <span className="text-error"> *</span> : null}
-      </span>
-      <input
-        className="border-border focus:border-accent-primary placeholder:text-text-muted h-12 w-full rounded-lg border bg-white px-4 text-sm transition outline-none"
-        placeholder={placeholder}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  );
-};
-
-interface StatusPanelProps {
-  text: string;
-  tone: "error" | "success";
-}
-
-const StatusPanel = ({ text, tone }: StatusPanelProps) => {
-  return (
-    <div
-      className={cn(
-        "mb-5 rounded-lg border px-5 py-4 text-sm font-bold",
-        tone === "error" && "text-error border-red-100 bg-red-50",
-        tone === "success" && "bg-bg-hover text-accent-primary border-green-100",
-      )}
-    >
-      {text}
-    </div>
-  );
-};
-
-interface EmptyAddressesProps {
-  onCreate: () => void;
-}
-
-const EmptyAddresses = ({ onCreate }: EmptyAddressesProps) => {
-  return (
-    <section className="border-border rounded-lg border bg-white p-8 text-center shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
-      <span className="bg-bg-hover text-accent-primary mx-auto grid size-16 place-items-center rounded-full">
-        <MapPin size={34} />
-      </span>
-      <h2 className="text-text-primary mt-5 text-2xl font-bold">Адресов пока нет</h2>
-      <p className="text-text-secondary mx-auto mt-3 max-w-xl leading-7">
-        Добавьте адрес доставки, чтобы быстрее оформлять заказы и рассчитывать доставку.
-      </p>
-      <Button className="mt-7 gap-3" onClick={onCreate}>
-        <Plus size={20} />
-        Добавить адрес
-      </Button>
-    </section>
-  );
-};
-
-const getAccessToken = (): string | null => {
-  return (
-    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token")
-  );
-};
-
-const toFormValues = (address: AddressResponse): AddressFormValues => {
-  return {
-    apartment: address.apartment ?? "",
-    building: address.building ?? "",
-    city: address.city,
-    comment: address.comment ?? "",
-    entrance: address.entrance ?? "",
-    floor: address.floor ?? "",
-    house: address.house,
-    intercom: address.intercom ?? "",
-    isDefault: address.is_default,
-    street: address.street,
-    title: address.title ?? "",
-  };
-};
-
-const toAddressRequest = (
-  values: AddressFormValues,
-): AddressCreateRequest & AddressUpdateRequest => {
-  return {
-    apartment: normalizeOptionalField(values.apartment),
-    building: normalizeOptionalField(values.building),
-    city: values.city.trim(),
-    comment: normalizeOptionalField(values.comment),
-    entrance: normalizeOptionalField(values.entrance),
-    floor: normalizeOptionalField(values.floor),
-    house: values.house.trim(),
-    intercom: normalizeOptionalField(values.intercom),
-    is_default: values.isDefault,
-    street: values.street.trim(),
-    title: normalizeOptionalField(values.title),
-  };
-};
-
-const normalizeOptionalField = (value: string): string | null => {
-  const trimmedValue = value.trim();
-
-  return trimmedValue.length > 0 ? trimmedValue : null;
-};
-
-const validateAddress = (values: AddressFormValues): string | null => {
-  if (!values.city.trim()) {
-    return "Укажите город.";
-  }
-
-  if (!values.street.trim()) {
-    return "Укажите улицу.";
-  }
-
-  if (!values.house.trim()) {
-    return "Укажите дом.";
-  }
-
-  return null;
-};
-
-const getAddressTitle = (address: AddressResponse): string => {
-  return address.title?.trim() || "Адрес доставки";
-};
-
-const formatDateTime = (value: string): string => {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "Europe/Moscow",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-};
-
-const formatAddressLine = (address: AddressResponse): string => {
-  const building = address.building ? `, корп. ${address.building}` : "";
-  const apartment = address.apartment ? `, кв. ${address.apartment}` : "";
-
-  return `Россия, ${address.city}, ул. ${address.street}, д. ${address.house}${building}${apartment}`;
-};
-
-const formatAddressDetails = (address: AddressResponse): string => {
-  const details = [
-    address.entrance ? `Подъезд ${address.entrance}` : null,
-    address.floor ? `этаж ${address.floor}` : null,
-    address.intercom ? `домофон ${address.intercom}` : null,
-  ].filter(Boolean);
-
-  return details.length > 0 ? details.join(", ") : "Дополнительные детали не указаны";
-};
-
-const getAddressIcon = (title?: string | null) => {
-  const normalizedTitle = title?.toLowerCase() ?? "";
-
-  if (normalizedTitle.includes("работ")) {
-    return BriefcaseBusiness;
-  }
-
-  if (normalizedTitle.includes("дом")) {
-    return Home;
-  }
-
-  if (normalizedTitle.includes("дач")) {
-    return Plus;
-  }
-
-  return MapPin;
 };

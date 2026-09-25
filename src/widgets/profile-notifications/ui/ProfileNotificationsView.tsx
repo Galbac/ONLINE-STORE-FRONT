@@ -1,8 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, CreditCard, PackageCheck, Truck } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  BellRing,
+  CheckCircle2,
+  ChevronRight,
+  CreditCard,
+  Package,
+  PackageCheck,
+  RotateCcw,
+  ShieldCheck,
+  ShoppingBag,
+  Smartphone,
+  Truck,
+  X,
+} from "lucide-react";
 import {
   notificationApi,
   type NotificationListParams,
@@ -11,28 +26,23 @@ import {
 } from "@/entities/notification";
 import { cn, ROUTES } from "@/shared/config";
 import { Button, Container, getStoredAccessToken } from "@/shared/ui";
-import {
-  getPushSubscription,
-  isPushSupported,
-  subscribeToPush,
-  unsubscribeFromPush,
-} from "@/shared/lib/push-notifications";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
-import { BellRing, Smartphone } from "lucide-react";
 
 type NotificationFilter = "all" | "unread" | "order" | "payment" | "delivery";
 
 interface FilterOption {
   label: string;
   value: NotificationFilter;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
 const filterOptions: FilterOption[] = [
-  { label: "Все", value: "all" },
-  { label: "Непрочитанные", value: "unread" },
-  { label: "Заказы", value: "order" },
-  { label: "Оплата", value: "payment" },
-  { label: "Доставка", value: "delivery" },
+  { label: "Все", value: "all", icon: Bell },
+  { label: "Непрочитанные", value: "unread", icon: BellRing },
+  { label: "Заказы", value: "order", icon: ShoppingBag },
+  { label: "Оплата", value: "payment", icon: CreditCard },
+  { label: "Доставка", value: "delivery", icon: Truck },
 ];
 
 const emptyNotifications: NotificationListResponse = {
@@ -45,90 +55,39 @@ const emptyNotifications: NotificationListResponse = {
 };
 
 export const ProfileNotificationsView = () => {
+  const [isMounted, setIsMounted] = useState(false);
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>("all");
   const [pendingNotificationId, setPendingNotificationId] = useState<number | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [pushSubscribed, setPushSubscribed] = useState<boolean | null>(null);
-  const [isPushToggling, setIsPushToggling] = useState(false);
-  const [isTestingPush, setIsTestingPush] = useState(false);
+
+  const {
+    permission,
+    isSubscribed,
+    isLoading: isPushLoading,
+    isTesting: isPushTesting,
+    isBannerDismissed,
+    requestPermission,
+    sendTestPush,
+    dismissBanner,
+  } = usePushNotifications();
 
   useEffect(() => {
-    void checkPushStatus();
+    setIsMounted(true);
   }, []);
-
-  const checkPushStatus = async () => {
-    if (!isPushSupported()) {
-      setPushSubscribed(false);
-      return;
-    }
-    const sub = await getPushSubscription();
-    setPushSubscribed(Boolean(sub));
-  };
-
-  const handleTogglePush = async () => {
-    try {
-      setIsPushToggling(true);
-      if (pushSubscribed) {
-        await unsubscribeFromPush();
-        setPushSubscribed(false);
-        toast.info("Push-уведомления отключены");
-      } else {
-        const res = await subscribeToPush();
-        if (res.success) {
-          setPushSubscribed(true);
-          toast.success("Push-уведомления успешно подключены!");
-        } else {
-          toast.error(res.error || "Не удалось подключить уведомления");
-        }
-      }
-    } finally {
-      setIsPushToggling(false);
-    }
-  };
-
-  const handleSendTestPush = async () => {
-    try {
-      setIsTestingPush(true);
-      const accessToken = getStoredAccessToken();
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const res = await fetch(`${apiUrl}/api/notifications/push/test`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: accessToken ? `Bearer ${accessToken}` : "",
-        },
-        body: JSON.stringify({
-          title: "Проверка уведомлений 🔔",
-          body: "Push-уведомления работают отлично! Вы будете узнавать о доставке первыми.",
-          url: "/profile/notifications",
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success("Тестовое уведомление отправлено!");
-      } else {
-        toast.error(data.detail || data.message || "Ошибка отправки тестового уведомления");
-      }
-    } catch {
-      toast.error("Не удалось отправить тестовое уведомление");
-    } finally {
-      setIsTestingPush(false);
-    }
-  };
 
   useEffect(() => {
     const accessToken = getStoredAccessToken();
 
     if (!accessToken) {
+      setIsLoading(false);
       return;
     }
 
-    let isMounted = true;
+    let active = true;
 
     const loadNotifications = async (): Promise<void> => {
       try {
@@ -140,18 +99,18 @@ export const ProfileNotificationsView = () => {
           accessToken,
         );
 
-        if (isMounted) {
+        if (active) {
           setNotifications(response.items);
           setUnreadCount(response.unread_count);
         }
       } catch {
-        if (isMounted) {
+        if (active) {
           setNotifications(emptyNotifications.items);
           setUnreadCount(emptyNotifications.unread_count);
           setErrorMessage("Не удалось загрузить уведомления.");
         }
       } finally {
-        if (isMounted) {
+        if (active) {
           setIsLoading(false);
         }
       }
@@ -160,13 +119,9 @@ export const ProfileNotificationsView = () => {
     void loadNotifications();
 
     return () => {
-      isMounted = false;
+      active = false;
     };
   }, [activeFilter]);
-
-  const unreadVisibleCount = useMemo(() => {
-    return notifications.filter((notification) => !notification.is_read).length;
-  }, [notifications]);
 
   const handleMarkAsRead = (notification: NotificationResponse): void => {
     const accessToken = getStoredAccessToken();
@@ -177,164 +132,321 @@ export const ProfileNotificationsView = () => {
         setErrorMessage(null);
         const updatedNotification = await notificationApi.markAsRead(notification.id, accessToken);
 
-        setNotifications((currentNotifications) =>
-          currentNotifications.map((currentNotification) =>
-            currentNotification.id === updatedNotification.id
-              ? updatedNotification
-              : currentNotification,
+        setNotifications((current) =>
+          current.map((item) =>
+            item.id === updatedNotification.id ? updatedNotification : item,
           ),
         );
-        setUnreadCount((currentCount) => Math.max(currentCount - 1, 0));
-        setStatusMessage("Уведомление отмечено как прочитанное.");
+        setUnreadCount((current) => Math.max(current - 1, 0));
+        toast.success("Уведомление отмечено как прочитанное");
       } catch {
-        setStatusMessage(null);
-        setErrorMessage("Не удалось отметить уведомление как прочитанное.");
+        toast.error("Не удалось отметить уведомление как прочитанное");
       } finally {
         setPendingNotificationId(null);
       }
     });
   };
 
+  const handleMarkAllAsRead = async () => {
+    const accessToken = getStoredAccessToken();
+    const unreadItems = notifications.filter((item) => !item.is_read);
+    if (unreadItems.length === 0) return;
+
+    startTransition(async () => {
+      try {
+        for (const item of unreadItems) {
+          await notificationApi.markAsRead(item.id, accessToken);
+        }
+        setNotifications((current) =>
+          current.map((item) => ({ ...item, is_read: true, read_at: new Date().toISOString() })),
+        );
+        setUnreadCount(0);
+        toast.success("Все уведомления прочитаны");
+      } catch {
+        toast.error("Часть уведомлений не удалось обновить");
+      }
+    });
+  };
+
+  // Показываем промо-баннер только если статус браузера 'default' и баннер не закрыт
+  const showPushBanner = isMounted && permission === "default" && !isBannerDismissed;
+
   return (
-    <main className="bg-bg-primary min-h-[70vh]">
+    <main className="bg-bg-primary min-h-[75vh]">
       <Container className="py-6 md:py-8">
-        <nav className="text-text-secondary mb-8 flex flex-wrap items-center gap-2 text-sm">
-          <Link className="hover:text-accent-primary" href={ROUTES.HOME}>
+        {/* Хлебные крошки */}
+        <nav aria-label="Навигация" className="text-text-secondary mb-6 flex flex-wrap items-center gap-2 text-sm">
+          <Link className="hover:text-accent-primary transition-colors" href={ROUTES.HOME}>
             Главная
           </Link>
-          <span>/</span>
-          <Link className="hover:text-accent-primary" href={ROUTES.PROFILE}>
+          <span aria-hidden="true">/</span>
+          <Link className="hover:text-accent-primary transition-colors" href={ROUTES.PROFILE}>
             Профиль
           </Link>
-          <span>/</span>
-          <span>Уведомления</span>
+          <span aria-hidden="true">/</span>
+          <span className="text-text-primary font-medium" aria-current="page">Уведомления</span>
         </nav>
 
-        <header className="mb-6 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        {/* Заголовок страницы (H1) со счетчиком и действием */}
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border/60">
           <div>
-            <h1 className="text-text-primary text-3xl sm:text-4xl font-extrabold md:text-5xl tracking-tight">Уведомления</h1>
-            <p className="text-text-secondary mt-2 sm:mt-4 text-sm sm:text-base">Заказы, оплата и доставка в одном списке.</p>
+            <div className="flex items-center gap-3">
+              <h1 className="text-text-primary text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
+                Уведомления
+              </h1>
+              {isMounted && unreadCount > 0 && (
+                <span
+                  role="status"
+                  aria-live="polite"
+                  className="inline-flex items-center justify-center px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                >
+                  {unreadCount} новых
+                </span>
+              )}
+            </div>
+            <p className="text-text-secondary mt-1 text-sm sm:text-base">
+              Заказы, оплата и доставка в одном списке.
+            </p>
           </div>
-          <div className="border-border bg-bg-secondary rounded-2xl border px-5 py-3 sm:py-4 self-start md:self-auto">
-            <span className="text-text-secondary block text-xs sm:text-sm">Непрочитанные</span>
-            <span className="text-text-primary mt-0.5 block text-2xl sm:text-3xl font-black">{unreadCount}</span>
+
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            {isMounted && permission === "granted" && isSubscribed && (
+              <Button
+                variant="secondary"
+                onClick={sendTestPush}
+                disabled={isPushTesting}
+                className="min-h-[44px] px-3.5 text-xs font-semibold gap-1.5"
+                title="Проверить работу Push-уведомлений"
+              >
+                <BellRing size={15} className="text-emerald-600" />
+                <span>{isPushTesting ? "Отправка..." : "Тест пуша"}</span>
+              </Button>
+            )}
+
+            {isMounted && unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAllAsRead}
+                disabled={isPending}
+                className="min-h-[44px] px-3 inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors rounded-xl hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              >
+                <CheckCircle2 size={16} />
+                <span>Прочитать все</span>
+              </button>
+            )}
           </div>
         </header>
 
-        {/* Web Push Toggle Card */}
-        <div className="mb-8 rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 to-teal-50/40 p-4 sm:p-6 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3.5">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-700/20">
-                <Smartphone size={22} />
-              </span>
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
-                  Push-уведомления на этом устройстве
-                </h3>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {pushSubscribed
-                    ? "Уведомления активны. Вы получите оповещение о выезде курьера и статусе оплаты."
-                    : "Включите пуши, чтобы моментально узнавать об изменении статуса заказа."}
-                </p>
+        {/* Баннер Push-уведомлений (H2) - отображается безопасно и только когда статус 'default' */}
+        {showPushBanner && (
+          <section
+            aria-labelledby="push-banner-heading"
+            className="mb-8 rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 via-emerald-50/40 to-teal-50/30 p-4 sm:p-6 shadow-sm transition-all duration-300"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3.5">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-700/20">
+                  <Smartphone size={22} />
+                </span>
+                <div>
+                  <h2
+                    id="push-banner-heading"
+                    className="text-base sm:text-lg font-bold text-slate-900 leading-snug"
+                  >
+                    Включите push-уведомления
+                  </h2>
+                  <p className="mt-0.5 text-xs sm:text-sm text-slate-600 max-w-xl">
+                    Моментально узнавайте о статусе доставки, выезде курьера и персональных спецпредложениях.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 sm:pt-0 shrink-0 self-end sm:self-center">
+                <Button
+                  onClick={requestPermission}
+                  disabled={isPushLoading}
+                  className="min-h-[44px] px-5 text-sm font-bold gap-2 shadow-sm shadow-emerald-700/20 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <BellRing size={16} />
+                  <span>{isPushLoading ? "Подключение..." : "Включить пуши"}</span>
+                </Button>
+                <button
+                  type="button"
+                  onClick={dismissBanner}
+                  aria-label="Закрыть предложение push-уведомлений"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  <X size={18} />
+                </button>
               </div>
             </div>
+          </section>
+        )}
 
-            <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
-              {pushSubscribed ? (
-                <>
-                  <Button
-                    onClick={handleSendTestPush}
-                    disabled={isTestingPush}
-                    variant="ghost"
-                    className="h-9 px-3 text-xs font-semibold text-emerald-800 bg-emerald-100/60 hover:bg-emerald-100"
-                  >
-                    <BellRing size={14} className="mr-1.5" />
-                    {isTestingPush ? "Отправка..." : "Проверить"}
-                  </Button>
-                  <Button
-                    onClick={handleTogglePush}
-                    disabled={isPushToggling}
-                    variant="ghost"
-                    className="h-9 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                  >
-                    {isPushToggling ? "Секунду..." : "Отключить"}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={handleTogglePush}
-                  disabled={isPushToggling}
-                  className="h-9 px-4 text-xs font-bold gap-1.5 shadow-sm shadow-emerald-700/20 bg-emerald-600 hover:bg-emerald-700 text-white"
+        {/* Группа табов с доступностью (ARIA tablist + горизонтальный скролл на мобильных) */}
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 mb-6 border-b border-border/60">
+          <nav
+            role="tablist"
+            aria-label="Фильтры уведомлений"
+            className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-none"
+          >
+            {filterOptions.map((option) => {
+              const Icon = option.icon;
+              const isActive = activeFilter === option.value;
+              const showBadge = option.value === "unread" && isMounted && unreadCount > 0;
+
+              return (
+                <button
+                  key={option.value}
+                  id={`tab-${option.value}`}
+                  role="tab"
+                  type="button"
+                  aria-selected={isActive}
+                  aria-controls={`tabpanel-${option.value}`}
+                  tabIndex={isActive ? 0 : -1}
+                  onClick={() => setActiveFilter(option.value)}
+                  className={cn(
+                    "min-h-[44px] px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all duration-200 active:scale-[0.98] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+                    isActive
+                      ? "border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-900/10"
+                      : "border-border bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40 hover:text-emerald-700",
+                  )}
                 >
-                  <Bell size={14} />
-                  {isPushToggling ? "Подключение..." : "Включить пуши"}
-                </Button>
-              )}
-            </div>
-          </div>
+                  <Icon size={16} className="shrink-0" />
+                  <span>{option.label}</span>
+                  {showBadge && (
+                    <span
+                      role="status"
+                      aria-live="polite"
+                      className={cn(
+                        "ml-1 px-1.5 py-0.5 text-xs rounded-full font-extrabold",
+                        isActive
+                          ? "bg-emerald-800 text-white"
+                          : "bg-emerald-100 text-emerald-800",
+                      )}
+                    >
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        <section className="mb-6 flex flex-wrap gap-3">
-          {filterOptions.map((option) => (
-            <button
-              className={cn(
-                "border-border hover:border-accent-primary rounded-lg border px-4 py-2 text-sm font-bold transition",
-                activeFilter === option.value &&
-                  "border-accent-primary bg-accent-primary text-accent-contrast",
-              )}
-              key={option.value}
-              type="button"
-              onClick={() => {
-                setActiveFilter(option.value);
-                setStatusMessage(null);
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </section>
-
-        {statusMessage ? (
-          <p className="text-success mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm">
-            {statusMessage}
+        {errorMessage && (
+          <p className="text-error mb-4 rounded-xl bg-red-50 p-4 text-sm border border-red-200">
+            {errorMessage}
           </p>
-        ) : null}
-        {errorMessage ? (
-          <p className="text-error mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm">{errorMessage}</p>
-        ) : null}
+        )}
 
-        <section className="border-border overflow-hidden rounded-lg border bg-white">
+        {/* Панель таба (ARIA tabpanel) */}
+        <section
+          role="tabpanel"
+          id={`tabpanel-${activeFilter}`}
+          aria-labelledby={`tab-${activeFilter}`}
+          className="space-y-4"
+        >
+          {/* Скелетоны загрузки */}
           {isLoading ? (
-            <NotificationState title="Загружаем уведомления" text="Получаем актуальные события." />
+            <div className="space-y-3" aria-busy="true" aria-label="Загрузка уведомлений">
+              {[1, 2, 3].map((index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-border bg-white p-5 animate-pulse flex items-start gap-4 shadow-sm"
+                >
+                  <div className="size-12 rounded-2xl bg-slate-200 shrink-0" />
+                  <div className="space-y-2.5 flex-1">
+                    <div className="h-4 bg-slate-200 rounded w-1/3" />
+                    <div className="h-3.5 bg-slate-200 rounded w-4/5" />
+                    <div className="h-3 bg-slate-200 rounded w-1/4 mt-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : notifications.length > 0 ? (
-            <ul className="divide-border divide-y">
+            /* Список уведомлений */
+            <ul className="space-y-3" role="list">
               {notifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
+                  isMounted={isMounted}
                   pending={pendingNotificationId === notification.id && isPending}
                   onMarkAsRead={handleMarkAsRead}
                 />
               ))}
             </ul>
           ) : (
-            <NotificationState
-              title="Уведомлений нет"
-              text={
-                activeFilter === "unread"
-                  ? "Все уведомления уже прочитаны."
-                  : "Здесь появятся события по заказам, оплате и доставке."
-              }
-            />
+            /* Конверсионный Empty State с 2 кнопками */
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-4 shadow-sm">
+              <div className="size-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+                <BellOff size={32} />
+              </div>
+
+              <div className="space-y-1.5 max-w-md">
+                <h2 className="text-xl font-bold text-slate-900">
+                  {activeFilter === "unread"
+                    ? "Все уведомления прочитаны"
+                    : "Уведомлений пока нет"}
+                </h2>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  {activeFilter === "unread"
+                    ? "У вас нет непрочитанных сообщений. Новые оповещения о доставке появятся здесь."
+                    : "Здесь будут отображаться этапы доставки ваших заказов, чеки оплаты и персональные скидки."}
+                </p>
+              </div>
+
+              {/* Две конверсионные CTA кнопки */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 w-full sm:w-auto">
+                <Link
+                  href={ROUTES.CATALOG}
+                  className="min-h-[44px] w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm shadow-emerald-700/20 hover:shadow transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                >
+                  <ShoppingBag size={18} />
+                  <span>Перейти в каталог</span>
+                </Link>
+
+                <Link
+                  href={ROUTES.PROFILE_ORDERS}
+                  className="min-h-[44px] w-full sm:w-auto px-6 py-2.5 rounded-xl border border-slate-200 hover:border-emerald-300 bg-white hover:bg-emerald-50/50 text-slate-700 hover:text-emerald-700 font-bold text-sm shadow-sm transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  <Package size={18} />
+                  <span>Мои заказы</span>
+                </Link>
+              </div>
+            </div>
           )}
         </section>
 
-        {!isLoading && unreadVisibleCount > 0 ? (
-          <p className="text-text-secondary mt-4 text-sm">
-            В текущем списке непрочитанных уведомлений: {unreadVisibleCount}.
-          </p>
-        ) : null}
+        {/* Блок доверия и настроек (H3) */}
+        <footer className="mt-10 pt-6 border-t border-border/60">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-border flex items-start gap-3.5 shadow-sm">
+              <ShieldCheck className="size-6 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Безопасность данных
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Мы отправляем только важную информацию о заказах и доставке, надежно защищая ваши персональные данные.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-border flex items-start gap-3.5 shadow-sm">
+              <RotateCcw className="size-6 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Управление уведомлениями
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Вы всегда можете отключить или настроить push-уведомления в настройках вашего браузера в любое время.
+                </p>
+              </div>
+            </div>
+          </div>
+        </footer>
       </Container>
     </main>
   );
@@ -342,75 +454,90 @@ export const ProfileNotificationsView = () => {
 
 interface NotificationItemProps {
   notification: NotificationResponse;
+  isMounted: boolean;
   pending: boolean;
   onMarkAsRead: (notification: NotificationResponse) => void;
 }
 
-const NotificationItem = ({ notification, onMarkAsRead, pending }: NotificationItemProps) => {
+const NotificationItem = ({
+  notification,
+  isMounted,
+  onMarkAsRead,
+  pending,
+}: NotificationItemProps) => {
   const Icon = getNotificationIcon(notification.type);
 
   return (
     <li
       className={cn(
-        "grid gap-4 p-5 md:grid-cols-[56px_minmax(0,1fr)_auto]",
-        !notification.is_read && "bg-bg-hover",
+        "group relative rounded-2xl border p-4 sm:p-5 flex items-start gap-4 transition-all duration-200",
+        !notification.is_read
+          ? "bg-emerald-50/30 border-emerald-500/30 shadow-sm"
+          : "bg-white border-border hover:border-slate-300",
       )}
     >
-      <span className="bg-bg-primary text-accent-primary border-border grid size-12 place-items-center rounded-full border">
-        <Icon size={24} />
+      <span className="size-11 sm:size-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+        <Icon size={22} />
       </span>
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-text-primary text-lg font-bold">{notification.title}</h2>
-          {!notification.is_read ? (
-            <span className="bg-accent-primary text-accent-contrast rounded-md px-2 py-1 text-xs font-bold">
-              Новое
-            </span>
-          ) : null}
+
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-slate-900 truncate">
+              {notification.title}
+            </h3>
+            {!notification.is_read && (
+              <span
+                title="Не прочитано"
+                className="size-2.5 rounded-full bg-emerald-500 shrink-0"
+              />
+            )}
+          </div>
+          <time
+            dateTime={notification.created_at}
+            suppressHydrationWarning
+            className="text-xs text-slate-400 shrink-0"
+          >
+            {isMounted ? formatDateTime(notification.created_at) : ""}
+          </time>
         </div>
-        <p className="text-text-secondary mt-2 leading-7">{notification.message}</p>
-        <div className="text-text-muted mt-3 flex flex-wrap gap-3 text-sm">
-          <span>{getNotificationTypeLabel(notification.type)}</span>
-          <span>{formatDateTime(notification.created_at)}</span>
-          {notification.read_at ? (
-            <span>Прочитано {formatDateTime(notification.read_at)}</span>
-          ) : null}
+
+        <p className="text-sm text-slate-600 leading-relaxed">
+          {notification.message}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-400">
+          <span className="font-medium text-slate-500">
+            {getNotificationTypeLabel(notification.type)}
+          </span>
+          {notification.read_at && isMounted && (
+            <span>• Прочитано {formatDateTime(notification.read_at)}</span>
+          )}
+          {notification.type.includes("order") && (
+            <Link
+              href={ROUTES.PROFILE_ORDERS}
+              className="inline-flex items-center gap-1 font-bold text-emerald-600 hover:text-emerald-700 min-h-[32px]"
+            >
+              <span>К заказам</span>
+              <ChevronRight size={14} />
+            </Link>
+          )}
         </div>
       </div>
-      {!notification.is_read ? (
-        <Button
-          className="h-11 gap-2 self-start"
+
+      {!notification.is_read && (
+        <button
           type="button"
-          disabled={pending}
           onClick={() => onMarkAsRead(notification)}
+          disabled={pending}
+          title="Отметить как прочитанное"
+          aria-label="Отметить как прочитанное"
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0 self-center disabled:opacity-50"
         >
-          <Check size={18} />
-          Прочитано
-        </Button>
-      ) : (
-        <span className="text-success inline-flex items-center gap-2 self-start text-sm font-bold">
-          <CheckCheck size={18} />
-          Прочитано
-        </span>
+          <CheckCircle2 size={20} />
+        </button>
       )}
     </li>
-  );
-};
-
-interface NotificationStateProps {
-  title: string;
-  text: string;
-}
-
-const NotificationState = ({ text, title }: NotificationStateProps) => {
-  return (
-    <div className="grid min-h-64 place-items-center p-8 text-center">
-      <div>
-        <Bell className="text-text-muted mx-auto mb-4" size={56} />
-        <h2 className="text-text-primary text-xl font-bold">{title}</h2>
-        <p className="text-text-secondary mt-2">{text}</p>
-      </div>
-    </div>
   );
 };
 
@@ -439,7 +566,7 @@ const getNotificationTypeLabel = (type: string): string => {
   if (type.includes("payment")) return "Оплата";
   if (type.includes("delivery")) return "Доставка";
 
-  return type;
+  return "Уведомление";
 };
 
 const formatDateTime = (value: string): string => {
@@ -450,7 +577,6 @@ const formatDateTime = (value: string): string => {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
-    timeZone: "Europe/Moscow",
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);

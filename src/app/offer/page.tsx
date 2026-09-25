@@ -1,90 +1,44 @@
 import type { Metadata } from "next";
-
 import { legalDocumentApi } from "@/entities/legal-document";
 import { STORE_INFO } from "@/shared/config";
-import { LegalDocumentPage, type LegalSection } from "@/widgets/legal-docs";
+import { LegalDocLayout, PUBLIC_OFFER_DOC } from "@/widgets/legal-docs";
 
 export const metadata: Metadata = {
-  title: `Публичная оферта - ${STORE_INFO.name}`,
+  title: `Публичная оферта интернет-магазина - ${STORE_INFO.name}`,
+  description: PUBLIC_OFFER_DOC.description,
+  openGraph: {
+    title: `Публичная оферта интернет-магазина - ${STORE_INFO.name}`,
+    description: PUBLIC_OFFER_DOC.description,
+    type: "article",
+  },
 };
 
 export const dynamic = "force-dynamic";
-
-const fallbackSections: LegalSection[] = [
-  {
-    title: "1. Продавец и реквизиты",
-    paragraphs: [
-      `Продавец: ${STORE_INFO.legalName} (Магазин «${STORE_INFO.name}»).`,
-      `Фактический адрес: ${STORE_INFO.address}. Телефон: ${STORE_INFO.phone}. Email: ${STORE_INFO.email}.`,
-      `ИНН: ${STORE_INFO.inn}, ОГРНИП/ОГРН: ${STORE_INFO.ogrn}.`,
-      "Режим работы службы поддержки и обработки заказов: круглосуточно.",
-    ],
-  },
-  {
-    title: "2. Предмет оферты",
-    paragraphs: [
-      "Продавец предлагает покупателю приобрести товары, представленные на сайте. Заказ оформляется через корзину и форму оформления заказа.",
-      "Информация о товаре, цене, наличии, скидках, способе получения и итоговой сумме показывается на сайте до подтверждения заказа.",
-    ],
-  },
-  {
-    title: "3. Оформление и подтверждение заказа",
-    paragraphs: [
-      "Покупатель указывает контактные данные, способ доставки или самовывоза, дату, временной слот и способ оплаты. Заказ считается оформленным после успешного создания заказа на сайте.",
-      "Продавец может связаться с покупателем для уточнения заказа, замены отсутствующих товаров или согласования условий доставки.",
-    ],
-  },
-  {
-    title: "4. Оплата",
-    paragraphs: [
-      "Оплата может выполняться онлайн банковской картой или при получении, если соответствующий способ доступен на сайте.",
-      "Итоговая стоимость заказа включает стоимость товаров, скидки, промокоды и стоимость доставки, если доставка платная.",
-    ],
-  },
-  {
-    title: "5. Доставка и самовывоз",
-    paragraphs: [
-      `Доставка и самовывоз выполняются в доступных зонах магазина ${STORE_INFO.name}. Точный адрес магазина: ${STORE_INFO.address}.`,
-      "Сроки доставки зависят от выбранного временного слота, доступности товаров и зоны доставки.",
-    ],
-  },
-  {
-    title: "6. Возврат, обмен и особенности продовольственных товаров",
-    paragraphs: [
-      "В соответствии со ст. 25 Закона РФ «О защите прав потребителей» и Постановлением Правительства РФ № 2463 продовольственные товары надлежащего качества возврату и обмену не подлежат.",
-      "Покупатель вправе отказаться от любого товара до момента его передачи курьером или в пункте выдачи. В случае обнаружения недостатков или истекшего срока годности покупатель вправе потребовать замену товара либо возврат уплаченной суммы (ст. 18 Закона РФ «О защите прав потребителей»).",
-      `Обращения по возврату денежных средств и претензии по качеству принимаются по телефону ${STORE_INFO.phone} и на email ${STORE_INFO.email} в пределах срока годности товара (до 48 часов для скоропортящейся продукции).`,
-    ],
-  },
-];
 
 export default async function Page() {
   let doc = null;
   try {
     doc = await legalDocumentApi.getPublic("offer");
   } catch {
-    // API unavailable or document not found - use fallback
+    // API unavailable or document not found - use fallback configuration
   }
 
   if (doc && doc.content_html) {
-    return (
-      <LegalDocumentPage
-        title={doc.title || "Публичная оферта"}
-        description={
-          doc.description ||
-          "Документ описывает основные условия заказа, оплаты, доставки, самовывоза, возврата и взаимодействия покупателя с продавцом."
-        }
-        contentHtml={doc.content_html}
-        updatedDate={doc.updated_date}
-      />
-    );
+    const updatedOfferDoc = {
+      ...PUBLIC_OFFER_DOC,
+      title: doc.title || PUBLIC_OFFER_DOC.title,
+      description: doc.description || PUBLIC_OFFER_DOC.description,
+      revisionIsoDate: doc.updated_date ? doc.updated_date.slice(0, 10) : PUBLIC_OFFER_DOC.revisionIsoDate,
+      effectiveDate: doc.updated_date
+        ? new Date(doc.updated_date).toLocaleDateString("ru-RU", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
+        : PUBLIC_OFFER_DOC.effectiveDate,
+    };
+    return <LegalDocLayout document={updatedOfferDoc} contentHtml={doc.content_html} />;
   }
 
-  return (
-    <LegalDocumentPage
-      title="Публичная оферта"
-      description="Документ описывает основные условия заказа, оплаты, доставки, самовывоза, возврата и взаимодействия покупателя с продавцом."
-      sections={fallbackSections}
-    />
-  );
+  return <LegalDocLayout document={PUBLIC_OFFER_DOC} />;
 }

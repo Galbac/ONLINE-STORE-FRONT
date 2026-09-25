@@ -1,6 +1,7 @@
 import { ProductReviews } from "@/widgets/product-reviews";
 import { ProductGallery } from "./ProductGallery";
 import { ProductArticleCopy } from "./ProductArticleCopy";
+import { KizlyarDeliveryZonesModal } from "./KizlyarDeliveryZonesModal";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
@@ -146,6 +147,24 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               </div>
 
               <ProductUnitInfo product={product} />
+
+              {/* Halal Certified Badge for Meat */}
+              {product.category?.slug === "myaso-i-ptitsa" ? (
+                <div className="my-3 flex items-center gap-3 rounded-2xl border border-emerald-300/80 bg-emerald-50/80 p-3.5 shadow-2xs">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white font-black text-xs shadow-xs tracking-wider">
+                    حلال
+                  </span>
+                  <div className="text-xs">
+                    <p className="font-extrabold text-emerald-950 flex items-center gap-1.5">
+                      Сертифицировано Халяль
+                      <span className="rounded-md bg-emerald-700 px-1.5 py-0.2 text-[9px] font-black text-white">100%</span>
+                    </p>
+                    <p className="text-emerald-800/80 text-[11px] mt-0.5 leading-relaxed">
+                      Строгий контроль халяльного убоя и фермерского происхождения (Республика Дагестан).
+                    </p>
+                  </div>
+                </div>
+              ) : null}
 
               {/* Freshness & Trust Guarantee */}
               <div className="my-4 flex items-center gap-3.5 rounded-2xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-4 shadow-2xs">
@@ -339,10 +358,26 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
           <Characteristic label="Категория" value={product.category?.name ?? "Каталог"} />
           <Characteristic
             label="Тип товара"
-            value={product.product_type === "weight" ? "Весовой" : "Штучный"}
+            value={product.product_type === "weight" ? "Весовой (на развес)" : "Штучный (фасованный)"}
           />
           <Characteristic
-            label="Остаток"
+            label="Производитель"
+            value={
+              product.category?.slug === "myaso-i-ptitsa"
+                ? "Фермерские хозяйства Дагестана (Халяль)"
+                : "Россия, г. Кизляр"
+            }
+          />
+          <Characteristic
+            label="Срок годности"
+            value={
+              product.category?.slug === "myaso-i-ptitsa"
+                ? "48 часов при t 0°C..+4°C"
+                : "Свежая поставка (см. на упаковке)"
+            }
+          />
+          <Characteristic
+            label="Остаток на складе"
             value={`${formatQuantity(product.stock_quantity)} ${unitLabel(product.unit)}`}
           />
         </dl>
@@ -388,6 +423,10 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+          <KizlyarDeliveryZonesModal />
         </div>
       </section>
     </div>

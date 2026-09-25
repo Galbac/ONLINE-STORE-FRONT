@@ -46,6 +46,7 @@ if (publicApiUrl) {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  devIndicators: false,
   images: {
     remotePatterns,
   },

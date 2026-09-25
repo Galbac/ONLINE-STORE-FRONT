@@ -163,6 +163,17 @@ export const LoginForm = () => {
         </div>
       ) : null}
 
+      <p className="text-[11px] text-center text-slate-400 leading-relaxed px-1">
+        Нажимая «Войти», вы соглашаетесь с{" "}
+        <Link className="underline hover:text-emerald-700" href="/terms" target="_blank">
+          условиями Оферты
+        </Link>{" "}
+        и{" "}
+        <Link className="underline hover:text-emerald-700" href="/privacy" target="_blank">
+          Политикой обработки персональных данных (152-ФЗ)
+        </Link>
+      </p>
+
       <button
         className={cn(
           "flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-xs font-extrabold uppercase tracking-wider text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/30 active:scale-[0.99] transition-all disabled:opacity-60",

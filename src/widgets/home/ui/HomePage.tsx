@@ -72,7 +72,7 @@ export const HomePage = async () => {
       <Header />
       <main className="space-y-12 pb-16">
         <Container className="pt-6">
-          <Hero />
+          <Hero totalProducts={categories.items.reduce((acc, cat) => acc + (cat.products_count ?? 0), 0)} />
         </Container>
 
         <Container className="pt-2 sm:pt-4">
@@ -150,7 +150,7 @@ export const HomePage = async () => {
   );
 };
 
-const Hero = () => {
+const Hero = ({ totalProducts }: { totalProducts: number }) => {
   return (
     <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-950 p-8 text-white shadow-2xl sm:p-12 lg:p-16">
       {/* Glow shapes */}
@@ -196,7 +196,9 @@ const Hero = () => {
 
         <div className="mt-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-8 sm:gap-6">
           <div>
-            <span className="block text-2xl font-black text-emerald-400 sm:text-3xl">1 000+</span>
+            <span className="block text-2xl font-black text-emerald-400 sm:text-3xl">
+              {totalProducts > 0 ? `${totalProducts}+` : "120+"}
+            </span>
             <span className="mt-1 block text-xs font-medium text-slate-400 sm:text-sm">
               Товаров в каталоге
             </span>

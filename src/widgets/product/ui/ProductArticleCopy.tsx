@@ -47,11 +47,10 @@ export const ProductArticleCopy = ({ article, className }: ProductArticleCopyPro
   };
 
   const handleCopy = async () => {
-    console.log("[ProductArticleCopy] handleCopy clicked!");
-    setCopied(true);
+        setCopied(true);
     void copyToClipboard(article);
     toast.success("Артикул «" + article + "» скопирован в буфер обмена");
-    setTimeout(() => { console.log("[ProductArticleCopy] reset timer fired!"); setCopied(false); }, 15000);
+    setTimeout(() => setCopied(false), 3000);
   };
 
   return (

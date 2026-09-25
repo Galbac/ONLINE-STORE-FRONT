@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { Bell, Check, Loader2, X } from "lucide-react";
 import { apiClient } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
@@ -113,6 +114,13 @@ export const StockAlertButton = ({
                     <p className="mt-1 text-xs text-rose-600">{errorMessage}</p>
                   )}
                 </div>
+
+                <p className="text-[11px] text-slate-400 leading-tight pt-1">
+                  Нажимая «Подписаться», вы даете{" "}
+                  <Link href="/privacy" target="_blank" className="underline hover:text-emerald-700">
+                    согласие на обработку персональных данных (152-ФЗ)
+                  </Link>
+                </p>
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button

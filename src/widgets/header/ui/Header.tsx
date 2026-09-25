@@ -17,18 +17,14 @@ export const Header = () => {
       <div className="hidden border-b border-slate-100 bg-slate-50/60 py-1.5 text-xs text-slate-500 sm:block">
         <Container className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
-            <span className="inline-flex items-center gap-1.5 font-medium text-slate-600">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700">
               <MapPin size={13} className="text-emerald-600" />
               {STORE_INFO.city}
             </span>
-            <span className="text-slate-300">•</span>
+            <span className="text-slate-300 select-none">|</span>
             <span className="inline-flex items-center gap-1.5 text-slate-600">
               <Clock size={12} className="text-emerald-600" />
-              <span>
-                {STORE_INFO.workingHours.toLowerCase().includes("круглосут")
-                  ? "Круглосуточная доставка 24/7"
-                  : `Доставка: ${STORE_INFO.workingHours}`}
-              </span>
+              <span>Заказы онлайн 24/7 • Доставка курьером 08:00–22:00</span>
             </span>
           </div>
           <div className="flex items-center gap-4">

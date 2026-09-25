@@ -23,6 +23,7 @@ export const ProductCard = ({
   initialInCart = false,
 }: ProductCardProps) => {
   const isLowStock = product.is_available && product.stock_display.startsWith("Осталось");
+  const isHalal = product.category?.name === "Мясо и птица" || product.category?.slug === "myaso-i-ptitsa";
 
   if (variant === "list") {
     return (
@@ -32,6 +33,11 @@ export const ProductCard = ({
           {product.discount_percent ? (
             <span className="pointer-events-auto rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 text-xs font-black text-white shadow-sm shadow-rose-500/30">
               -{product.discount_percent}%
+            </span>
+          ) : null}
+          {isHalal ? (
+            <span className="pointer-events-auto rounded-md bg-emerald-700/95 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-white uppercase shadow-2xs">
+              ХАЛЯЛЬ
             </span>
           ) : null}
           <div className="hidden sm:block pointer-events-auto">
@@ -140,6 +146,11 @@ export const ProductCard = ({
         {product.discount_percent ? (
           <span className="pointer-events-auto rounded-lg sm:rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-black text-white shadow-sm shadow-rose-500/30">
             -{product.discount_percent}%
+          </span>
+        ) : null}
+        {isHalal ? (
+          <span className="pointer-events-auto rounded-md bg-emerald-700/95 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-white uppercase shadow-2xs">
+            ХАЛЯЛЬ
           </span>
         ) : null}
         <div className="hidden sm:block pointer-events-auto">

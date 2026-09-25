@@ -195,6 +195,16 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                     active: !categoryId,
                     href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), category_id: undefined, page: undefined }),
                   },
+                  {
+                    id: "halal",
+                    label: "🥩 Халяль",
+                    active: categoryId === 100,
+                    href: buildCatalogHref({
+                      ...toCatalogUrlParams(searchParams),
+                      category_id: categoryId === 100 ? undefined : "100",
+                      page: undefined,
+                    }),
+                  },
                   ...categories.items.map((cat) => ({
                     id: String(cat.id),
                     label: cat.name,

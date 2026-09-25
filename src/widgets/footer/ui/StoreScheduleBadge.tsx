@@ -91,7 +91,7 @@ export const StoreScheduleBadge = () => {
           </p>
         ) : (
           <p className="text-[11px] text-slate-400 leading-tight">
-            Ежедневно с 08:00 до 22:00
+            Доставка ежедневно 08:00–22:00 • Заказы онлайн 24/7
           </p>
         )}
       </div>
@@ -114,7 +114,7 @@ export const StoreScheduleBadge = () => {
                 </span>
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900">Режим работы магазина</h3>
-                  <p className="text-xs text-slate-400">График по дням недели и доставка</p>
+                  <p className="text-xs text-slate-400">Доставка курьером 08:00–22:00 • Прием заказов 24/7</p>
                 </div>
               </div>
               <button

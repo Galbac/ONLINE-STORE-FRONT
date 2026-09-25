@@ -9,5 +9,6 @@ export const STORE_INFO = {
   phone: "+7 (928) 519-14-85",
   phoneHref: "tel:+79285191485",
   tagline: "Свежесть каждый день!",
-  workingHours: "Круглосуточно",
+  workingHours: "Ежедневно 08:00–22:00",
+  ordersOnline: "Заказы онлайн 24/7",
 } as const;

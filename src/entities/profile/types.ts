@@ -8,6 +8,8 @@ export interface ProfileUserResponse {
   role: UserRole;
   is_active: boolean;
   is_verified?: boolean;
+  is_phone_verified?: boolean;
+  phone_verified_at?: string | null;
 }
 
 export interface ProfileStatsResponse {

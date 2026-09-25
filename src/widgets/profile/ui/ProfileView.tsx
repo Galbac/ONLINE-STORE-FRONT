@@ -1,27 +1,6 @@
-const PERMISSION_LABELS: Record<string, string> = {
-  "profile:read": "Просмотр профиля",
-  "profile:write": "Редактирование профиля",
-  "orders:read": "Просмотр истории заказов",
-  "orders:create": "Оформление заказов",
-  "orders:cancel": "Отмена заказов",
-  "cart:read": "Просмотр корзины",
-  "cart:write": "Управление корзиной",
-  "favorites:read": "Просмотр избранного",
-  "favorites:write": "Управление избранным",
-  "addresses:read": "Просмотр адресов доставки",
-  "addresses:write": "Управление адресами",
-  "notifications:read": "Получение уведомлений",
-  "admin:access": "Доступ к панели управления",
-  "admin:products": "Управление каталогом",
-  "admin:orders": "Управление заказами",
-  "admin:users": "Управление клиентами",
-  "admin:settings": "Настройки магазина",
-};
+"use client";
 
-const formatPermission = (permission: string): string => {
-  return PERMISSION_LABELS[permission] || permission;
-};
-
+import { useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -30,25 +9,33 @@ import {
   CalendarClock,
   ChevronRight,
   ClipboardList,
+  Eye,
+  EyeOff,
   Headphones,
   Heart,
   KeyRound,
   MapPin,
   Package,
-  Pencil,
   Percent,
   ReceiptText,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Trash2,
   Truck,
   UserRound,
   WalletCards,
-  Sparkles,
 } from "lucide-react";
 import type { ProfileSummaryResponse } from "@/entities/profile";
 import type { UserMeResponse } from "@/entities/user";
+import { userApi } from "@/entities/user";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container } from "@/shared/ui";
+import { toast } from "sonner";
 import { ProfileLogoutButton } from "./ProfileLogoutButton";
+import { PhoneVerificationModal } from "./PhoneVerificationModal";
+import { DeleteAccountModal } from "./DeleteAccountModal";
 
 interface ProfileViewProps {
   profile: ProfileSummaryResponse;
@@ -78,14 +65,15 @@ const serviceBenefits = [
   },
 ] as const;
 
-export const ProfileView = ({ profile, user }: ProfileViewProps) => {
+export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) => {
+  const [currentUser, setCurrentUser] = useState<UserMeResponse>(initialUser);
   const recentOrdersTotal = profile.recent_orders.reduce((total, order) => {
     return total + Number(order.final_price);
   }, 0);
   const averageRecentOrder =
     profile.recent_orders.length > 0 ? recentOrdersTotal / profile.recent_orders.length : 0;
   const lastOrder = profile.recent_orders[0] ?? profile.active_order ?? null;
-  const displayEmail = user.email ?? profile.user.email ?? "Не указан";
+  const displayEmail = currentUser.email ?? profile.user.email ?? "";
 
   return (
     <main className="bg-bg-primary min-h-[70vh]">
@@ -104,7 +92,11 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
         </div>
 
         <section className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.9fr)]">
-          <ProfileCard user={user} email={displayEmail} />
+          <ProfileCard
+            user={currentUser}
+            email={displayEmail}
+            onUserUpdated={(updated) => setCurrentUser(updated)}
+          />
           <StatsCard
             ordersCount={profile.stats.orders_count}
             addressesCount={profile.stats.addresses_count}
@@ -114,8 +106,8 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
           />
         </section>
 
-        {/* Мои регулярные покупки (показываются только после первой покупки) */}
-        {(profile.stats.orders_count > 0 || profile.recent_orders.length > 0) ? (
+        {/* Мои регулярные покупки */}
+        {profile.stats.orders_count > 0 || profile.recent_orders.length > 0 ? (
           <section className="mt-8 flex flex-col gap-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/80 to-teal-50/50 p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
@@ -124,8 +116,7 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Мои регулярные покупки</h3>
                 <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-600">
-                  Соберите вашу привычную недельную продуктовую корзину (хлеб, молоко, сыр, яйца,
-                  свежие фрукты) в 1 клик на основе ваших прошлых заказов!
+                  Соберите вашу привычную недельную продуктовую корзину в 1 клик на основе ваших прошлых заказов!
                 </p>
               </div>
             </div>
@@ -151,7 +142,7 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
               href={ROUTES.PROFILE_ADDRESSES}
               icon={<MapPin size={30} />}
               title="Адреса"
-              text={`${profile.stats.addresses_count} адреса доставки`}
+              text={pluralizeAddresses(profile.stats.addresses_count)}
             />
             <QuickLink
               href={ROUTES.PROFILE_ORDERS}
@@ -172,10 +163,10 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
               text="Настройки уведомлений"
             />
             <QuickLink
-              href={ROUTES.FORGOT_PASSWORD}
+              href={ROUTES.PROFILE_CHANGE_PASSWORD}
               icon={<KeyRound size={30} />}
-              title="Восстановление пароля"
-              text="Сброс и восстановление доступа"
+              title="Безопасность"
+              text="Смена пароля аккаунта"
             />
           </div>
         </section>
@@ -205,47 +196,145 @@ export const ProfileView = ({ profile, user }: ProfileViewProps) => {
 interface ProfileCardProps {
   email: string;
   user: UserMeResponse;
+  onUserUpdated: (user: UserMeResponse) => void;
 }
 
-const ProfileCard = ({ email, user }: ProfileCardProps) => {
+const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
+  const [showPhone, setShowPhone] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(user.marketing_consent ?? false);
+  const [isUpdatingMarketing, setIsUpdatingMarketing] = useState(false);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const isPhoneVerified = Boolean(user.is_phone_verified ?? user.is_verified);
+
+  const handleToggleMarketing = async (checked: boolean) => {
+    setIsUpdatingMarketing(true);
+    try {
+      await userApi.updateMarketingConsent(checked);
+      setMarketingConsent(checked);
+      onUserUpdated({ ...user, marketing_consent: checked });
+      toast.success(checked ? "Рассылки и акции подключены" : "Рассылки отключены");
+    } catch {
+      toast.error("Не удалось обновить согласие на рассылки");
+    } finally {
+      setIsUpdatingMarketing(false);
+    }
+  };
+
   return (
     <section className="border-border rounded-lg border bg-white p-6 shadow-[0_14px_40px_rgb(20_28_18/0.06)] md:p-9">
       <div className="grid gap-8 md:grid-cols-[112px_minmax(0,1fr)]">
-        <span className="bg-accent-primary text-accent-contrast grid size-24 place-items-center rounded-full md:size-28">
+        <span className="bg-accent-primary text-accent-contrast grid size-24 place-items-center rounded-full md:size-28 shrink-0">
           <UserRound size={58} />
         </span>
-        <div className="grid gap-7 sm:grid-cols-[minmax(120px,0.55fr)_minmax(0,1fr)]">
-          <ProfileField label="Имя" value={user.name} />
-          <ProfileField label="Телефон" value={user.phone} />
-          <ProfileField label="Email" value={email} />
-          <ProfileField label="Дата регистрации" value={formatDateTime(user.created_at)} />
-          <ProfileField label="Подтвержден" value={user.is_verified ? "Да" : "Нет"} />
-          <ProfileField label="Статус" value={user.is_active ? "Активен" : "Неактивен"} />
-          <ProfileField
-            label="Рассылки и акции (38-ФЗ)"
-            value={user.marketing_consent ? "Согласие предоставлено" : "Отключены"}
-          />
+        <div className="space-y-4">
+          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+            <span className="text-text-secondary">Имя:</span>
+            <span className="text-text-primary font-bold break-words">{user.name}</span>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+            <span className="text-text-secondary">Телефон:</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-text-primary font-bold font-mono text-xs sm:text-sm">
+                {showPhone ? user.phone : maskPhone(user.phone)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPhone(!showPhone)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                title={showPhone ? "Скрыть номер" : "Показать номер"}
+              >
+                {showPhone ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+            <span className="text-text-secondary">Email:</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-text-primary font-bold break-all text-xs sm:text-sm">
+                {email ? (showEmail ? email : maskEmail(email)) : "Не указан"}
+              </span>
+              {email ? (
+                <button
+                  type="button"
+                  onClick={() => setShowEmail(!showEmail)}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                  title={showEmail ? "Скрыть email" : "Показать email"}
+                >
+                  {showEmail ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+            <span className="text-text-secondary">Дата регистрации:</span>
+            <span className="text-text-primary font-medium text-xs sm:text-sm">
+              {formatDateTime(user.created_at)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+            <span className="text-text-secondary">Подтвержден:</span>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {isPhoneVerified ? (
+                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-xs border border-emerald-200/60">
+                  <ShieldCheck size={14} className="text-emerald-600" />
+                  Да (телефон подтвержден)
+                </span>
+              ) : (
+                <>
+                  <span className="font-bold text-rose-600 text-xs">Нет</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsVerifyModalOpen(true)}
+                    className="inline-flex h-7 items-center justify-center rounded-lg bg-emerald-600 px-2.5 text-[11px] font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition cursor-pointer"
+                  >
+                    Подтвердить телефон по SMS
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+            <span className="text-text-secondary">Статус:</span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+              <span className={`size-2 rounded-full ${user.is_active ? "bg-emerald-500" : "bg-slate-400"}`} />
+              {user.is_active ? "Активен" : "Неактивен"}
+            </span>
+          </div>
+
+          {/* Маркетинговые рассылки с интерактивным переключателем 38-ФЗ */}
+          <div className="pt-3 border-t border-slate-100">
+            <label className="flex items-center justify-between gap-4 cursor-pointer select-none group">
+              <div>
+                <span className="block text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition">
+                  Рассылки и акции (38-ФЗ «О рекламе»)
+                </span>
+                <span className="block text-[11px] text-slate-500 mt-0.5">
+                  {marketingConsent
+                    ? "Вы получаете персональные скидки и закрытые спецпредложения"
+                    : "Рекламные сообщения и промо-рассылки отключены"}
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                disabled={isUpdatingMarketing}
+                checked={marketingConsent}
+                onChange={(e) => handleToggleMarketing(e.target.checked)}
+                className="size-4.5 rounded text-emerald-600 accent-emerald-600 cursor-pointer"
+              />
+            </label>
+          </div>
         </div>
       </div>
 
-      {user.permissions && user.permissions.length > 0 ? (
-        <div className="border-border mt-8 rounded-lg border p-4">
-          <p className="text-text-secondary text-sm">Права аккаунта</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {user.permissions.map((permission) => (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs"
-                key={permission}
-              >
-                <span className="size-1.5 rounded-full bg-emerald-500" />
-                {formatPermission(permission)}
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Настройки безопасности и аккаунта */}
+      {/* Настройки безопасности и смена пароля */}
       <div className="mt-8 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
@@ -254,48 +343,55 @@ const ProfileCard = ({ email, user }: ProfileCardProps) => {
             </span>
             <div>
               <p className="text-sm font-bold text-slate-900">Безопасность аккаунта</p>
-              <p className="text-xs text-slate-500">Восстановление или изменение пароля</p>
+              <p className="text-xs text-slate-500">Изменение текущего пароля</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-emerald-300 hover:text-emerald-700"
-              href={ROUTES.PROFILE_CHANGE_PASSWORD}
-            >
-              Сменить пароль
-            </Link>
-            <Link
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3.5 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
-              href={ROUTES.FORGOT_PASSWORD}
-            >
-              Восстановление пароля
-            </Link>
-          </div>
+          <Link
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-4 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700 active:scale-95"
+            href={ROUTES.PROFILE_CHANGE_PASSWORD}
+          >
+            Сменить пароль
+          </Link>
         </div>
       </div>
 
-      <Link
-        className="border-accent-primary text-accent-primary hover:bg-bg-hover mt-6 inline-flex h-14 w-full items-center justify-center gap-3 rounded-lg border px-6 text-base font-bold transition"
-        href={ROUTES.PROFILE_ADDRESSES}
-      >
-        <Pencil size={20} />
-        Управлять адресами доставки
-      </Link>
+      {/* Удаление аккаунта и персональных данных (152-ФЗ РФ) */}
+      <div className="mt-4 rounded-xl border border-rose-200/70 bg-rose-50/30 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+              <Trash2 size={20} />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-slate-900">Удаление персональных данных (152-ФЗ)</p>
+              <p className="text-xs text-slate-500">Отзыв согласий и полное обезличивание аккаунта</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-300 bg-white px-3.5 text-xs font-bold text-rose-700 shadow-2xs transition hover:bg-rose-50 cursor-pointer"
+          >
+            Удалить аккаунт
+          </button>
+        </div>
+      </div>
+
+      {/* Модалки верификации и удаления */}
+      <PhoneVerificationModal
+        isOpen={isVerifyModalOpen}
+        phone={user.phone}
+        onClose={() => setIsVerifyModalOpen(false)}
+        onSuccess={() => {
+          onUserUpdated({ ...user, is_phone_verified: true, is_verified: true });
+        }}
+      />
+
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </section>
-  );
-};
-
-interface ProfileFieldProps {
-  label: string;
-  value: string;
-}
-
-const ProfileField = ({ label, value }: ProfileFieldProps) => {
-  return (
-    <>
-      <span className="text-text-secondary">{label}</span>
-      <span className="text-text-primary font-bold break-words">{value}</span>
-    </>
   );
 };
 
@@ -315,35 +411,54 @@ const StatsCard = ({
   recentOrdersTotal,
 }: StatsCardProps) => {
   return (
-    <section className="border-border rounded-lg border bg-white p-6 shadow-[0_14px_40px_rgb(20_28_18/0.06)] md:p-9">
+    <section className="border-border rounded-lg border bg-white p-6 shadow-[0_14px_40px_rgb(20_28_18/0.06)] md:p-9 flex flex-col">
       <h2 className="text-text-primary text-2xl font-bold">Статистика заказов</h2>
-      <div className="mt-9 space-y-8">
-        <StatRow
-          icon={<ReceiptText size={28} />}
-          label="Всего заказов"
-          value={String(ordersCount)}
-        />
-        <StatRow
-          icon={<WalletCards size={28} />}
-          label="Сумма последних заказов"
-          value={toPriceFormat(recentOrdersTotal)}
-        />
-        <StatRow
-          icon={<ClipboardList size={28} />}
-          label="Средний чек"
-          value={toPriceFormat(averageRecentOrder)}
-        />
-        <StatRow
-          icon={<CalendarClock size={28} />}
-          label="Последний заказ"
-          value={lastOrderDate ? formatDate(lastOrderDate) : "Пока нет"}
-        />
-        <StatRow
-          icon={<MapPin size={28} />}
-          label="Сохранено адресов"
-          value={String(addressesCount)}
-        />
-      </div>
+
+      {ordersCount === 0 ? (
+        <div className="my-auto flex flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 p-6 sm:p-8 text-center mt-6">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 mb-3 shadow-xs">
+            <ShoppingBag size={28} />
+          </div>
+          <h3 className="text-base font-bold text-slate-900">Вы еще не совершали покупок</h3>
+          <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-600">
+            Дарим скидку 10% на ваш первый заказ свежих фермерских продуктов с быстрой доставкой!
+          </p>
+          <Link
+            href={ROUTES.CATALOG}
+            className="mt-5 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-5 text-xs font-bold text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-700 active:scale-95 transition"
+          >
+            Перейти в каталог
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-9 space-y-8">
+          <StatRow
+            icon={<ReceiptText size={28} />}
+            label="Всего заказов"
+            value={String(ordersCount)}
+          />
+          <StatRow
+            icon={<WalletCards size={28} />}
+            label="Сумма последних заказов"
+            value={toPriceFormat(recentOrdersTotal)}
+          />
+          <StatRow
+            icon={<ClipboardList size={28} />}
+            label="Средний чек"
+            value={toPriceFormat(averageRecentOrder)}
+          />
+          <StatRow
+            icon={<CalendarClock size={28} />}
+            label="Последний заказ"
+            value={lastOrderDate ? formatDate(lastOrderDate) : "Пока нет"}
+          />
+          <StatRow
+            icon={<MapPin size={28} />}
+            label="Сохранено адресов"
+            value={String(addressesCount)}
+          />
+        </div>
+      )}
     </section>
   );
 };
@@ -394,6 +509,37 @@ const QuickLink = ({ href, icon, text, title }: QuickLinkProps) => {
       <span className="text-text-secondary mt-3 block leading-7">{text}</span>
     </Link>
   );
+};
+
+const maskPhone = (phone: string): string => {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10) return phone;
+  const start = digits.slice(-10, -7);
+  const end = digits.slice(-2);
+  return `+7 (${start}) ***-**-${end}`;
+};
+
+const maskEmail = (email: string): string => {
+  if (!email || !email.includes("@")) return email;
+  const [localPart, domain] = email.split("@");
+  if (!localPart || !domain) return email;
+  if (localPart.length <= 2) {
+    return `${localPart[0]}***@${domain}`;
+  }
+  const first = localPart[0];
+  const last = localPart[localPart.length - 1];
+  return `${first}***${last}@${domain}`;
+};
+
+const pluralizeAddresses = (count: number): string => {
+  if (count === 0) return "Нет сохраненных адресов";
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod100 >= 11 && mod100 <= 19) return `${count} адресов доставки`;
+  if (mod10 === 1) return `${count} адрес доставки`;
+  if (mod10 >= 2 && mod10 <= 4) return `${count} адреса доставки`;
+  return `${count} адресов доставки`;
 };
 
 const formatDateTime = (value: string): string => {

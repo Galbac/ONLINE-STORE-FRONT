@@ -230,7 +230,7 @@ export default function FeedbackPage() {
               <div className="rounded-3xl bg-gradient-to-br from-emerald-50 to-teal-50 p-6 border border-emerald-100/80 space-y-2">
                 <h4 className="text-xs font-bold text-emerald-900">Гарантия качества</h4>
                 <p className="text-[11px] leading-relaxed text-emerald-800">
-                  Если вам привезли товар ненадлежащего качества, мы заменим его или вернем деньги в течение 24 часов.
+                  Если вам привезли товар ненадлежащего качества, мы заменим его или вернем деньги в пределах срока годности товара (до 48 часов для охлажденной продукции).
                 </p>
               </div>
             </div>

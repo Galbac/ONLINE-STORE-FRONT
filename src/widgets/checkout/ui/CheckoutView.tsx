@@ -1,5 +1,7 @@
 "use client";
 
+import { AlertCircle, Loader2 } from "lucide-react";
+
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -37,6 +39,7 @@ import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Button, Container } from "@/shared/ui";
+import { PhoneVerificationModal } from "@/widgets/profile/ui/PhoneVerificationModal";
 
 interface CheckoutViewProps {
   addresses: AddressListResponse;
@@ -59,13 +62,12 @@ type DeliveryType = "delivery" | "pickup";
 type PaymentMethod = "online" | "on_delivery" | "sbp";
 
 const steps = [
-  "Контактные данные",
-  "Доставка или самовывоз",
-  "Адрес или точка самовывоза",
-  "Дата и временной слот",
-  "Способ оплаты",
-  "Проверка заказа",
-  "Создание заказа",
+  "Контакты",
+  "Получение",
+  "Адрес / ПВЗ",
+  "Дата и время",
+  "Оплата",
+  "Проверка",
 ] as const;
 
 export const CheckoutView = ({
@@ -127,12 +129,28 @@ export const CheckoutView = ({
   );
   const [selectedDate, setSelectedDate] = useState(timeSlots.date);
   const [selectedSlotId, setSelectedSlotId] = useState(firstAvailableSlot?.id ?? null);
-  const [personalDataAgreement, setPersonalDataAgreement] = useState(false);
   const [order, setOrder] = useState<OrderCreateResponse | null>(null);
   const [payment, setPayment] = useState<PaymentCreateResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isPhoneVerified, setIsPhoneVerified] = useState(
+    Boolean(currentUser?.is_phone_verified ?? currentUser?.is_verified)
+  );
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [idempotencyKey] = useState(() => {
+    if (typeof window !== "undefined" && window.crypto?.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+    return `ord_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  });
+
+  useEffect(() => {
+    if (currentUser) {
+      setIsPhoneVerified(Boolean(currentUser.is_phone_verified ?? currentUser.is_verified));
+    }
+  }, [currentUser]);
 
   const selectedAddress = useMemo(() => {
     return addresses.items.find((address) => address.id === selectedAddressId) ?? defaultAddress;
@@ -148,11 +166,32 @@ export const CheckoutView = ({
     return timeSlots.items.find((slot) => slot.id === selectedSlotId) ?? firstAvailableSlot;
   }, [firstAvailableSlot, selectedSlotId, timeSlots.items]);
 
-  const deliveryPrice =
+  const isOutsideKizlyar = useMemo(() => {
+    if (deliveryType !== "delivery" || !selectedAddress) return false;
+    const city = (selectedAddress.city || "").trim().toLowerCase();
+    return city !== "" && city !== "кизляр";
+  }, [deliveryType, selectedAddress]);
+
+  const deliveryPrice = deliveryType === "pickup" ? "0" : (
     summary.delivery_price ??
     deliveryCalculation.delivery_price ??
     deliveryOptions.delivery.base_price ??
-    "0";
+    "199.00"
+  );
+
+  const itemsCount = cart.items.length;
+  const itemsTotal = Number(summary.subtotal || summary.final_price || 0);
+  const minOrderAmount = Number(deliveryCalculation.min_order_amount || deliveryOptions.delivery.min_order_amount || 1000);
+  const isMinOrderMet = itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
+
+  const currentStep = useMemo(() => {
+    if (order) return 6;
+    if (paymentMethod && (selectedSlotId || selectedDate)) return 5;
+    if (selectedSlotId || selectedDate) return 4;
+    if (deliveryType === "pickup" ? selectedPickupPointId : selectedAddressId) return 3;
+    if (contact.name && contact.phone) return 2;
+    return 1;
+  }, [contact.name, contact.phone, deliveryType, order, paymentMethod, selectedAddressId, selectedDate, selectedPickupPointId, selectedSlotId]);
 
   const handleContactChange = (field: keyof ContactState, value: string): void => {
     setContact((current) => ({
@@ -165,8 +204,10 @@ export const CheckoutView = ({
     event.preventDefault();
     setErrorMessage(null);
 
-    if (!personalDataAgreement) {
-      setErrorMessage("Подтвердите согласие на обработку персональных данных.");
+
+    if (!isPhoneVerified) {
+      setIsVerifyModalOpen(true);
+      setErrorMessage("Для оформления заказа необходимо подтвердить номер телефона по SMS.");
       return;
     }
 
@@ -214,9 +255,30 @@ export const CheckoutView = ({
       request.pickup_point_id = selectedPickupPoint.id;
     }
 
+    if (itemsCount === 0) {
+      setErrorMessage("Ваша корзина пуста. Пожалуйста, добавьте товары из каталога.");
+      return;
+    }
+
+    if (!isMinOrderMet) {
+      setErrorMessage(`Минимальная сумма заказа для доставки — ${minOrderAmount} ₽. Добавьте товаров еще на ${minOrderAmount - itemsTotal} ₽.`);
+      return;
+    }
+
+    if (deliveryType === "delivery" && isOutsideKizlyar) {
+      setErrorMessage("К сожалению, по данному адресу доставка не осуществляется. Доступен только самовывоз в г. Кизляр.");
+      return;
+    }
+
+    if (paymentMethod === "on_delivery" && !isPhoneVerified) {
+      setIsVerifyModalOpen(true);
+      setErrorMessage("Для оплаты при получении требуется подтверждение номера телефона по SMS.");
+      return;
+    }
+
     startTransition(async () => {
       try {
-        const createdOrder = await orderApi.create(request);
+        const createdOrder = await orderApi.create(request, idempotencyKey);
         setOrder(createdOrder);
         notifyCartChanged({ itemsCount: 0 });
 
@@ -237,8 +299,13 @@ export const CheckoutView = ({
           successParams.set("payment_id", String(createdPaymentId));
         }
         router.push(`${ROUTES.CHECKOUT_SUCCESS}?${successParams.toString()}`);
-      } catch {
-        setErrorMessage("Не удалось создать заказ. Проверьте данные и попробуйте еще раз.");
+      } catch (err: any) {
+        if (err?.message?.includes("PHONE_VERIFICATION_REQUIRED") || err?.status === 403) {
+          setIsVerifyModalOpen(true);
+          setErrorMessage("Необходимо подтвердить номер телефона по SMS перед созданием заказа.");
+        } else {
+          setErrorMessage("Не удалось создать заказ. Проверьте данные и попробуйте еще раз.");
+        }
       }
     });
   };
@@ -260,7 +327,7 @@ export const CheckoutView = ({
 
         <h1 className="text-text-primary mb-7 text-4xl font-bold md:text-5xl">Оформление заказа</h1>
 
-        <CheckoutSteps activeStep={order ? 7 : 1} />
+        <CheckoutSteps activeStep={currentStep} />
 
         {errorMessage ? (
           <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -413,6 +480,51 @@ export const CheckoutView = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Зона и стоимость доставки по Кизляру (Интегрировано в шаг 3) */}
+                <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4.5 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-8 items-center justify-center rounded-xl bg-emerald-600 text-white shrink-0">
+                        <Truck size={16} />
+                      </span>
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">
+                          Зона доставки: {isOutsideKizlyar ? "Вне зоны курьерской доставки" : (deliveryCalculation.zone?.name || "Кизляр — Центральный")}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {isOutsideKizlyar 
+                            ? "Доставка осуществляется по г. Кизляр и пригородным поселкам" 
+                            : `Тариф доставки: ${deliveryPrice === "0" ? "Бесплатно" : `${deliveryPrice} ₽`} (бесплатно от ${toPriceFormat(deliveryCalculation.free_delivery_from || 3000)})`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="rounded-lg bg-emerald-100/80 px-2.5 py-1 text-xs font-black text-emerald-800">
+                        {isOutsideKizlyar ? "Недоступно" : deliveryPrice === "0" ? "0 ₽" : `${deliveryPrice} ₽`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isOutsideKizlyar ? (
+                    <div className="mt-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800 font-medium">
+                      <div className="flex items-center gap-1.5 font-bold text-rose-900 mb-0.5">
+                        <AlertCircle size={15} className="shrink-0 text-rose-600" />
+                        <span>Адрес за пределами зоны доставки</span>
+                      </div>
+                      <p className="leading-relaxed">
+                        К сожалению, по данному адресу курьерская доставка не осуществляется. Доступен только самовывоз из магазина в г. Кизляр.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryType("pickup")}
+                        className="mt-2 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer"
+                      >
+                        Переключить на самовывоз
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
                 </>
               ) : (
                 <PickupSelector
@@ -423,29 +535,7 @@ export const CheckoutView = ({
               )}
             </CheckoutSection>
 
-            <CheckoutSection
-              icon={<Truck size={24} />}
-              number={4}
-              title="Стоимость и зона доставки"
-            >
-              <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
-                <div className="text-text-secondary text-sm">
-                  <span>Зона доставки: </span>
-                  <span className="text-text-primary font-semibold">
-                    {deliveryCalculation.zone?.name ??
-                      selectedAddress?.city ??
-                      selectedPickupPoint?.city ??
-                      "Не выбрана"}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-text-secondary text-sm">Стоимость доставки:</p>
-                  <p className="text-2xl font-bold">{toPriceFormat(deliveryPrice)}</p>
-                </div>
-              </div>
-            </CheckoutSection>
-
-            <CheckoutSection icon={<Calendar size={24} />} number={5} title="Дата и временной слот">
+            <CheckoutSection icon={<Calendar size={24} />} number={4} title="Дата и временной слот">
               <DateAndSlotPicker
                 selectedDate={selectedDate}
                 selectedSlotId={selectedSlotId}
@@ -455,31 +545,7 @@ export const CheckoutView = ({
               />
             </CheckoutSection>
 
-            <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
-                  <Sparkles size={18} />
-                </span>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">Бонусные баллы</h4>
-                  <p className="text-xs text-slate-500">Спишите бонусы программы лояльности (1 бонус = 1 ₽)</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  max={loyaltyBalance > 0 ? loyaltyBalance : undefined}
-                  className="w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-emerald-500"
-                  placeholder="0 бонусов"
-                  value={usePoints || ""}
-                  onChange={(e) => setUsePoints(Math.max(0, Math.min(Number(e.target.value) || 0, loyaltyBalance > 0 ? loyaltyBalance : Infinity)))}
-                />
-                <span className="text-xs font-bold text-slate-600">₽</span>
-              </div>
-            </div>
-
-            <CheckoutSection icon={<CreditCard size={24} />} number={6} title="Способ оплаты">
+            <CheckoutSection icon={<CreditCard size={24} />} number={5} title="Способ оплаты">
               <div className="grid gap-3 sm:grid-cols-3">
                 <ChoiceCard
                   checked={paymentMethod === "sbp"}
@@ -500,11 +566,42 @@ export const CheckoutView = ({
                   onClick={() => setPaymentMethod("on_delivery")}
                 />
               </div>
+
+              {/* Блок списания бонусов внутри шага оплаты */}
+              <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4.5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs shrink-0">
+                    <Sparkles size={18} />
+                  </span>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">Бонусные баллы</h4>
+                    <p className="text-xs text-slate-500">
+                      Доступно: {loyaltyBalance} бонусов. Оплата бонусами до 50% стоимости товаров.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max={Math.min(loyaltyBalance, Math.floor(itemsTotal * 0.5))}
+                    className="w-32 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-emerald-500"
+                    placeholder="0 бонусов"
+                    value={usePoints || ""}
+                    onChange={(e) => {
+                      const maxPoints = Math.min(loyaltyBalance, Math.floor(itemsTotal * 0.5));
+                      const val = Math.max(0, Math.min(Number(e.target.value) || 0, maxPoints));
+                      setUsePoints(val);
+                    }}
+                  />
+                  <span className="text-xs font-bold text-slate-600">₽</span>
+                </div>
+              </div>
             </CheckoutSection>
 
             <CheckoutSection
               icon={<ClipboardCheck size={24} />}
-              number={7}
+              number={6}
               title="Проверьте ваш заказ"
             >
               <ReviewList items={cart.items} />
@@ -526,16 +623,34 @@ export const CheckoutView = ({
               cart={cart}
               deliveryCalculation={deliveryCalculation}
               deliveryPrice={deliveryPrice}
-              personalDataAgreement={personalDataAgreement}
+              deliveryType={deliveryType}
               isPending={isPending}
               order={order}
               payment={payment}
               summary={summary}
-              onPersonalDataAgreementChange={setPersonalDataAgreement}
+              itemsCount={itemsCount}
+              itemsTotal={itemsTotal}
+              minOrderAmount={minOrderAmount}
+              isPhoneVerified={isPhoneVerified}
+              onOpenVerifyModal={() => setIsVerifyModalOpen(true)}
+              marketingConsent={marketingConsent}
+              onMarketingConsentChange={setMarketingConsent}
             />
-            <CheckoutBenefits />
+            <CheckoutBenefits
+              itemsTotal={itemsTotal}
+              freeFrom={Number(deliveryCalculation.free_delivery_from || deliveryOptions.delivery.free_from_amount || 3000)}
+            />
           </aside>
         </form>
+        <PhoneVerificationModal
+          isOpen={isVerifyModalOpen}
+          phone={contact.phone || currentUser?.phone || ""}
+          onClose={() => setIsVerifyModalOpen(false)}
+          onSuccess={() => {
+            setIsPhoneVerified(true);
+            setErrorMessage(null);
+          }}
+        />
       </Container>
     </main>
   );
@@ -549,7 +664,7 @@ const CheckoutSteps = ({ activeStep }: CheckoutStepsProps) => {
   return (
     <div className="relative">
       <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <ol className="flex min-w-[560px] md:min-w-0 md:grid md:grid-cols-7 gap-3 pr-8 md:pr-0">
+        <ol className="flex min-w-[560px] md:min-w-0 md:grid md:grid-cols-6 gap-3 pr-8 md:pr-0">
         {steps.map((step, index) => {
           const stepNumber = index + 1;
           const isActive = stepNumber <= activeStep;
@@ -1003,151 +1118,234 @@ interface OrderSummaryProps {
   cart: CartResponse;
   deliveryCalculation: DeliveryCalculateResponse;
   deliveryPrice: string;
-  personalDataAgreement: boolean;
+  deliveryType: "delivery" | "pickup";
   isPending: boolean;
   order: OrderCreateResponse | null;
   payment: PaymentCreateResponse | null;
   summary: CartSummaryResponse;
-  onPersonalDataAgreementChange: (checked: boolean) => void;
+  itemsCount: number;
+  itemsTotal: number;
+  minOrderAmount: number;
+  isPhoneVerified: boolean;
+  onOpenVerifyModal: () => void;
+  marketingConsent: boolean;
+  onMarketingConsentChange: (value: boolean) => void;
 }
 
 const OrderSummary = ({
   cart,
   deliveryCalculation,
   deliveryPrice,
-  personalDataAgreement,
+  deliveryType,
   isPending,
   order,
-  onPersonalDataAgreementChange,
   payment,
   summary,
+  itemsCount,
+  itemsTotal,
+  minOrderAmount,
+  isPhoneVerified,
+  onOpenVerifyModal,
+  marketingConsent,
+  onMarketingConsentChange,
 }: OrderSummaryProps) => {
   const finalWithDelivery = Number(summary.final_price) + Number(deliveryPrice);
-  const amountLeft = deliveryCalculation.amount_left_for_free_delivery;
-  const freeFrom = deliveryCalculation.free_delivery_from;
+  const freeFrom = Number(deliveryCalculation.free_delivery_from || 3000);
+  const amountLeft = Math.max(0, freeFrom - itemsTotal);
+  const isMinOrderMet = itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
   return (
-    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-[0_14px_40px_rgb(20_28_18/0.08)]">
-      <h2 className="mb-6 text-xl font-bold">Ваш заказ</h2>
-      <div className="space-y-4">
-        {cart.items.map((item) => (
-          <div
-            className="grid grid-cols-[70px_minmax(0,1fr)_80px] items-center gap-3"
-            key={item.id}
+    <section className="border-border bg-bg-primary rounded-2xl border p-5 shadow-[0_14px_40px_rgb(20_28_18/0.08)]">
+      <h2 className="mb-5 text-xl font-bold text-slate-900">Ваш заказ</h2>
+
+      {itemsCount === 0 ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-xs font-semibold text-rose-800 space-y-2">
+          <p className="font-bold text-sm">Корзина пуста</p>
+          <p className="text-slate-600 font-normal">Добавьте товары из каталога для оформления заказа.</p>
+          <Link
+            href={ROUTES.CATALOG}
+            className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition cursor-pointer"
           >
-            <ProductThumb item={item} size={64} />
-            <div className="min-w-0">
-              <p className="truncate font-bold">{item.name}</p>
-              <p className="text-text-secondary text-sm">
-                {formatQuantity(item.quantity)} {item.unit}
-              </p>
-              <p className="text-text-secondary text-xs">
-                {toPriceFormat(item.price)} x {formatQuantity(item.quantity)}
-              </p>
+            Перейти в каталог
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-4 max-h-[280px] overflow-y-auto pr-1">
+          {cart.items.map((item) => (
+            <div
+              className="grid grid-cols-[56px_minmax(0,1fr)_75px] items-center gap-3"
+              key={item.id}
+            >
+              <ProductThumb item={item} size={56} />
+              <div className="min-w-0">
+                <p className="truncate font-bold text-xs sm:text-sm">{item.name}</p>
+                <p className="text-text-secondary text-xs">
+                  {formatQuantity(item.quantity)} {item.unit}
+                </p>
+                <p className="text-text-secondary text-[11px]">
+                  {toPriceFormat(item.price)} x {formatQuantity(item.quantity)}
+                </p>
+              </div>
+              <span className="text-right font-bold text-xs sm:text-sm">{toPriceFormat(item.final_price)}</span>
             </div>
-            <span className="text-right font-bold">{toPriceFormat(item.final_price)}</span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <div className="border-border mt-6 space-y-4 border-y py-5">
+      <div className="border-border mt-5 space-y-3 border-y py-4 text-xs sm:text-sm">
         <SummaryLine
-          label={`Товары (${summary.items_count})`}
-          value={toPriceFormat(summary.subtotal)}
+          label={`Товары (${itemsCount})`}
+          value={toPriceFormat(summary.subtotal || summary.final_price || "0")}
         />
-        <SummaryLine
-          label="Скидка на товары"
-          value={`-${toPriceFormat(summary.discount_amount)}`}
-          danger
-        />
-        <SummaryLine
-          label={`Промокод${summary.promo_code ? ` (${summary.promo_code})` : ""}`}
-          value={`-${toPriceFormat(summary.promo_discount_amount)}`}
-          danger
-        />
-        <SummaryLine label="Доставка" value={toPriceFormat(deliveryPrice)} />
-      </div>
-
-      <div className="mt-5 flex items-end justify-between gap-4">
-        <span className="text-xl font-bold">Итого</span>
-        <span className="text-3xl font-bold">{toPriceFormat(finalWithDelivery)}</span>
-      </div>
-
-      <div className="mt-6 space-y-3">
-        <label className="flex items-start gap-3 text-sm leading-6 cursor-pointer select-none">
-          <input
-            className="border-border mt-1 size-5 rounded accent-[var(--color-accent-primary)] cursor-pointer"
-            checked={personalDataAgreement}
-            type="checkbox"
-            onChange={(event) => onPersonalDataAgreementChange(event.target.checked)}
+        {Number(summary.discount_amount) > 0 ? (
+          <SummaryLine
+            label="Скидка на товары"
+            value={`-${toPriceFormat(summary.discount_amount)}`}
+            danger
           />
-          <span className="text-text-secondary text-xs sm:text-sm">
-            <span className="text-red-500 font-bold">* </span>
-            Я даю{" "}
-            <Link className="text-accent-primary font-semibold hover:underline" href={ROUTES.PERSONAL_DATA_CONSENT}>
-              согласие на обработку персональных данных
-            </Link>
-            , принимаю{" "}
-            <Link className="text-accent-primary font-semibold hover:underline" href={ROUTES.PRIVACY}>
-              политику обработки персональных данных (152-ФЗ)
-            </Link>{" "}
-            и{" "}
-            <Link className="text-accent-primary font-semibold hover:underline" href={ROUTES.OFFER}>
-              публичную оферту
-            </Link>
-          </span>
-        </label>
+        ) : null}
+        {summary.promo_code ? (
+          <SummaryLine
+            label={`Промокод (${summary.promo_code})`}
+            value={`-${toPriceFormat(summary.promo_discount_amount)}`}
+            danger
+          />
+        ) : null}
+        <SummaryLine 
+          label="Доставка" 
+          value={deliveryPrice === "0" ? "Бесплатно (0 ₽)" : toPriceFormat(deliveryPrice)} 
+        />
       </div>
 
-      {deliveryCalculation.min_order_amount && Number(summary.final_price) < Number(deliveryCalculation.min_order_amount) ? (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          Минимальная сумма заказа для оформления — {toPriceFormat(deliveryCalculation.min_order_amount)}
+      <div className="mt-4 flex items-end justify-between gap-4">
+        <span className="text-xl font-bold">Итого</span>
+        <span className="text-3xl font-black text-slate-900">{toPriceFormat(finalWithDelivery)}</span>
+      </div>
+
+      {deliveryType === "delivery" && itemsTotal < minOrderAmount ? (
+        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950 font-medium">
+          <div className="flex items-center gap-1.5 font-bold mb-1 text-amber-900">
+            <AlertCircle size={15} className="text-amber-600 shrink-0" />
+            <span>Минимальная сумма для доставки — {toPriceFormat(minOrderAmount)}</span>
+          </div>
+          <p className="leading-relaxed text-[11px] text-amber-800">
+            В корзине на <strong className="font-bold">{toPriceFormat(itemsTotal)}</strong>. Не хватает{" "}
+            <strong className="font-bold text-emerald-800">{toPriceFormat(minOrderAmount - itemsTotal)}</strong>.
+          </p>
+          <Link href={ROUTES.CATALOG} className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline">
+            Добавить товары из каталога →
+          </Link>
+        </div>
+      ) : null}
+
+      {!isPhoneVerified ? (
+        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs">
+          <div className="flex items-center gap-2 font-bold text-amber-900 mb-1">
+            <ShieldCheck size={16} className="text-amber-600 shrink-0" />
+            <span>Требуется подтверждение телефона</span>
+          </div>
+          <p className="text-amber-800 leading-relaxed mb-2 text-[11px]">
+            Для защиты от спама при оплате при получении подтвердите номер по SMS.
+          </p>
+          <button
+            type="button"
+            onClick={onOpenVerifyModal}
+            className="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition cursor-pointer"
+          >
+            Подтвердить телефон по SMS
+          </button>
         </div>
       ) : null}
 
       <Button
-        className="mt-4 h-14 w-full text-base"
+        className="mt-5 h-14 w-full text-base font-bold shadow-md shadow-emerald-700/20"
         type="submit"
         disabled={
           isPending || 
-          cart.items.length === 0 || 
-          !personalDataAgreement ||
-          (deliveryCalculation.min_order_amount !== null && deliveryCalculation.min_order_amount !== undefined && Number(summary.final_price) < Number(deliveryCalculation.min_order_amount))
+          itemsCount === 0 || 
+          !isMinOrderMet ||
+          (!isPhoneVerified) ||
+          Boolean(order)
         }
       >
-        {order ? "Заказ создан" : "Создать заказ"}
+        {isPending ? (
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="animate-spin" size={18} />
+            <span>Создание заказа...</span>
+          </span>
+        ) : order ? (
+          "Заказ создан"
+        ) : itemsCount === 0 ? (
+          "Корзина пуста"
+        ) : !isMinOrderMet ? (
+          `Минимум ${toPriceFormat(minOrderAmount)}`
+        ) : !isPhoneVerified ? (
+          "Подтвердите телефон"
+        ) : (
+          "Создать заказ"
+        )}
       </Button>
 
       {order ? (
-        <div className="bg-bg-hover mt-4 rounded-lg p-4 text-sm">
-          <p className="font-bold">№ {order.order_number}</p>
-          {payment ? (
-            <a className="text-accent-primary mt-2 block font-semibold" href={payment.payment_url}>
-              Перейти к оплате
+        <div className="bg-emerald-50 border border-emerald-200 mt-4 rounded-xl p-3.5 text-xs text-emerald-900">
+          <p className="font-bold">Заказ № {order.order_number} успешно оформлен!</p>
+          {payment?.payment_url ? (
+            <a className="text-emerald-700 mt-1.5 block font-bold underline hover:text-emerald-800" href={payment.payment_url}>
+              Перейти к оплате онлайн →
             </a>
           ) : null}
         </div>
       ) : null}
 
-      {amountLeft && freeFrom ? (
-        <div className="bg-bg-hover mt-5 rounded-lg p-4">
-          <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-            <span>До бесплатной доставки осталось</span>
-            <span className="font-bold">{toPriceFormat(amountLeft)}</span>
+      {/* Прогресс-бар бесплатной доставки */}
+      {freeFrom > 0 && deliveryType === "delivery" ? (
+        <div className="bg-emerald-50/60 border border-emerald-100 mt-4 rounded-xl p-3 text-xs">
+          <div className="mb-1.5 flex items-center justify-between text-slate-700">
+            <span className="font-semibold text-[11px]">
+              {amountLeft === 0 ? "Бесплатная доставка активна! 🎉" : "До бесплатной доставки:"}
+            </span>
+            <span className="font-black text-emerald-800 text-[11px]">
+              {amountLeft === 0 ? "0 ₽" : toPriceFormat(amountLeft)}
+            </span>
           </div>
-          <div className="bg-border h-2 overflow-hidden rounded-full">
+          <div className="bg-emerald-200/50 h-1.5 overflow-hidden rounded-full">
             <div
-              className="bg-accent-primary h-full rounded-full"
+              className="bg-emerald-600 h-full rounded-full transition-all duration-300"
               style={{
-                width: `${Math.min(100, Math.max(8, (Number(summary.final_price) / Number(freeFrom)) * 100))}%`,
+                width: `${Math.min(100, Math.max(5, (itemsTotal / freeFrom) * 100))}%`,
               }}
             />
           </div>
-          <p className="text-text-muted mt-2 text-sm">
-            Бесплатная доставка от {toPriceFormat(freeFrom)}
-          </p>
         </div>
       ) : null}
+
+      {/* Юридический комплаенс 152-ФЗ без единого принудительного чекбокса */}
+      <p className="mt-3.5 text-center text-[11px] leading-relaxed text-slate-500">
+        Нажимая «Создать заказ», вы соглашаетесь с условиями{" "}
+        <Link className="text-emerald-700 font-semibold hover:underline" href={ROUTES.OFFER} target="_blank">
+          Публичной оферты
+        </Link>{" "}
+        и даете{" "}
+        <Link className="text-emerald-700 font-semibold hover:underline" href={ROUTES.PERSONAL_DATA_CONSENT} target="_blank">
+          Согласие на обработку персональных данных
+        </Link>{" "}
+        в соответствии с{" "}
+        <Link className="text-emerald-700 font-semibold hover:underline" href={ROUTES.PRIVACY} target="_blank">
+          Политикой конфиденциальности
+        </Link>
+        .
+      </p>
+
+      {/* Опциональное согласие на маркетинговые рассылки (38-ФЗ) */}
+      <label className="mt-3 flex items-start gap-2.5 text-[11px] text-slate-600 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={marketingConsent}
+          onChange={(e) => onMarketingConsentChange(e.target.checked)}
+          className="mt-0.5 size-4 rounded accent-emerald-600"
+        />
+        <span>Получать персональные скидки, промокоды и уведомления об акциях (38-ФЗ)</span>
+      </label>
     </section>
   );
 };
@@ -1167,28 +1365,53 @@ const SummaryLine = ({ danger = false, label, value }: SummaryLineProps) => {
   );
 };
 
-const CheckoutBenefits = () => {
+interface CheckoutBenefitsProps {
+  itemsTotal: number;
+  freeFrom: number;
+}
+
+const CheckoutBenefits = ({ itemsTotal, freeFrom }: CheckoutBenefitsProps) => {
+  const amountLeft = Math.max(0, freeFrom - itemsTotal);
+  const isFree = itemsTotal >= freeFrom && itemsTotal > 0;
+
   return (
-    <section className="border-border bg-bg-primary divide-border overflow-hidden rounded-lg border shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
-      <Benefit
-        icon={<Truck size={24} />}
-        title="До бесплатной доставки"
-        text="Условия считаются по корзине"
-      />
+    <section className="border-border bg-bg-primary divide-border overflow-hidden rounded-2xl border shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
+      <div className="flex items-start gap-4 p-5 bg-gradient-to-r from-emerald-50/70 to-teal-50/40">
+        <span className="text-emerald-600 shrink-0">
+          <Truck size={24} />
+        </span>
+        <div>
+          <p className="font-bold text-slate-900 text-sm">
+            {isFree ? "Бесплатная доставка активна! 🎉" : "До бесплатной доставки"}
+          </p>
+          {isFree ? (
+            <p className="text-slate-600 mt-1 text-xs">
+              Ваш заказ доставляется курьером за 0 ₽
+            </p>
+          ) : (
+            <p className="text-slate-600 mt-1 text-xs">
+              Не хватает {toPriceFormat(amountLeft)} ·{" "}
+              <Link href={ROUTES.CATALOG} className="font-bold text-emerald-700 hover:underline">
+                Вернуться в каталог
+              </Link>
+            </p>
+          )}
+        </div>
+      </div>
       <Benefit
         icon={<ShieldCheck size={24} />}
         title="Безопасная оплата"
-        text="Оплата онлайн или курьеру"
+        text="СБП, банковская карта или оплата при получении"
       />
       <Benefit
         icon={<PackageCheck size={24} />}
-        title="Свежие продукты"
-        text="Гарантия качества каждый день"
+        title="Гарантия свежести"
+        text="Контроль качества и срока годности до 48 часов"
       />
       <Benefit
         icon={<LockKeyhole size={24} />}
-        title="Защита данных"
-        text="Ваши данные под надёжной защитой"
+        title="Защита данных (152-ФЗ)"
+        text="Ваши персональные данные защищены законом"
       />
     </section>
   );

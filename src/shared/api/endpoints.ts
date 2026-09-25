@@ -150,6 +150,9 @@ export const API_ENDPOINTS = {
   },
   USER: {
     ME: "/api/users/me",
+    PHONE_SEND_OTP: "/api/users/phone/send-otp",
+    PHONE_VERIFY_OTP: "/api/users/phone/verify-otp",
+    MARKETING_CONSENT: "/api/users/marketing-consent",
   },
   ORDER: {
     CREATE: "/api/orders",

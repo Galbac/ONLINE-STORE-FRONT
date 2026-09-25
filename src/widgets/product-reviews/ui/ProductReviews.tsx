@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { useEffect, useState, useTransition } from "react";
-import { MessageSquare, Plus, Star, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Plus, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import { Button, getStoredAccessToken } from "@/shared/ui";
 
@@ -140,6 +140,31 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
       }
     });
   };
+
+  if (total === 0 && !showForm) {
+    return (
+      <section className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-amber-50 text-amber-500 shrink-0">
+              <Star size={18} className="fill-amber-400 text-amber-400" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-slate-800">★ Отзывы покупателей · Пока нет оценок</p>
+              <p className="text-xs text-slate-400">Будьте первым, кто оставит отзыв и поделится впечатлениями о вкусе!</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition active:scale-95 cursor-pointer"
+          >
+            <Plus size={15} /> Написать первый отзыв
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
@@ -314,12 +339,23 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
             </div>
           ))
         ) : (
-          <div className="py-10 text-center">
-            <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-              <MessageSquare size={22} />
-            </span>
-            <h4 className="text-sm font-bold text-slate-800">Пока нет отзывов</h4>
-            <p className="mt-1 text-xs text-slate-400">Будьте первым, кто поделится своим мнением о товаре</p>
+          <div className="py-3.5 px-4 sm:px-5 rounded-2xl bg-slate-50/80 border border-slate-200/60 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 shrink-0">
+                <Star size={16} className="fill-amber-400 text-amber-400" />
+              </span>
+              <div>
+                <p className="text-xs font-bold text-slate-800">У этого товара пока нет отзывов</p>
+                <p className="text-[11px] text-slate-400">Поделитесь своими впечатлениями о вкусе и качестве</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowForm(!showForm)}
+              className="text-xs font-bold text-emerald-700 bg-emerald-100/70 hover:bg-emerald-100 px-3.5 py-1.5 rounded-xl transition cursor-pointer"
+            >
+              {showForm ? "Скрыть форму" : "Написать первый отзыв"}
+            </button>
           </div>
         )}
       </div>

@@ -31,11 +31,16 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
     with_similar: false,
   });
 
-  const [similarProducts, cart, favorites] = await Promise.all([
+  const [similarProducts, crossSellProducts, cart, favorites] = await Promise.all([
     productApi.getSimilar(product.id, {
       limit: 6,
       in_stock: true,
     }),
+    productApi.getList({
+      limit: 4,
+      category_slug: "sousy-i-specii",
+      in_stock: true,
+    }).catch(() => ({ items: [] as any[] })),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
@@ -46,6 +51,21 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
   const favoriteProductIds = new Set(favorites.items.map((favoriteProduct) => favoriteProduct.id));
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
   const relatedProducts = similarProducts.items;
+  const crossSellItems = crossSellProducts.items || [];
+
+  const nameLower = (product.name ?? "").toLowerCase();
+  const isPork =
+    nameLower.includes("свинин") ||
+    nameLower.includes("бекон") ||
+    nameLower.includes("сало") ||
+    nameLower.includes("шпик") ||
+    nameLower.includes("pork") ||
+    nameLower.includes("bacon") ||
+    nameLower.includes("lard");
+
+  const displayTitle = product.product_type === "weight"
+    ? product.name.replace(/,\s*\d+\s*(?:г|кг)\b/gi, "").trim()
+    : product.name;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -81,19 +101,19 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
         "@type": "ListItem",
         position: 1,
         name: "Главная",
-        item: (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "") || ROUTES.HOME,
+        item: (process.env.NEXT_PUBLIC_SITE_URL || "https://eda-pobeda.ru").replace(/\/$/, "") || ROUTES.HOME,
       },
       {
         "@type": "ListItem",
         position: 2,
         name: product.category?.name || "Каталог",
-        item: `${(process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "")}/catalog/${product.category?.slug || ""}`,
+        item: `${(process.env.NEXT_PUBLIC_SITE_URL || "https://eda-pobeda.ru").replace(/\/$/, "")}/catalog/${product.category?.slug || ""}`,
       },
       {
         "@type": "ListItem",
         position: 3,
         name: product.name,
-        item: `${(process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "")}/product/${product.slug}`,
+        item: `${(process.env.NEXT_PUBLIC_SITE_URL || "https://eda-pobeda.ru").replace(/\/$/, "")}/product/${product.slug}`,
       },
     ],
   };
@@ -126,7 +146,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               <p className="text-text-secondary mb-3 text-sm">
                 {product.category?.name ?? "Каталог"}
               </p>
-              <h1 className="text-text-primary text-4xl leading-tight font-bold">{product.name}</h1>
+              <h1 className="text-text-primary text-4xl leading-tight font-bold">{displayTitle}</h1>
 
               <div className="mt-4 flex items-center gap-2">
                 <ProductArticleCopy
@@ -149,7 +169,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               <ProductUnitInfo product={product} />
 
               {/* Halal Certified Badge for Meat */}
-              {product.category?.slug === "myaso-i-ptitsa" ? (
+              {!isPork && (product.is_halal === true || (product.category?.slug === "myaso-i-ptitsa" && (nameLower.includes("кури") || nameLower.includes("говяд") || nameLower.includes("индейк") || nameLower.includes("баран") || nameLower.includes("цыплен")))) ? (
                 <div className="my-3 flex items-center gap-3 rounded-2xl border border-emerald-300/80 bg-emerald-50/80 p-3.5 shadow-2xs">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white font-black text-xs shadow-xs tracking-wider">
                     حلال
@@ -226,6 +246,43 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               ))}
             </div>
           </section>
+
+          {crossSellItems.length > 0 ? (
+            <section className="mt-14">
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">С этим товаром также покупают</h2>
+                  <p className="text-slate-500 text-sm mt-0.5">Специи, соусы и маринады для кулинарных шедевров</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {crossSellItems.slice(0, 4).map((crossItem) => (
+                  <ProductCard
+                    key={crossItem.id}
+                    product={crossItem}
+                    initialInCart={cartProductIds.has(crossItem.id)}
+                    cartControl={
+                      <CatalogCartButton
+                        initialInCart={cartProductIds.has(crossItem.id)}
+                        productId={crossItem.id}
+                        productName={crossItem.name}
+                        minQuantity={crossItem.min_quantity}
+                        quantityStep={crossItem.quantity_step}
+                        unit={crossItem.unit}
+                      />
+                    }
+                    favoriteControl={
+                      <CatalogFavoriteButton
+                        initialFavorite={favoriteProductIds.has(crossItem.id)}
+                        productId={crossItem.id}
+                        productName={crossItem.name}
+                      />
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <div className="mt-12">
             <ProductReviews productId={product.id} />
@@ -317,7 +374,7 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
       </section>
       {/* Nutrition & Storage */}
       {(() => {
-        const nutrition = getProductNutrition(product.category?.slug, product.slug);
+        const nutrition = getProductNutrition(product.category?.slug, product.slug, product.name);
         return (
           <section className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4.5">
             <div className="flex items-center justify-between mb-3">
@@ -419,7 +476,7 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
             <div>
               <p className="font-bold text-slate-800">Гарантия 100% свежести и возврата</p>
               <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                Если вас не устроит качество или свежесть продуктов — вернем деньги или заменим в течение 24 часов.
+                Если качество или свежесть продукта вас не устроит — заменим товар или вернем деньги в пределах срока годности товара (до 48 часов).
               </p>
             </div>
           </div>
@@ -478,13 +535,45 @@ const unitLabel = (unit?: string | null): string => {
   return unitName ?? unit;
 };
 
-const getProductNutrition = (catSlug?: string | null, prodSlug?: string) => {
+const getProductNutrition = (catSlug?: string | null, prodSlug?: string, prodName?: string) => {
   const cat = (catSlug ?? "").toLowerCase();
   const slug = (prodSlug ?? "").toLowerCase();
+  const name = (prodName ?? "").toLowerCase();
 
-  if (cat.includes("myaso") || cat.includes("мясо") || slug.includes("farsh") || slug.includes("steik") || slug.includes("file") || slug.includes("kurin") || slug.includes("bekon") || slug.includes("sosiski")) {
+  // 1. Chicken / Poultry (Филе грудки куриной)
+  if (
+    name.includes("кури") ||
+    name.includes("цыплен") ||
+    slug.includes("kurin") ||
+    slug.includes("кури") ||
+    slug.includes("цыплен")
+  ) {
     return {
-      badge: "🥩 Натуральное мясо",
+      badge: "🍗 Диетическое мясо птицы",
+      calories: "~113 ккал",
+      proteins: "23.5 г",
+      fats: "1.8 г",
+      carbs: "0.0 г",
+      storage: "Хранить при температуре от 0°C до +4°C не более 48 часов",
+    };
+  }
+
+  // 2. Turkey (Филе индейки)
+  if (slug.includes("indeyk") || slug.includes("индейк")) {
+    return {
+      badge: "🦃 Диетическая индейка",
+      calories: "~120 ккал",
+      proteins: "24.0 г",
+      fats: "2.5 г",
+      carbs: "0.0 г",
+      storage: "Хранить при температуре от 0°C до +4°C не более 48 часов",
+    };
+  }
+
+  // 3. Beef (Говядина и фарш)
+  if (cat.includes("myaso") || cat.includes("мясо") || slug.includes("govyad") || slug.includes("говяд") || slug.includes("farsh") || slug.includes("steik")) {
+    return {
+      badge: "🥩 Натуральная говядина",
       calories: "~254 ккал",
       proteins: "18.0 г",
       fats: "20.0 г",

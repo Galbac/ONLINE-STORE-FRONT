@@ -23,7 +23,23 @@ export const ProductCard = ({
   initialInCart = false,
 }: ProductCardProps) => {
   const isLowStock = product.is_available && product.stock_display.startsWith("Осталось");
-  const isHalal = product.category?.name === "Мясо и птица" || product.category?.slug === "myaso-i-ptitsa";
+  const nameLower = (product.name ?? "").toLowerCase();
+  const isPork = 
+    nameLower.includes("свинин") || 
+    nameLower.includes("бекон") || 
+    nameLower.includes("сало") || 
+    nameLower.includes("шпик") || 
+    nameLower.includes("pork") || 
+    nameLower.includes("bacon") ||
+    nameLower.includes("lard");
+
+  const isHalal = !isPork && (
+    product.is_halal === true ||
+    (product.is_halal === undefined && (
+      (product.category?.name === "Мясо и птица" || product.category?.slug === "myaso-i-ptitsa") &&
+      (nameLower.includes("кури") || nameLower.includes("говяд") || nameLower.includes("индейк") || nameLower.includes("баран") || nameLower.includes("цыплен"))
+    ))
+  );
 
   if (variant === "list") {
     return (

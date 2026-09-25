@@ -19,7 +19,24 @@ export const userApi = {
     return apiClient.patch<UserMeUpdateRequest, UserMeResponse>(API_ENDPOINTS.USER.ME, data);
   },
 
-  deleteMe: async (_data: UserMeDeleteRequest): Promise<MessageResponse> => {
-    return apiClient.delete<MessageResponse, UserMeDeleteRequest>(API_ENDPOINTS.USER.ME, _data);
+  updateMarketingConsent: async (marketing_consent: boolean): Promise<UserMeResponse> => {
+    return apiClient.patch<{ marketing_consent: boolean }, UserMeResponse>(
+      API_ENDPOINTS.USER.MARKETING_CONSENT,
+      { marketing_consent },
+    );
+  },
+
+  sendPhoneOtp: async (): Promise<MessageResponse> => {
+    return apiClient.post<undefined, MessageResponse>(API_ENDPOINTS.USER.PHONE_SEND_OTP);
+  },
+
+  verifyPhoneOtp: async (otp_code: string): Promise<UserMeResponse> => {
+    return apiClient.post<{ otp_code: string }, UserMeResponse>(API_ENDPOINTS.USER.PHONE_VERIFY_OTP, {
+      otp_code,
+    });
+  },
+
+  deleteMe: async (data: UserMeDeleteRequest): Promise<MessageResponse> => {
+    return apiClient.delete<MessageResponse, UserMeDeleteRequest>(API_ENDPOINTS.USER.ME, data);
   },
 };

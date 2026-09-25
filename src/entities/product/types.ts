@@ -34,6 +34,7 @@ export interface ProductShortResponse {
   product_type: string;
   min_quantity?: string | number | null;
   quantity_step?: string | number | null;
+  is_halal?: boolean | null;
   is_available: boolean;
   stock_display: string;
   category?: ProductCategoryShortResponse | null;
@@ -134,6 +135,7 @@ export interface ProductDetailResponse {
   product_type: string;
   quantity_step: string;
   min_quantity: string;
+  is_halal?: boolean | null;
   is_available: boolean;
   stock_quantity: string;
   stock_display: string;

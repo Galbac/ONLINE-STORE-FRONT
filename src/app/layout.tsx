@@ -18,7 +18,7 @@ const inter = Inter({
 const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://localhost"
+  "https://eda-pobeda.ru"
 ).replace(/\/$/, "");
 
 export const metadata: Metadata = {

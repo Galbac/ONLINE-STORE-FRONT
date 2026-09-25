@@ -56,10 +56,11 @@ const toProfileOrderListQuery = (
 };
 
 export const orderApi = {
-  create: async (data: OrderCreateRequest): Promise<OrderCreateResponse> => {
+  create: async (data: OrderCreateRequest, idempotencyKey?: string | null): Promise<OrderCreateResponse> => {
     return apiClient.post<OrderCreateRequest, OrderCreateResponse>(
       API_ENDPOINTS.ORDER.CREATE,
       data,
+      idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
     );
   },
 

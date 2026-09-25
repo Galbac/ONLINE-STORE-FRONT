@@ -63,7 +63,7 @@ export const CatalogCartButton = ({
     if (!checkAuth()) return;
 
     const qty = minQty;
-    const finalQuantity = Number.isFinite(qty) && qty > 0 ? (Number.isInteger(qty) ? qty : Number(qty.toFixed(2))) : 1;
+    const finalQuantity = Number.isFinite(qty) && qty > 0 ? (Math.round(qty * 1000) / 1000) : 1;
 
     startTransition(async () => {
       try {
@@ -102,7 +102,7 @@ export const CatalogCartButton = ({
     if (!checkAuth()) return;
     triggerHaptic();
     const prevQty = quantity;
-    const nextQty = Number((quantity + step).toFixed(2));
+    const nextQty = (Math.round(quantity * 1000) + Math.round(step * 1000)) / 1000;
     setQuantity(nextQty); // Optimistic instant update
 
     startTransition(async () => {
@@ -127,7 +127,7 @@ export const CatalogCartButton = ({
     if (!checkAuth()) return;
     triggerHaptic();
     const prevQty = quantity;
-    const nextQty = Number((quantity - step).toFixed(2));
+    const nextQty = Math.max(0, (Math.round(quantity * 1000) - Math.round(step * 1000)) / 1000);
     const isRemove = nextQty <= 0.001;
     setQuantity(isRemove ? 0 : nextQty); // Optimistic instant update
 

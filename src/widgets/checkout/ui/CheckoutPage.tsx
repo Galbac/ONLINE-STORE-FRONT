@@ -226,13 +226,24 @@ const createDeliveryCalculationFallback = (
   summary: CartSummaryResponse,
   deliveryOptions: DeliveryOptionsResponse,
 ): DeliveryCalculateResponse => {
+  const freeFrom = Number(deliveryOptions.delivery.free_from_amount ?? 3000);
+  const subtotal = Number(summary.subtotal || summary.final_price || 0);
+  const amountLeft = Math.max(0, freeFrom - subtotal);
+
   return {
-    amount_left_for_free_delivery: null,
+    amount_left_for_free_delivery: amountLeft > 0 ? String(amountLeft) : "0",
     available: deliveryOptions.delivery.enabled,
-    delivery_price: summary.delivery_price ?? deliveryOptions.delivery.base_price ?? null,
-    free_delivery_from: deliveryOptions.delivery.free_from_amount ?? null,
+    delivery_price: summary.delivery_price ?? deliveryOptions.delivery.base_price ?? "199.00",
+    free_delivery_from: String(freeFrom),
     message: deliveryOptions.delivery.description ?? deliveryOptions.delivery.title,
-    min_order_amount: deliveryOptions.delivery.min_order_amount ?? null,
-    zone: null,
+    min_order_amount: deliveryOptions.delivery.min_order_amount ?? "1000.00",
+    zone: {
+      id: 1,
+      name: "Кизляр — Центральный",
+      city: "Кизляр",
+      price: deliveryOptions.delivery.base_price ?? "199.00",
+      free_delivery_from: String(freeFrom),
+      min_order_amount: deliveryOptions.delivery.min_order_amount ?? "1000.00",
+    } as any,
   };
 };

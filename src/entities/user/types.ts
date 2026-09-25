@@ -9,8 +9,12 @@ export interface UserMeResponse {
   permissions?: string[];
   is_active: boolean;
   is_verified?: boolean;
+  is_phone_verified?: boolean;
+  phone_verified_at?: string | null;
   agreed_to_privacy?: boolean;
+  agreed_to_privacy_at?: string | null;
   marketing_consent?: boolean;
+  marketing_consent_at?: string | null;
   created_at: string;
   updated_at: string;
 }

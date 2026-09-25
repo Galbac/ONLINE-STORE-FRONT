@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { useState, useTransition } from "react";
 import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { cartApi } from "@/entities/cart";
@@ -55,25 +57,36 @@ export const ProductPurchaseActions = ({
 
   const handleDecrease = (): void => {
     if (canDecrease) {
-      setQuantity((currentQuantity) => normalizeQuantity(currentQuantity - step));
+      setQuantity((currentQuantity) => {
+        const curGrams = Math.round(currentQuantity * 1000);
+        const stepGrams = Math.round(step * 1000);
+        return Math.max(min, (curGrams - stepGrams) / 1000);
+      });
     }
   };
 
   const handleIncrease = (): void => {
     if (canIncrease) {
-      setQuantity((currentQuantity) => normalizeQuantity(currentQuantity + step));
+      setQuantity((currentQuantity) => {
+        const curGrams = Math.round(currentQuantity * 1000);
+        const stepGrams = Math.round(step * 1000);
+        return (curGrams + stepGrams) / 1000;
+      });
     }
   };
 
   const handleAddToCart = (): void => {
     startCartTransition(async () => {
-      const response = await cartApi.addItem({
-        product_id: productId,
-        quantity: formatQuantityValue(quantity),
-      });
-
-
-      notifyCartChanged({ itemsCount: response.cart.items_count });
+      try {
+        const response = await cartApi.addItem({
+          product_id: productId,
+          quantity: formatQuantityValue(quantity),
+        });
+        notifyCartChanged({ itemsCount: response.cart.items_count });
+        toast.success(`Товар «${productName}» (${formatQuantityValue(quantity)} ${unitLabel(unit)}) добавлен в корзину`);
+      } catch {
+        toast.error("Не удалось добавить товар в корзину");
+      }
     });
   };
 
@@ -102,20 +115,25 @@ export const ProductPurchaseActions = ({
     <div className="space-y-5">
       {/* Dynamic Price Block calculated per selected quantity */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-5 shadow-2xs">
-        <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none">
-            {toPriceFormat(currentTotal)}
-          </span>
-          {currentOldTotal ? (
-            <span className="text-lg text-slate-400 line-through leading-none font-medium">
-              {toPriceFormat(currentOldTotal)}
+        <div>
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none">
+              {toPriceFormat(currentTotal)}
             </span>
-          ) : null}
-          {discountPercent ? (
-            <span className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1 text-xs font-black text-white shadow-xs">
-              -{discountPercent}%
-            </span>
-          ) : null}
+            {currentOldTotal ? (
+              <span className="text-lg text-slate-400 line-through leading-none font-medium">
+                {toPriceFormat(currentOldTotal)}
+              </span>
+            ) : null}
+            {discountPercent ? (
+              <span className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1 text-xs font-black text-white shadow-xs">
+                -{discountPercent}%
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1.5 text-xs font-semibold text-slate-500">
+            Итого за {formatQuantityValue(quantity)} {unitLabel(unit)} (из расчета {toPriceFormat(price)} / {unit})
+          </p>
         </div>
         <div className="rounded-xl bg-white/90 border border-emerald-200/60 px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs">
           {toPriceFormat(price)} / {unit}
@@ -150,7 +168,7 @@ export const ProductPurchaseActions = ({
           </div>
           <button
             className={cn(
-              "flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-base font-bold text-white shadow-sm shadow-emerald-700/20 transition-all hover:bg-emerald-700 hover:scale-[1.01] active:scale-98 disabled:cursor-not-allowed disabled:opacity-55",
+              "flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm sm:text-base font-bold text-white shadow-sm shadow-emerald-700/20 transition-all hover:bg-emerald-700 hover:scale-[1.01] active:scale-98 disabled:cursor-not-allowed disabled:opacity-55 whitespace-nowrap",
               isCartPending && "cursor-wait opacity-75",
             )}
             type="button"
@@ -158,7 +176,7 @@ export const ProductPurchaseActions = ({
             onClick={handleAddToCart}
           >
             <ShoppingCart size={18} />
-            {isCartPending ? "Добавление..." : "В корзину"}
+            {isCartPending ? "Добавление..." : `В корзину • ${toPriceFormat(currentTotal)}`}
           </button>
         </div>
       </div>

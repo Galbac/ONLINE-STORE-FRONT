@@ -93,7 +93,7 @@ export const ProfilePage = () => {
     <AuthGuard>
       <Header />
       {content}
-      <Footer />
+      <Footer showAdvantages={false} />
     </AuthGuard>
   );
 };

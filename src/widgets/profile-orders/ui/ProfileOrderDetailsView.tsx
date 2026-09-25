@@ -6,11 +6,8 @@ import { OrderCourierTips } from "./OrderCourierTips";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
-  BadgeCheck,
   CreditCard,
-  Headphones,
   Info,
-  Percent,
   Receipt,
   RefreshCcw,
   Store,
@@ -35,28 +32,6 @@ interface ProfileOrderDetailsViewProps {
   initialStatus: OrderStatusResponse;
 }
 
-const serviceBenefits = [
-  {
-    title: "Качество продуктов",
-    text: "Только свежие и проверенные товары каждый день",
-    icon: BadgeCheck,
-  },
-  {
-    title: "Доставка",
-    text: "Быстрая доставка на дом и в удобное время",
-    icon: Truck,
-  },
-  {
-    title: "Выгодные цены",
-    text: "Лучшие предложения и акции для вас",
-    icon: Percent,
-  },
-  {
-    title: "Поддержка 24/7",
-    text: "Мы всегда на связи и готовы помочь",
-    icon: Headphones,
-  },
-] as const;
 
 export const ProfileOrderDetailsView = ({
   initialOrder,
@@ -188,7 +163,7 @@ export const ProfileOrderDetailsView = ({
           </Link>
           <span>/</span>
           <Link className="hover:text-accent-primary" href={ROUTES.PROFILE_ORDERS}>
-            Заказы
+            Мои заказы
           </Link>
           <span>/</span>
           <span>Заказ {order.order_number}</span>
@@ -382,30 +357,15 @@ export const ProfileOrderDetailsView = ({
               </p>
             </div>
           </div>
-          <Button className="w-full sm:w-auto" variant="secondary">
+          <Link
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-100 border border-slate-200/80 px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-200 active:scale-95 transition"
+            href={ROUTES.FEEDBACK}
+          >
             Связаться с поддержкой
-          </Button>
+          </Link>
         </section>
 
-        <section className="border-border mt-8 grid gap-5 rounded-lg border bg-white p-6 shadow-[0_10px_28px_rgb(20_28_18/0.04)] md:grid-cols-2 lg:grid-cols-4">
-          {serviceBenefits.map((benefit) => {
-            const Icon = benefit.icon;
 
-            return (
-              <div className="flex gap-4" key={benefit.title}>
-                <span className="bg-bg-hover text-accent-primary grid size-14 shrink-0 place-items-center rounded-full border border-green-100">
-                  <Icon size={28} />
-                </span>
-                <span>
-                  <span className="block font-bold">{benefit.title}</span>
-                  <span className="text-text-secondary mt-2 block text-sm leading-6">
-                    {benefit.text}
-                  </span>
-                </span>
-              </div>
-            );
-          })}
-        </section>
       </Container>
     </main>
   );

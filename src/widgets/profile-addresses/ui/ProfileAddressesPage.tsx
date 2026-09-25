@@ -16,7 +16,7 @@ export const ProfileAddressesPage = () => {
     <AuthGuard>
       <Header />
       <ProfileAddressesView initialAddresses={emptyAddresses} />
-      <Footer />
+      <Footer showAdvantages={false} />
     </AuthGuard>
   );
 };

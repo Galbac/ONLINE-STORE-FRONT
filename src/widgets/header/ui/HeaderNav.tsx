@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ROUTES } from "@/shared/config";
+import { usePathname } from "next/navigation";
+import { ROUTES, cn } from "@/shared/config";
 import { apiClient } from "@/shared/api";
 
 interface NavItem {
@@ -30,6 +31,7 @@ const baseNavItems: NavItem[] = [
 ];
 
 export const HeaderNav = () => {
+  const pathname = usePathname() || "";
   const [hasDiscounts, setHasDiscounts] = useState(true);
 
   useEffect(() => {
@@ -45,7 +47,6 @@ export const HeaderNav = () => {
         setHasDiscounts(count > 0);
       })
       .catch(() => {
-        // Upon error keep default visible
         if (isMounted) setHasDiscounts(true);
       });
 
@@ -66,15 +67,29 @@ export const HeaderNav = () => {
 
   return (
     <nav className="mt-3 hidden items-center gap-6 border-t border-slate-100 pt-2 text-xs font-semibold text-slate-600 lg:flex">
-      {items.map((item) => (
-        <Link
-          className="inline-flex items-center gap-1 py-1 transition-colors hover:text-emerald-700"
-          href={item.href}
-          key={item.label}
-        >
-          {item.label}
-        </Link>
-      ))}
+      {items.map((item) => {
+        const isActive =
+          item.href === ROUTES.PROFILE_ORDERS
+            ? pathname.startsWith(ROUTES.PROFILE_ORDERS)
+            : item.href === ROUTES.CHECKOUT
+            ? pathname === ROUTES.CHECKOUT
+            : false;
+
+        return (
+          <Link
+            className={cn(
+              "inline-flex items-center gap-1 py-1 transition-colors relative",
+              isActive
+                ? "text-emerald-700 font-bold border-b-2 border-emerald-600 -mb-[2px]"
+                : "text-slate-600 hover:text-emerald-700 font-semibold"
+            )}
+            href={item.href}
+            key={item.label}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 };

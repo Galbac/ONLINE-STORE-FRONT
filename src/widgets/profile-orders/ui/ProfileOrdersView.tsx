@@ -3,23 +3,25 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import {
-  BadgeCheck,
   Banknote,
   ChevronRight,
   CreditCard,
   Headphones,
-  Info,
-  PackageCheck,
-  Percent,
   RefreshCcw,
+  RotateCcw,
+  Search,
+  SearchX,
+  ShoppingBag,
+  Sparkles,
   Store,
   Truck,
+  X,
 } from "lucide-react";
 import { orderApi, type OrderShortResponse } from "@/entities/order";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
-import { Button, Container } from "@/shared/ui";
+import { Container } from "@/shared/ui";
 
 interface ProfileOrdersViewProps {
   initialOrders: {
@@ -41,29 +43,6 @@ const filterOptions: FilterOption[] = [
   { label: "Выполненные", value: "completed" },
   { label: "Отмененные", value: "cancelled" },
 ];
-
-const serviceBenefits = [
-  {
-    title: "Качество продуктов",
-    text: "Только свежие и проверенные товары каждый день",
-    icon: BadgeCheck,
-  },
-  {
-    title: "Доставка",
-    text: "Быстрая доставка на дом и в удобное время",
-    icon: Truck,
-  },
-  {
-    title: "Выгодные цены",
-    text: "Лучшие предложения и акции для вас",
-    icon: Percent,
-  },
-  {
-    title: "Поддержка 24/7",
-    text: "Мы всегда на связи и готовы помочь",
-    icon: Headphones,
-  },
-] as const;
 
 export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => {
   const [orders, setOrders] = useState<OrderShortResponse[]>(initialOrders.items);
@@ -104,6 +83,17 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
       isMounted = false;
     };
   }, []);
+
+  // Динамические счетчики для каждого таба
+  const counts = useMemo(() => {
+    return {
+      all: orders.length,
+      new: orders.filter((o) => matchesFilter(o.status, "new")).length,
+      processing: orders.filter((o) => matchesFilter(o.status, "processing")).length,
+      completed: orders.filter((o) => matchesFilter(o.status, "completed")).length,
+      cancelled: orders.filter((o) => matchesFilter(o.status, "cancelled")).length,
+    };
+  }, [orders]);
 
   const visibleOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -156,39 +146,97 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
     });
   };
 
+  const handleResetFilters = (): void => {
+    setActiveFilter("all");
+    setSearchNumber("");
+    setDatePeriod("all");
+  };
+
   return (
     <main className="bg-bg-primary min-h-[70vh]">
       <Container className="py-6 md:py-8">
-        <nav className="text-text-secondary mb-9 flex flex-wrap items-center gap-2 text-sm">
-          <Link className="hover:text-accent-primary" href={ROUTES.HOME}>
+        {/* Хлебные крошки: Мои заказы */}
+        <nav className="text-text-secondary mb-6 flex flex-wrap items-center gap-2 text-sm">
+          <Link className="hover:text-accent-primary transition-colors" href={ROUTES.HOME}>
             Главная
           </Link>
           <span>/</span>
-          <Link className="hover:text-accent-primary" href={ROUTES.PROFILE}>
+          <Link className="hover:text-accent-primary transition-colors" href={ROUTES.PROFILE}>
             Профиль
           </Link>
           <span>/</span>
-          <span>Заказы</span>
+          <span className="font-semibold text-slate-800">Мои заказы</span>
         </nav>
 
-        <section className="mb-9">
-          <h1 className="text-text-primary text-4xl font-bold md:text-5xl">Мои заказы</h1>
+        <section className="mb-8">
+          <h1 className="text-text-primary text-3xl font-black tracking-tight md:text-4xl">
+            Мои заказы
+          </h1>
+          <p className="text-text-secondary mt-1 text-sm">
+            История покупок, отслеживание курьера и повтор заказов
+          </p>
         </section>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-[1fr_auto]">
-          <input
-            type="search"
-            placeholder="Поиск по номеру заказа (#123)..."
-            value={searchNumber}
-            onChange={(e) => setSearchNumber(e.target.value)}
-            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
-          />
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-medium">Период:</span>
+        {/* 1. Табы статусов располагаются НАД строкой поиска */}
+        <div className="mb-5 flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {filterOptions.map((option) => {
+            const count = counts[option.value];
+            const isActive = activeFilter === option.value;
+            return (
+              <button
+                className={cn(
+                  "flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  isActive
+                    ? "bg-emerald-700 text-white shadow-sm shadow-emerald-700/20"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900",
+                )}
+                key={option.value}
+                type="button"
+                onClick={() => setActiveFilter(option.value)}
+              >
+                <span>{option.label}</span>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[10px] font-black",
+                    isActive ? "bg-emerald-600/90 text-white" : "bg-slate-200 text-slate-700",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 2. Сгруппированный flex-тулбар: Поиск с кнопкой очистки и выбор периода */}
+        <div className="mb-8 flex flex-wrap sm:flex-nowrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input
+              type="text"
+              placeholder="Поиск по номеру заказа (#123)..."
+              value={searchNumber}
+              onChange={(e) => setSearchNumber(e.target.value)}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9.5 pr-8 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+            />
+            {searchNumber ? (
+              <button
+                type="button"
+                onClick={() => setSearchNumber("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
+                aria-label="Очистить поиск"
+              >
+                <X size={14} />
+              </button>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Период:</span>
             <select
               value={datePeriod}
               onChange={(e) => setDatePeriod(e.target.value)}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-500"
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
             >
               <option value="all">За всё время</option>
               <option value="month">За последний месяц</option>
@@ -197,23 +245,6 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
             </select>
           </div>
         </div>
-        <div className="mb-8 flex gap-3 overflow-x-auto pb-2">
-          {filterOptions.map((option) => (
-            <button
-              className={cn(
-                "h-12 shrink-0 rounded-lg border px-5 text-sm font-bold transition",
-                activeFilter === option.value
-                  ? "border-accent-primary bg-accent-primary text-accent-contrast"
-                  : "border-border bg-bg-secondary text-text-primary hover:bg-bg-hover",
-              )}
-              key={option.value}
-              type="button"
-              onClick={() => setActiveFilter(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
 
         {errorMessage ? (
           <StatusPanel tone="error" text={errorMessage} />
@@ -221,6 +252,7 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
           <StatusPanel tone="success" text={statusMessage} />
         ) : null}
 
+        {/* 3. Список заказов или разделенные Empty States */}
         <section className="space-y-5">
           {visibleOrders.length > 0 ? (
             visibleOrders.map((order) => (
@@ -231,47 +263,33 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
                 onRepeat={handleRepeatOrder}
               />
             ))
+          ) : orders.length === 0 ? (
+            <EmptyOrdersFirstTime />
           ) : (
-            <EmptyOrders />
+            <EmptyOrdersFiltered onReset={handleResetFilters} />
           )}
         </section>
 
-        <section className="border-success/20 bg-bg-secondary mt-9 flex flex-col gap-4 rounded-lg border p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-          <div className="flex gap-4">
-            <span className="bg-accent-primary text-accent-contrast grid size-12 shrink-0 place-items-center rounded-full">
-              <Info size={26} />
+        {/* 4. Компактный сервисный inline-блок поддержки */}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4.5 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+              <Headphones size={18} />
             </span>
             <div>
-              <p className="text-text-primary font-bold">Не нашли нужный заказ?</p>
-              <p className="text-text-secondary mt-2 text-sm leading-6">
-                Если у вас возникли вопросы по заказу, свяжитесь с нашей службой поддержки.
+              <p className="text-xs font-bold text-slate-800">Не нашли нужный заказ или возникли вопросы?</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Наша служба заботы о клиентах всегда на связи и готова оперативно помочь
               </p>
             </div>
           </div>
-          <Button className="w-full sm:w-auto" variant="secondary">
-            Связаться с поддержкой
-          </Button>
-        </section>
-
-        <section className="border-border mt-9 grid gap-5 rounded-lg border bg-white p-6 shadow-[0_10px_28px_rgb(20_28_18/0.04)] md:grid-cols-2 lg:grid-cols-4">
-          {serviceBenefits.map((benefit) => {
-            const Icon = benefit.icon;
-
-            return (
-              <div className="flex gap-4" key={benefit.title}>
-                <span className="bg-bg-hover text-accent-primary grid size-14 shrink-0 place-items-center rounded-full border border-green-100">
-                  <Icon size={28} />
-                </span>
-                <span>
-                  <span className="block font-bold">{benefit.title}</span>
-                  <span className="text-text-secondary mt-2 block text-sm leading-6">
-                    {benefit.text}
-                  </span>
-                </span>
-              </div>
-            );
-          })}
-        </section>
+          <Link
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200/80 px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-200 active:scale-95 transition"
+            href={ROUTES.FEEDBACK}
+          >
+            <span>Связаться с поддержкой</span>
+          </Link>
+        </div>
       </Container>
     </main>
   );
@@ -279,47 +297,34 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
 
 interface OrderCardProps {
   isPending: boolean;
-  order: OrderShortResponse;
   onRepeat: (order: OrderShortResponse) => void;
+  order: OrderShortResponse;
 }
 
-
 const ORDER_STATUS_STEPS = [
-  { key: "created", label: "Принят" },
+  { key: "new", label: "Принят" },
   { key: "confirmed", label: "Подтвержден" },
   { key: "assembling", label: "Сборка" },
   { key: "in_delivery", label: "В пути" },
   { key: "delivered", label: "Доставлен" },
-];
+] as const;
 
 const getStatusStepIndex = (status: string): number => {
-  switch (status.toLowerCase()) {
-    case "created":
-    case "new":
-    case "pending":
-      return 0;
-    case "confirmed":
-    case "paid":
-      return 1;
-    case "assembling":
-    case "processing":
-      return 2;
-    case "in_delivery":
-    case "shipped":
-      return 3;
-    case "delivered":
-    case "completed":
-      return 4;
-    default:
-      return 0;
-  }
+  const normalized = status.toLowerCase();
+  if (normalized === "delivered" || normalized === "completed" || normalized === "done") return 4;
+  if (normalized === "in_delivery") return 3;
+  if (normalized === "assembling" || normalized === "processing") return 2;
+  if (normalized === "confirmed") return 1;
+  return 0;
 };
 
 const OrderStatusStepper = ({ status }: { status: string }) => {
-  const isCancelled = status.toLowerCase().includes("cancel");
+  const normalized = status.toLowerCase();
+  const isCancelled = normalized === "cancelled" || normalized === "canceled";
+
   if (isCancelled) {
     return (
-      <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700">
+      <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-2 text-xs font-bold text-rose-700">
         Заказ отменен
       </div>
     );
@@ -368,13 +373,13 @@ const OrderStatusStepper = ({ status }: { status: string }) => {
           {currentIdx === 4
             ? "✅ Заказ успешно доставлен"
             : currentIdx === 3
-            ? "🚴 Курьер выехал: доставка ожидается в течение ~25 минут"
+            ? "🚴 Курьер выехал: доставка ожидается в ближайшее время"
             : currentIdx >= 1
-            ? "📦 Заказ в обработке, прибудет в указанное время"
+            ? "📦 Заказ собирается и проверяется на свежесть"
             : "⏳ Заказ принят магазином"}
         </span>
         <span className="font-bold text-emerald-700">
-          {currentIdx < 4 ? "Шаг " + (currentIdx + 1) + " из 5" : "Завершен"}
+          {currentIdx < 4 ? `Шаг ${currentIdx + 1} из 5` : "Завершен"}
         </span>
       </div>
     </div>
@@ -383,25 +388,27 @@ const OrderStatusStepper = ({ status }: { status: string }) => {
 
 const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
   const DeliveryIcon = order.delivery_type === "pickup" ? Store : Truck;
-  const PaymentIcon = order.payment_method === "cash" ? Banknote : CreditCard;
+  const PaymentIcon = order.payment_method === "cash" || order.payment_method === "on_delivery" ? Banknote : CreditCard;
   const status = getStatusMeta(order.status);
 
   return (
-    <article className="border-border rounded-lg border bg-white p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)] md:p-7">
+    <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-slate-300 md:p-6">
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.7fr_0.55fr_1fr_1fr_190px] xl:items-center">
         <div>
-          <p className="text-text-secondary text-sm">N° заказа</p>
-          <p className="text-text-primary mt-3 text-xl font-bold break-words">
+          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">№ заказа</p>
+          <p className="text-text-primary mt-1.5 text-lg font-black break-words">
             {order.order_number}
           </p>
-          <p className="text-text-secondary mt-3 text-sm">{formatDateTime(order.created_at)}</p>
+          <time className="text-slate-400 mt-1.5 text-xs block" suppressHydrationWarning>
+            {formatDateTime(order.created_at)}
+          </time>
         </div>
 
         <div>
-          <p className="text-text-secondary text-sm">Статус</p>
+          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Статус</p>
           <span
             className={cn(
-              "mt-3 inline-flex rounded-lg px-4 py-2 text-sm font-bold",
+              "mt-2 inline-flex rounded-xl px-3 py-1 text-xs font-bold",
               status.className,
             )}
           >
@@ -410,59 +417,60 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
         </div>
 
         <div>
-          <p className="text-text-secondary text-sm">Сумма</p>
-          <p className="text-text-primary mt-3 text-xl font-bold">
+          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Сумма</p>
+          <p className="text-slate-900 mt-1.5 text-lg font-black">
             {toPriceFormat(order.final_price)}
           </p>
         </div>
 
         <div>
-          <p className="text-text-secondary text-sm">Способ получения</p>
-          <div className="mt-3 flex items-start gap-3">
-            <DeliveryIcon className="text-accent-primary mt-0.5 shrink-0" size={24} />
-            <span>
-              <span className="block text-sm font-semibold">
+          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Получение</p>
+          <div className="mt-2 flex items-start gap-2.5">
+            <DeliveryIcon className="text-emerald-600 mt-0.5 shrink-0" size={18} />
+            <div>
+              <p className="text-xs font-bold text-slate-800">
                 {formatDeliveryType(order.delivery_type)}
-              </span>
-              <span className="text-text-secondary mt-2 block text-sm">
+              </p>
+              <p className="text-slate-400 mt-0.5 text-xs">
                 {formatItemsCount(order.items_count)}
-              </span>
-            </span>
+              </p>
+            </div>
           </div>
         </div>
 
         <div>
-          <p className="text-text-secondary text-sm">Способ оплаты</p>
-          <div className="mt-3 flex items-start gap-3">
-            <PaymentIcon className="text-accent-primary mt-0.5 shrink-0" size={24} />
-            <span>
-              <span className="block text-sm font-semibold">
+          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Оплата</p>
+          <div className="mt-2 flex items-start gap-2.5">
+            <PaymentIcon className="text-emerald-600 mt-0.5 shrink-0" size={18} />
+            <div>
+              <p className="text-xs font-bold text-slate-800">
                 {formatPaymentMethod(order.payment_method)}
-              </span>
-              <span className="text-text-secondary mt-2 block text-sm">
+              </p>
+              <p className="text-slate-400 mt-0.5 text-xs">
                 {formatPaymentStatus(order.payment_status)}
-              </span>
-            </span>
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        {/* Кнопки приведены к дизайн-системе: основной акцент — изумрудный (#047857), вторичные — серый (#F3F4F6) */}
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
           <Link
-            className="border-border bg-bg-primary text-text-primary hover:bg-bg-hover inline-flex h-12 items-center justify-center gap-2 rounded-lg border px-5 text-sm font-bold transition"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200/80 px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-200 active:scale-95 transition"
             href={ROUTES.PROFILE_ORDER(order.id)}
           >
-            Подробнее
-            <ChevronRight size={18} />
+            <span>Подробнее</span>
+            <ChevronRight size={15} />
           </Link>
-          <Button
-            className="border-accent-primary text-accent-primary hover:bg-bg-hover gap-2 bg-white"
-            variant="secondary"
+          <button
+            type="button"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 active:scale-95 transition disabled:opacity-60 cursor-pointer"
             disabled={isPending}
             onClick={() => onRepeat(order)}
           >
-            <RefreshCcw size={18} />
-            {isPending ? "Повторяем..." : "Повторить заказ"}
-          </Button>
+            <RefreshCcw size={14} className={isPending ? "animate-spin" : ""} />
+            <span>{isPending ? "Повторяем..." : "Повторить заказ"}</span>
+          </button>
         </div>
       </div>
       <OrderStatusStepper status={order.status} />
@@ -479,9 +487,9 @@ const StatusPanel = ({ text, tone }: StatusPanelProps) => {
   return (
     <div
       className={cn(
-        "mb-5 rounded-lg border px-5 py-4 text-sm font-bold",
-        tone === "error" && "text-error border-red-100 bg-red-50",
-        tone === "success" && "bg-bg-hover text-accent-primary border-green-100",
+        "mb-5 rounded-2xl border px-4.5 py-3.5 text-xs font-bold shadow-2xs",
+        tone === "error" && "text-rose-700 border-rose-200 bg-rose-50",
+        tone === "success" && "text-emerald-800 border-emerald-200 bg-emerald-50",
       )}
     >
       {text}
@@ -489,22 +497,67 @@ const StatusPanel = ({ text, tone }: StatusPanelProps) => {
   );
 };
 
-const EmptyOrders = () => {
+/**
+ * 1. Empty State для случая, когда у пользователя ВООБЩЕ нет заказов (total === 0)
+ */
+const EmptyOrdersFirstTime = () => {
   return (
-    <section className="border-border rounded-lg border bg-white p-8 text-center shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
-      <span className="bg-bg-hover text-accent-primary mx-auto grid size-16 place-items-center rounded-full">
-        <PackageCheck size={34} />
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-sm sm:p-12">
+      <span className="mx-auto flex size-18 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 shadow-xs">
+        <ShoppingBag size={34} />
       </span>
-      <h2 className="text-text-primary mt-5 text-2xl font-bold">Заказов не найдено</h2>
-      <p className="text-text-secondary mx-auto mt-3 max-w-xl leading-7">
-        Попробуйте выбрать другой статус или оформите новый заказ из каталога.
+      <h2 className="mt-6 text-2xl font-bold text-slate-900">У вас пока нет заказов</h2>
+      <p className="mx-auto mt-2.5 max-w-md text-sm text-slate-500 leading-relaxed">
+        Свежие фермерские продукты, натуральное мясо Халяль и отборные овощи ждут вас в нашем каталоге.
       </p>
-      <Link
-        className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-7 inline-flex h-12 items-center justify-center rounded-lg px-5 text-sm font-bold transition"
-        href={ROUTES.CATALOG}
-      >
-        Перейти в каталог
-      </Link>
+
+      {/* Промокод на первый заказ */}
+      <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-2.5 text-xs text-emerald-900 shadow-2xs">
+        <Sparkles size={16} className="text-emerald-700 shrink-0" />
+        <span>
+          Промокод на первый заказ: <strong className="font-black text-emerald-800 tracking-wider">ПЕРВЫЙ</strong> (-10% от 1 000 ₽)
+        </span>
+      </div>
+
+      <div className="mt-7">
+        <Link
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-700 px-6 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-800 active:scale-95 transition"
+          href={ROUTES.CATALOG}
+        >
+          Перейти в каталог
+        </Link>
+      </div>
+    </section>
+  );
+};
+
+/**
+ * 2. Empty State для случая, когда поиск или фильтр вернул 0 результатов
+ */
+interface EmptyOrdersFilteredProps {
+  onReset: () => void;
+}
+
+const EmptyOrdersFiltered = ({ onReset }: EmptyOrdersFilteredProps) => {
+  return (
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-sm sm:p-12">
+      <span className="mx-auto flex size-18 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+        <SearchX size={34} />
+      </span>
+      <h2 className="mt-6 text-2xl font-bold text-slate-900">Ничего не найдено по вашему запросу</h2>
+      <p className="mx-auto mt-2.5 max-w-md text-sm text-slate-500 leading-relaxed">
+        В выбранном статусе или за указанный период заказов не обнаружено. Измените параметры поиска или сбросьте фильтры.
+      </p>
+      <div className="mt-7">
+        <button
+          type="button"
+          onClick={onReset}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-100 px-6 text-sm font-bold text-slate-700 border border-slate-200/70 hover:bg-slate-200 shadow-2xs active:scale-95 transition cursor-pointer"
+        >
+          <RotateCcw size={16} />
+          <span>Сбросить фильтры</span>
+        </button>
+      </div>
     </section>
   );
 };
@@ -542,27 +595,27 @@ const getStatusMeta = (status: string): { className: string; label: string } => 
 
   if (["delivered", "completed", "done"].includes(normalizedStatus)) {
     return {
-      className: "bg-green-100 text-accent-primary",
+      className: "bg-emerald-100 text-emerald-800",
       label: "Доставлен",
     };
   }
 
   if (["processing", "assembling", "confirmed", "in_delivery"].includes(normalizedStatus)) {
     return {
-      className: "bg-blue-100 text-blue-700",
+      className: "bg-blue-100 text-blue-800",
       label: "В обработке",
     };
   }
 
   if (["cancelled", "canceled"].includes(normalizedStatus)) {
     return {
-      className: "bg-bg-secondary text-text-secondary",
+      className: "bg-slate-100 text-slate-600",
       label: "Отменен",
     };
   }
 
   return {
-    className: "bg-yellow-100 text-yellow-700",
+    className: "bg-amber-100 text-amber-800",
     label: "Новый",
   };
 };
@@ -573,7 +626,7 @@ const formatDeliveryType = (deliveryType?: string | null): string => {
 
 const formatPaymentMethod = (paymentMethod?: string | null): string => {
   if (paymentMethod === "cash" || paymentMethod === "on_delivery") {
-    return "Наличными";
+    return "При получении";
   }
 
   return "Банковской картой";
@@ -581,7 +634,7 @@ const formatPaymentMethod = (paymentMethod?: string | null): string => {
 
 const formatPaymentStatus = (paymentStatus?: string | null): string => {
   if (paymentStatus === "paid" || paymentStatus === "success") {
-    return "Онлайн";
+    return "Онлайн оплачен";
   }
 
   if (paymentStatus === "failed" || paymentStatus === "cancelled") {

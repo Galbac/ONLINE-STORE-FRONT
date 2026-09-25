@@ -16,7 +16,7 @@ export const ProfileOrdersPage = () => {
     <AuthGuard>
       <Header />
       <ProfileOrdersView initialOrders={emptyOrders} />
-      <Footer />
+      <Footer showAdvantages={false} />
     </AuthGuard>
   );
 };

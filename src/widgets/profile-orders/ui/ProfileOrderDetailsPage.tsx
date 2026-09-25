@@ -98,7 +98,7 @@ export const ProfileOrderDetailsPage = ({ orderId }: ProfileOrderDetailsPageProp
     <AuthGuard>
       <Header />
       {content}
-      <Footer />
+      <Footer showAdvantages={false} />
     </AuthGuard>
   );
 };

@@ -54,11 +54,16 @@ const legalLinks: FooterLink[] = [
   },
 ];
 
-export const Footer = () => {
+interface FooterProps {
+  showAdvantages?: boolean;
+}
+
+export const Footer = ({ showAdvantages = true }: FooterProps) => {
   return (
     <footer className="mt-16 border-t border-slate-200 bg-white text-slate-600">
       {/* Advantage bar */}
-      <div className="border-b border-slate-100 bg-slate-50/60 py-6">
+      {showAdvantages ? (
+        <div className="border-b border-slate-100 bg-slate-50/60 py-6">
         <Container>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <div className="flex items-center gap-3.5">
@@ -92,7 +97,8 @@ export const Footer = () => {
             </div>
           </div>
         </Container>
-      </div>
+        </div>
+      ) : null}
 
       {/* Main footer content */}
       <Container className="py-12">

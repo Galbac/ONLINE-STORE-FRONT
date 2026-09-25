@@ -20,3 +20,5 @@ export { PwaInstallPrompt, PwaInstallModal, PwaInstallButton } from "./pwa-insta
 export { ScrollRestorationKeeper } from "./scroll-keeper";
 
 export { BackButton } from "./back-button";
+
+export { OrderStatusBadge } from "./order-status-badge";

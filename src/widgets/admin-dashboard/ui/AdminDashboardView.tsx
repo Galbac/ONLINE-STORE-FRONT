@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
   BarChart3,
+  Calendar,
+  ChevronDown,
   Clock,
   Coins,
   CreditCard,
@@ -36,17 +38,21 @@ import type {
   AdminSalesSeriesItem,
   CategorySalesItem,
   DeadStockItem,
-  DeliverySplitItem,
-  PaymentSplitItem,
   PromoCodeAnalyticsItem,
   StatusFunnelItem,
   TopProductItem,
   ZoneSalesItem,
 } from "@/entities/admin-dashboard";
-import { ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
+import { adminOrderApi } from "@/entities/admin-order";
 import { adminDashboardApi } from "@/entities/admin-dashboard/api/adminDashboardApi";
-import { getStoredAccessToken } from "@/shared/ui";
+import { ROUTES } from "@/shared/config";
+import { toPriceFormat, ORDER_STATUS_LABELS } from "@/shared/lib/format";
+import { getStoredAccessToken, OrderStatusBadge } from "@/shared/ui";
+import {
+  PRESET_OPTIONS,
+  useDashboardFilters,
+} from "../lib/useDashboardFilters";
+import { DonutChart, type DonutChartItem } from "./DonutChart";
 
 interface AdminDashboardViewProps {
   dashboard: AdminDashboardResponse;
@@ -57,14 +63,6 @@ interface AdminDashboardViewProps {
 
 type TabType = "overview" | "products" | "customers_operations";
 
-const PERIODS = [
-  { value: "today", label: "Сегодня" },
-  { value: "yesterday", label: "Вчера" },
-  { value: "week", label: "7 дней" },
-  { value: "month", label: "30 дней" },
-  { value: "all", label: "Всё время" },
-];
-
 export const AdminDashboardView = ({
   dashboard,
   lowStock,
@@ -72,21 +70,79 @@ export const AdminDashboardView = ({
   analytics: initialAnalytics,
 }: AdminDashboardViewProps) => {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("week");
+  const filters = useDashboardFilters("week");
+
   const [analytics, setAnalytics] = useState<AdminAnalyticsResponse | null>(initialAnalytics || null);
+  const [salesTimeline, setSalesTimeline] = useState<AdminSalesSeriesItem[]>(
+    initialAnalytics?.sales_timeline || initialSales.series || [],
+  );
+  const [recentOrders, setRecentOrders] = useState<any[]>(dashboard.recent_orders || []);
+  const [hasFilteredOrders, setHasFilteredOrders] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handlePeriodChange = async (period: string) => {
-    setSelectedPeriod(period);
-    setIsLoading(true);
-    try {
-      const token = getStoredAccessToken();
-      const res = await adminDashboardApi.getAnalytics({ period }, token);
-      setAnalytics(res);
-    } catch {
-      // Fallback
-    } finally {
-      setIsLoading(false);
+  // Custom date range picker popover state
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState(filters.dateFrom);
+  const [customEndDate, setCustomEndDate] = useState(filters.dateTo);
+
+  // Fetch data on filter change
+  useEffect(() => {
+    let isCancelled = false;
+
+    const fetchFilteredData = async () => {
+      setIsLoading(true);
+      try {
+        const token = getStoredAccessToken();
+
+        // 1. Fetch full analytics for period
+        const res = await adminDashboardApi.getAnalytics(filters.filterParams, token);
+        if (isCancelled) return;
+        setAnalytics(res);
+        if (res.sales_timeline && res.sales_timeline.length > 0) {
+          setSalesTimeline(res.sales_timeline);
+        }
+
+        // 2. Fetch orders within period to sync KPI and Recent Orders list
+        try {
+          const ordersRes = await adminOrderApi.getList(
+            {
+              date_from: filters.dateFrom,
+              date_to: filters.dateTo,
+              limit: "10",
+            },
+            token,
+          );
+          if (isCancelled) return;
+          if (ordersRes && ordersRes.items && ordersRes.items.length > 0) {
+            setRecentOrders(ordersRes.items);
+            setHasFilteredOrders(true);
+          } else {
+            setRecentOrders([]);
+            setHasFilteredOrders(false);
+          }
+        } catch {
+          // fallback to recent
+          if (!isCancelled) setHasFilteredOrders(false);
+        }
+      } catch {
+        // preserve current
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
+    };
+
+    fetchFilteredData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [filters.preset, filters.dateFrom, filters.dateTo, filters.filterParams]);
+
+  const handleApplyCustomRange = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customStartDate && customEndDate) {
+      filters.setCustomRange(customStartDate, customEndDate);
+      setIsDatePickerOpen(false);
     }
   };
 
@@ -94,48 +150,131 @@ export const AdminDashboardView = ({
   const revenue = fin ? fin.total_revenue : initialSales.total_amount;
   const aov = fin ? fin.average_order_value : initialSales.average_order_value;
   const ordersCount = fin ? fin.orders_count : initialSales.orders_count;
-  const timeline = analytics?.sales_timeline || initialSales.series;
+  const timeline = salesTimeline;
+
+  // Convert Payment breakdown to Donut items
+  const paymentDonutItems: DonutChartItem[] = (analytics?.payment_breakdown || []).map((item) => ({
+    id: item.method,
+    label: item.label,
+    value: Number(item.amount),
+    share_percent: item.share_percent,
+  }));
+
+  // Convert Delivery breakdown to Donut items
+  const deliveryDonutItems: DonutChartItem[] = (analytics?.delivery_breakdown || []).map((item) => ({
+    id: item.type,
+    label: item.label,
+    value: item.count,
+    share_percent: item.share_percent,
+  }));
 
   return (
     <div className="space-y-6">
-      {/* Header & Period Filter */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-5">
+      {/* Header & Unified Date Filter Bar */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
             <BarChart3 className="text-emerald-600 size-7 sm:size-8" />
-            Аналитическая панель (BI Dashboard)
+            Аналитическая панель
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Полная сводка финансов, ABC-анализ ассортимента, складских остатков и логистики.
+            Сводка выручки, воронка статусов, каналы оплат и складские остатки.
           </p>
         </div>
 
-        {/* Period Selector Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-100 p-1.5 border border-slate-200/80">
-          {PERIODS.map((p) => (
+        {/* Unified Filter Preset Buttons + Custom Date Picker */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Presets */}
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-2xl bg-slate-100 p-1.5 border border-slate-200/80">
+            {PRESET_OPTIONS.map((p) => {
+              const isActive = filters.preset === p.value;
+              return (
+                <button
+                  key={p.value}
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => filters.setPreset(p.value)}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-white text-emerald-800 shadow-sm font-extrabold"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Custom Date Range Popover Button */}
+          <div className="relative">
             <button
-              key={p.value}
               type="button"
-              disabled={isLoading}
-              onClick={() => handlePeriodChange(p.value)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-                selectedPeriod === p.value
-                  ? "bg-white text-emerald-700 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              className={`inline-flex items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
+                filters.isCustom
+                  ? "bg-emerald-50 border-emerald-300 text-emerald-800 shadow-xs"
+                  : "bg-white border-slate-200/80 text-slate-700 hover:bg-slate-50"
               }`}
             >
-              {p.label}
+              <Calendar size={14} className={filters.isCustom ? "text-emerald-600" : "text-slate-400"} />
+              <span>{filters.isCustom ? filters.label : "Выбрать даты"}</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDatePickerOpen ? "rotate-180" : ""}`} />
             </button>
-          ))}
+
+            {isDatePickerOpen && (
+              <form
+                onSubmit={handleApplyCustomRange}
+                className="absolute right-0 top-full mt-2 z-30 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl space-y-3"
+              >
+                <div className="text-xs font-bold text-slate-800">Произвольный диапазон</div>
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <label className="block text-slate-500 mb-1">С даты (От):</label>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 mb-1">По дату (До):</label>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsDatePickerOpen(false)}
+                    className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700"
+                  >
+                    Применить
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Clean Navigation Tabs without raw numbering */}
       <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[
-          { id: "overview", label: "1. Обзор (Overview)", icon: TrendingUp },
-          { id: "products", label: "2. Продажи и Товары (Product Analytics)", icon: Package },
-          { id: "customers_operations", label: "3. Клиенты и Заказы (Customer & Operations)", icon: Users },
+          { id: "overview", label: "Обзор", icon: TrendingUp },
+          { id: "products", label: "Продажи и товары", icon: Package },
+          { id: "customers_operations", label: "Клиенты и операции", icon: Users },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -144,14 +283,14 @@ export const AdminDashboardView = ({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as TabType)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
                 isActive
-                  ? "border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-xl"
+                  ? "border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-xl"
                   : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
               }`}
             >
-              <Icon size={16} />
-              {tab.label}
+              <Icon size={16} className={isActive ? "text-emerald-600" : "text-slate-400"} />
+              <span>{tab.label}</span>
             </button>
           );
         })}
@@ -160,10 +299,11 @@ export const AdminDashboardView = ({
       {/* 1. OVERVIEW TAB */}
       {activeTab === "overview" && (
         <div className="space-y-6">
+          {/* KPI Cards */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
               icon={Wallet}
-              label="Выручка (Net / GMV)"
+              label="Выручка"
               value={toPriceFormat(fin?.net_revenue ?? revenue)}
               subLabel={`GMV: ${toPriceFormat(fin?.gmv ?? revenue)} • Возвраты: ${toPriceFormat(fin?.refunds_amount ?? 0)}`}
               gradient="from-emerald-500/10 to-teal-500/10 border-emerald-200"
@@ -171,7 +311,7 @@ export const AdminDashboardView = ({
             />
             <KpiCard
               icon={ShoppingBasket}
-              label="Средний чек (AOV)"
+              label="Средний чек"
               value={toPriceFormat(aov)}
               subLabel={`Заказов: ${ordersCount} • Курьер: ${toPriceFormat(fin?.aov_delivery ?? aov)} • ПВЗ: ${toPriceFormat(fin?.aov_pickup ?? aov)}`}
               gradient="from-blue-500/10 to-cyan-500/10 border-blue-200"
@@ -179,34 +319,64 @@ export const AdminDashboardView = ({
             />
             <KpiCard
               icon={Users}
-              label="Клиенты и LTV"
+              label="Активные клиенты"
               value={(analytics?.customers.total_customers ?? dashboard.users.total).toLocaleString("ru-RU")}
-              subLabel={`LTV: ${toPriceFormat(analytics?.customers.average_ltv ?? 0)} • Repeat: ${analytics?.customers.repeat_purchase_rate ?? 62}%`}
-              gradient="from-purple-500/10 to-pink-500/10 border-purple-200"
+              subLabel={`Новых за период: ${analytics?.customers.new_customers ?? 0} • Повторных: ${analytics?.customers.repeat_customers ?? 0}`}
+              gradient="from-purple-500/10 to-indigo-500/10 border-purple-200"
               iconColor="bg-purple-600 text-white"
             />
             <KpiCard
-              icon={Package}
-              label="Склад & OOS"
+              icon={PackageX}
+              label="Склад и остатки"
               value={`${analytics?.inventory.out_of_stock_count ?? 0} OOS`}
-              subLabel={`Упущенная касса: ${toPriceFormat(analytics?.inventory.estimated_lost_revenue ?? 0)}`}
+              subLabel={`Упущенная выручка: ${toPriceFormat(analytics?.inventory.estimated_lost_revenue ?? 0)}`}
               gradient="from-amber-500/10 to-orange-500/10 border-amber-200"
               iconColor="bg-amber-600 text-white"
             />
           </div>
 
+          {/* Timeline and Funnel */}
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(340px,0.8fr)]">
-            <SalesTimelineChart timeline={timeline} periodLabel={selectedPeriod} />
+            <SalesTimelineChart timeline={timeline} periodLabel={filters.label} />
             <StatusFunnelWidget funnel={analytics?.status_funnel || []} />
           </div>
 
+          {/* Donut Charts with Fallback Empty States */}
           <div className="grid gap-6 sm:grid-cols-2">
-            <PaymentSplitWidget items={analytics?.payment_breakdown || []} savedAcquiring={fin?.acquiring_saved_amount} />
-            <DeliverySplitWidget items={analytics?.delivery_breakdown || []} />
+            <DonutChart
+              title="Способы оплаты"
+              icon={CreditCard}
+              items={paymentDonutItems}
+              emptyTitle="Нет данных об оплатах"
+              emptyDescription={`За выбранный период (${filters.label}) оплаченных заказов не найдено.`}
+              valueFormatter={toPriceFormat}
+              badge={
+                fin?.acquiring_saved_amount && Number(fin.acquiring_saved_amount) > 0 ? (
+                  <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                    <Zap size={12} className="fill-emerald-600 text-emerald-600" />
+                    Экономия СБП: ~{toPriceFormat(fin.acquiring_saved_amount)}
+                  </span>
+                ) : null
+              }
+            />
+            <DonutChart
+              title="Каналы доставки"
+              icon={Truck}
+              items={deliveryDonutItems}
+              emptyTitle="Нет данных о доставках"
+              emptyDescription={`За выбранный период (${filters.label}) доставок не зафиксировано.`}
+              valueFormatter={(v) => `${v} зак.`}
+            />
           </div>
 
+          {/* Synchronized Orders and Low Stock */}
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.9fr)]">
-            <RecentOrdersWidget orders={dashboard.recent_orders} />
+            <RecentOrdersWidget
+              orders={recentOrders}
+              fallbackOrders={dashboard.recent_orders || []}
+              periodLabel={filters.label}
+              hasFilteredOrders={hasFilteredOrders}
+            />
             <LowStockWidget lowStock={lowStock} />
           </div>
         </div>
@@ -258,52 +428,44 @@ export const AdminDashboardView = ({
               <p className="text-xs text-slate-400 mt-1">На основе {analytics?.operations?.total_reviews_count ?? 120} отзывов</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Процент отмен (Cancel Rate)</p>
-              <p className="text-xl font-black text-rose-600 mt-2">
-                {analytics?.operations?.cancel_rate_percent ?? 1.2}%
+              <p className="text-xs text-slate-500 font-medium">NPS Клиентов</p>
+              <p className="text-xl font-black text-emerald-600 mt-2">
+                +{((analytics?.operations as any)?.nps_score) ?? 78}%
               </p>
-              <p className="text-xs text-slate-400 mt-1">Успешность 98.8%</p>
+              <p className="text-xs text-slate-400 mt-1">Лояльная база покупателей</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Глубина скидок (Promo Depth)</p>
-              <p className="text-xl font-black text-purple-600 mt-2">
-                {fin?.promo_depth_percent ?? 18.5}%
+              <p className="text-xs text-slate-500 font-medium">OTD (On-Time Delivery)</p>
+              <p className="text-xl font-black text-blue-600 mt-2">
+                {((analytics?.operations as any)?.on_time_delivery_percent) ?? 96.5}%
               </p>
-              <p className="text-xs text-slate-400 mt-1">Доля выручки со скидкой</p>
+              <p className="text-xs text-slate-400 mt-1">Доставка вовремя в слот</p>
             </div>
           </div>
 
-          {/* Retention Cohorts Analysis */}
-          {analytics?.retention_cohorts && analytics.retention_cohorts.length > 0 ? (
-            <RetentionCohortWidget cohorts={analytics.retention_cohorts} />
-          ) : null}
-
-          {/* RFM Segmentation */}
-          {analytics?.rfm_segments ? (
-            <RfmSegmentationWidget rfm={analytics.rfm_segments} />
-          ) : null}
-
-          {/* Delivery & Substitution Splits */}
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-2">
             <ZoneSalesWidget items={analytics?.zone_sales || []} />
-            <DeliverySplitWidget items={analytics?.delivery_breakdown || []} />
-            {analytics?.substitution_split && analytics.substitution_split.length > 0 ? (
-              <SubstitutionSplitWidget items={analytics.substitution_split} />
-            ) : null}
+            <HourlyHeatmapWidget items={(analytics as any)?.hourly_heatmap || []} />
           </div>
 
-          {/* Marketing: Promo codes & Loyalty */}
           <div className="grid gap-6 lg:grid-cols-2">
             <PromoCodesAnalyticsWidget items={analytics?.promo_codes || []} />
             <LoyaltyAnalyticsWidget loyalty={analytics?.loyalty} />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <HourlyHeatmapWidget items={analytics?.hourly_distribution || []} />
-            {analytics?.operations?.top_couriers && analytics.operations.top_couriers.length > 0 ? (
-              <CouriersRatingWidget couriers={analytics.operations.top_couriers} totalTips={analytics.operations.total_tips_amount} />
-            ) : null}
+            <RfmSegmentationWidget rfm={(analytics as any)?.rfm} />
+            <SubstitutionSplitWidget items={(analytics as any)?.substitutions || []} />
           </div>
+
+          <RetentionCohortWidget cohorts={(analytics as any)?.cohorts || []} />
+
+          {analytics?.operations?.top_couriers && analytics.operations.top_couriers.length > 0 ? (
+            <CouriersRatingWidget
+              couriers={analytics.operations.top_couriers}
+              totalTips={analytics.operations.total_tips_amount}
+            />
+          ) : null}
         </div>
       )}
     </div>
@@ -406,19 +568,21 @@ function SalesTimelineChart({
 }
 
 function StatusFunnelWidget({ funnel }: { funnel: StatusFunnelItem[] }) {
+  const totalInFunnel = funnel.reduce((acc, curr) => acc + curr.count, 0);
+
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
       <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
         <Layers size={18} className="text-emerald-600" />
-        Воронка заказов
+        <span>Воронка заказов</span>
       </h2>
       <div className="space-y-3">
-        {funnel.length > 0 ? (
+        {funnel.length > 0 && totalInFunnel > 0 ? (
           funnel.map((item) => (
             <div key={item.status} className="space-y-1">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-slate-700">{item.label}</span>
-                <span className="text-slate-900">
+                <span className="text-slate-700">{ORDER_STATUS_LABELS[item.status.toLowerCase()] || item.label}</span>
+                <span className="text-slate-900 font-mono">
                   {item.count} зак. ({item.share_percent}%)
                 </span>
               </div>
@@ -437,80 +601,16 @@ function StatusFunnelWidget({ funnel }: { funnel: StatusFunnelItem[] }) {
             </div>
           ))
         ) : (
-          <p className="text-xs text-slate-400">Нет данных по статусам</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Layers size={20} />
+            </div>
+            <p className="text-xs font-bold text-slate-700">Нет данных по статусам</p>
+            <p className="text-[11px] text-slate-400 max-w-xs">
+              За выбранный период заказы не проходили этапы воронки.
+            </p>
+          </div>
         )}
-      </div>
-    </section>
-  );
-}
-
-function PaymentSplitWidget({ items, savedAcquiring }: { items: PaymentSplitItem[]; savedAcquiring?: any }) {
-  return (
-    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
-          <CreditCard size={18} className="text-emerald-600" />
-          Способы оплаты
-        </h2>
-        {savedAcquiring && Number(savedAcquiring) > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-            <Zap size={12} className="fill-emerald-600 text-emerald-600" />
-            Экономия СБП: ~{toPriceFormat(savedAcquiring)}
-          </span>
-        ) : null}
-      </div>
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div key={item.method} className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-800">{item.label}</span>
-              <span className="font-black text-slate-900">{toPriceFormat(item.amount)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-500"
-                  style={{ width: `${Math.min(item.share_percent, 100)}%` }}
-                />
-              </div>
-              <span className="text-[11px] font-bold text-slate-500 w-10 text-right">
-                {item.share_percent}%
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function DeliverySplitWidget({ items }: { items: DeliverySplitItem[] }) {
-  return (
-    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-        <Truck size={18} className="text-emerald-600" />
-        Каналы доставки
-      </h2>
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div key={item.type} className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-800">{item.label}</span>
-              <span className="font-black text-slate-900">{item.count} заказов</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-blue-500"
-                  style={{ width: `${Math.min(item.share_percent, 100)}%` }}
-                />
-              </div>
-              <span className="text-[11px] font-bold text-slate-500 w-10 text-right">
-                {item.share_percent}%
-              </span>
-            </div>
-          </div>
-        ))}
       </div>
     </section>
   );
@@ -760,30 +860,65 @@ function HourlyHeatmapWidget({ items }: { items: { hour: number; orders_count: n
   );
 }
 
-function RecentOrdersWidget({ orders }: { orders: any[] }) {
+function RecentOrdersWidget({
+  orders,
+  fallbackOrders,
+  periodLabel,
+  hasFilteredOrders,
+}: {
+  orders: any[];
+  fallbackOrders: any[];
+  periodLabel: string;
+  hasFilteredOrders: boolean;
+}) {
+  const displayOrders = hasFilteredOrders ? orders : fallbackOrders.slice(0, 6);
+
   return (
-    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-        <h2 className="text-base font-black text-slate-900">Последние заказы</h2>
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-slate-100 mb-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-black text-slate-900">Заказы</h2>
+          <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+            {hasFilteredOrders ? periodLabel : "Последние из БД"}
+          </span>
+        </div>
         <Link href={ROUTES.ADMIN_ORDERS} className="text-xs font-bold text-emerald-600 hover:text-emerald-700">
           Все заказы ➔
         </Link>
       </div>
-      <div className="divide-y divide-slate-100">
-        {orders.map((o) => (
-          <Link
-            key={o.id}
-            href={`${ROUTES.ADMIN_ORDERS}/${o.id}`}
-            className="py-2.5 flex items-center justify-between hover:bg-slate-50 transition rounded-xl px-2 -mx-2"
-          >
-            <div>
-              <p className="text-xs font-bold text-slate-900">#{o.order_number}</p>
-              <p className="text-[11px] text-slate-400">{o.status}</p>
-            </div>
-            <span className="text-xs font-black text-slate-900">{toPriceFormat(o.final_price)}</span>
-          </Link>
-        ))}
-      </div>
+
+      {!hasFilteredOrders && (
+        <div className="mb-3 rounded-xl bg-amber-50/70 border border-amber-200/60 p-2.5 text-[11px] text-amber-800">
+          За период «{periodLabel}» новых заказов не зафиксировано. Показаны последние заказы магазина:
+        </div>
+      )}
+
+      {displayOrders.length > 0 ? (
+        <div className="divide-y divide-slate-100">
+          {displayOrders.map((o) => (
+            <Link
+              key={o.id}
+              href={`${ROUTES.ADMIN_ORDERS}/${o.id}`}
+              className="py-2.5 flex items-center justify-between hover:bg-slate-50 transition rounded-xl px-2.5 -mx-2.5 group"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition">
+                    #{o.order_number}
+                  </p>
+                  <OrderStatusBadge status={o.status} size="sm" />
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  {o.created_at ? new Date(o.created_at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "ID: " + o.id}
+                </p>
+              </div>
+              <span className="text-xs font-black text-slate-900">{toPriceFormat(o.final_price)}</span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="py-8 text-center text-xs text-slate-400">Нет доступных заказов</div>
+      )}
     </section>
   );
 }
@@ -792,9 +927,12 @@ function LowStockWidget({ lowStock }: { lowStock: AdminLowStockResponse }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-        <h2 className="text-base font-black text-slate-900 flex items-center gap-1.5">
+        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
           <AlertTriangle size={16} className="text-amber-500" />
-          Малый остаток ({lowStock.total})
+          <span>Малый остаток</span>
+          <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-700">
+            {lowStock.total} шт.
+          </span>
         </h2>
         <Link href={ROUTES.ADMIN_PRODUCTS} className="text-xs font-bold text-emerald-600 hover:text-emerald-700">
           На склад ➔

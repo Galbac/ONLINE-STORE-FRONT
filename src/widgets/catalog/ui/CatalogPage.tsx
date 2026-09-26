@@ -150,7 +150,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   return (
     <>
       <Header />
-      <main>
+      <main className="pb-20 md:pb-8">
         <Container className="py-6">
           <nav className="text-text-secondary mb-5 flex items-center gap-2 text-sm">
             <Link className="hover:text-accent-primary" href={ROUTES.HOME}>

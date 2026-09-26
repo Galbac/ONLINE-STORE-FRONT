@@ -133,7 +133,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <main>
+      <main className="pb-20 md:pb-8">
         <Container className="py-6">
           <div className="mb-4 flex items-center justify-between gap-4">
             <BackButton fallbackHref={product.category?.slug ? `/catalog/${product.category.slug}` : ROUTES.CATALOG} />

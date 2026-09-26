@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
 
 const API_PROXY_TARGET = (
   process.env.API_INTERNAL_URL ||
@@ -8,12 +8,7 @@ const API_PROXY_TARGET = (
 
 const configuredDomain = (process.env.DOMAIN_NAME || process.env.NEXT_PUBLIC_DOMAIN_NAME || "").trim();
 
-const remotePatterns: Array<{
-  protocol: "http" | "https";
-  hostname: string;
-  port?: string;
-  pathname?: string;
-}> = [
+const remotePatterns = [
   // Local development
   { protocol: "http", hostname: "localhost" },
   { protocol: "https", hostname: "localhost" },
@@ -63,12 +58,12 @@ if (publicApiUrl) {
     const parsed = new URL(publicApiUrl);
     if (parsed.hostname && !remotePatterns.some((item) => item.hostname === parsed.hostname)) {
       remotePatterns.push({
-        protocol: (parsed.protocol.replace(":", "") || "https") as "http" | "https",
+        protocol: parsed.protocol.replace(":", "") || "https",
         hostname: parsed.hostname,
       });
       if (!parsed.hostname.startsWith("www.")) {
         remotePatterns.push({
-          protocol: (parsed.protocol.replace(":", "") || "https") as "http" | "https",
+          protocol: parsed.protocol.replace(":", "") || "https",
           hostname: "www." + parsed.hostname,
         });
       }
@@ -77,7 +72,7 @@ if (publicApiUrl) {
   }
 }
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   output: "standalone",
   devIndicators: false,
   images: {

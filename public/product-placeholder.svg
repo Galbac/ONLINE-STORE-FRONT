@@ -1,0 +1,19 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#bgGradient)" />
+  <circle cx="200" cy="170" r="64" fill="#E2E8F0" fill-opacity="0.6" />
+  <!-- Shopping bag icon -->
+  <path d="M168 152V140C168 122.327 182.327 108 200 108C217.673 108 232 122.327 232 140V152M144 152H256L246 232H154L144 152Z" stroke="url(#iconGradient)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="200" cy="186" r="6" fill="#059669" />
+  <text x="200" y="278" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#64748B" letter-spacing="0.5">ПОБЕДА</text>
+  <text x="200" y="302" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="#94A3B8">Изображение временно недоступно</text>
+</svg>

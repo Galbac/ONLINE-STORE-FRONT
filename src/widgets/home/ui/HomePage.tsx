@@ -4,18 +4,13 @@ import {
   Apple,
   ArrowRight,
   Beef,
-  CheckCircle2,
-  Clock,
   Coffee,
   Cookie,
   Leaf,
-  MapPinned,
   Milk,
   Percent,
   ShoppingBag,
   Sparkles,
-  Store,
-  Truck,
   Wheat,
 } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
@@ -27,11 +22,12 @@ import { productApi, type ProductShortResponse } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { apiClient, fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
 import { Container, ProductCard, Section } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { QuickRepeatOrderBanner } from "./QuickRepeatOrderBanner";
 import { Header } from "@/widgets/header";
+import { BenefitsSection } from "@/components/home/BenefitsSection";
+import { DeliveryWidgets } from "@/components/home/DeliveryWidgets";
+import { QuickRepeatOrderBanner } from "./QuickRepeatOrderBanner";
 
 export const HomePage = async () => {
   const accessToken = await getAccessToken();
@@ -70,9 +66,14 @@ export const HomePage = async () => {
   return (
     <>
       <Header />
-      <main className="space-y-12 pb-16">
+      <main className="space-y-12 pb-20 md:pb-8">
         <Container className="pt-6">
           <Hero totalProducts={categories.items.reduce((acc, cat) => acc + (cat.products_count ?? 0), 0)} />
+        </Container>
+
+        {/* Блок 3 ключевых преимуществ сразу под Hero-баннером */}
+        <Container className="pt-2 sm:pt-4">
+          <BenefitsSection />
         </Container>
 
         <Container className="pt-2 sm:pt-4">
@@ -121,14 +122,16 @@ export const HomePage = async () => {
           </Container>
         ) : null}
 
+        {/* 2-колоночный сплит-блок доставки и самовывоза */}
         <Container>
-          <DeliveryBlock
+          <DeliveryWidgets
             deliveryTitle={delivery.delivery.title}
             deliveryDescription={delivery.delivery.description}
             deliveryPrice={delivery.delivery.base_price ?? delivery.delivery.price}
             freeFromAmount={delivery.delivery.free_from_amount}
             pickupTitle={delivery.pickup.title}
             pickupDescription={delivery.pickup.description}
+            currentCartAmount={parseFloat(cart.subtotal || "0")}
           />
         </Container>
 
@@ -244,7 +247,7 @@ const CategorySection = ({ categories }: CategorySectionProps) => {
                 <Icon size={28} />
               </span>
               <span className="line-clamp-2 text-xs font-bold text-slate-800 transition-colors group-hover:text-emerald-700 leading-tight">
-                {category.name}
+                {(category.name ?? "").trim()}
               </span>
               {category.products_count ? (
                 <span className="mt-1 text-[11px] font-medium text-slate-400">
@@ -354,19 +357,20 @@ const ProductSection = ({
             initialInCart={cartProductIds.has(product.id)}
             cartControl={
               <CatalogCartButton
+                className="w-full h-10 font-bold"
                 initialInCart={cartProductIds.has(product.id)}
                 productId={product.id}
-                productName={product.name}
+                productName={(product.name ?? "").trim()}
                 minQuantity={product.min_quantity}
-                            quantityStep={product.quantity_step}
-                            unit={product.unit}
+                quantityStep={product.quantity_step}
+                unit={product.unit}
               />
             }
             favoriteControl={
               <CatalogFavoriteButton
                 initialFavorite={favoriteProductIds.has(product.id)}
                 productId={product.id}
-                productName={product.name}
+                productName={(product.name ?? "").trim()}
               />
             }
           />
@@ -380,84 +384,6 @@ const getAccessToken = async (): Promise<string | undefined> => {
   const cookieStore = await cookies();
 
   return cookieStore.get("access_token")?.value;
-};
-
-interface DeliveryBlockProps {
-  deliveryTitle: string;
-  deliveryDescription?: string | null | undefined;
-  deliveryPrice?: string | null | undefined;
-  freeFromAmount?: string | null | undefined;
-  pickupTitle: string;
-  pickupDescription?: string | null | undefined;
-}
-
-const DeliveryBlock = ({
-  deliveryTitle,
-  deliveryDescription,
-  deliveryPrice,
-  freeFromAmount,
-  pickupTitle,
-  pickupDescription,
-}: DeliveryBlockProps) => {
-  return (
-    <section className="grid gap-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm md:grid-cols-2 lg:p-8">
-      <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-br from-emerald-50/70 to-teal-50/40 p-6 sm:p-8 border border-emerald-100/60">
-        <div>
-          <span className="flex size-12 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-700/20">
-            <Truck size={24} />
-          </span>
-          <h2 className="mt-5 text-2xl font-black text-slate-900">{deliveryTitle}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">{deliveryDescription}</p>
-
-          <div className="mt-6 grid gap-2.5 text-xs sm:grid-cols-2">
-            <span className="flex items-center gap-2 rounded-xl bg-white/90 p-3 font-semibold text-slate-800 shadow-xs">
-              <Clock size={16} className="text-emerald-600" />
-              Сегодня за 45-60 минут
-            </span>
-            <span className="flex items-center gap-2 rounded-xl bg-white/90 p-3 font-semibold text-slate-800 shadow-xs">
-              <CheckCircle2 size={16} className="text-emerald-600" />
-              От {toPriceFormat(deliveryPrice)}
-            </span>
-          </div>
-        </div>
-
-        {freeFromAmount ? (
-          <div className="mt-6 rounded-xl bg-emerald-600/10 px-4 py-3 text-xs font-bold text-emerald-800">
-            🎉 Бесплатная доставка при заказе от {toPriceFormat(freeFromAmount)}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex flex-col justify-between rounded-2xl bg-slate-50 p-6 sm:p-8 border border-slate-200/60">
-        <div>
-          <span className="flex size-12 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
-            <Store size={24} />
-          </span>
-          <h2 className="mt-5 text-2xl font-black text-slate-900">{pickupTitle}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">{pickupDescription}</p>
-
-          <div className="mt-6 space-y-2.5 text-xs">
-            <span className="flex items-center gap-2 rounded-xl bg-white p-3 font-semibold text-slate-800 shadow-xs">
-              <MapPinned size={16} className="text-emerald-600" />
-              Удобные пункты выдачи в вашем районе
-            </span>
-            <span className="flex items-center gap-2 rounded-xl bg-white p-3 font-semibold text-slate-800 shadow-xs">
-              <CheckCircle2 size={16} className="text-emerald-600" />
-              Готовность к выдаче через 15 минут
-            </span>
-          </div>
-        </div>
-
-        <Link
-          className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 active:scale-95"
-          href={ROUTES.CHECKOUT}
-        >
-          Выбрать пункт самовывоза
-          <ArrowRight size={16} />
-        </Link>
-      </div>
-    </section>
-  );
 };
 
 interface BannerItem {

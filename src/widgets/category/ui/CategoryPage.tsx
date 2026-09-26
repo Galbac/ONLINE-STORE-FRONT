@@ -139,7 +139,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   return (
     <>
       <Header />
-      <main>
+      <main className="pb-20 md:pb-8">
         <Container className="py-6">
           <CategoryBreadcrumbs breadcrumbs={category.breadcrumbs} categoryName={category.name} />
           <CategoryHero category={category} />

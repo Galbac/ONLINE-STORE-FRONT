@@ -8,7 +8,6 @@ import { ArrowRight, Clock, LayoutGrid, Loader2, Search, ShoppingBag, Sparkles, 
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
-import { Button } from "@/shared/ui";
 
 interface SuggestionCategory {
   id: number;
@@ -64,7 +63,6 @@ const highlightMatch = (text: string, query: string): React.ReactNode => {
   );
 };
 
-
 export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
   const router = useRouter();
   const [query, setQuery] = useState(defaultValue ?? "");
@@ -74,6 +72,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [dynamicPopularSearches, setDynamicPopularSearches] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
@@ -91,6 +90,19 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
         }
       })
       .catch(() => {});
+  }, []);
+
+  // Горячая клавиша Cmd/Ctrl + K для мгновенного фокуса поиска
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        setIsOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const saveRecentSearch = (term: string) => {
@@ -167,43 +179,56 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
   return (
     <div className="relative w-full" ref={containerRef}>
       <form
-        className="group relative flex min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50 shadow-xs transition-all duration-200 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-3 focus-within:ring-emerald-500/15"
+        className="group relative flex w-full items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 shadow-xs transition-all duration-200 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-3 focus-within:ring-emerald-500/15"
         onSubmit={handleSubmit}
       >
         <label className="sr-only" htmlFor="site-search">
           Поиск товаров
         </label>
-        <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5">
-          <Search
-            className="shrink-0 text-slate-400 transition-colors group-focus-within:text-emerald-600"
-            size={19}
-          />
-          <input
-            autoComplete="off"
-            className="h-11 min-w-0 flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none"
-            id="site-search"
-            name="q"
-            placeholder="Найти свежие продукты, мясо, молоко..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setIsOpen(true)}
-            type="search"
-          />
+        
+        {/* Иконка лупы внутри инпута слева */}
+        <Search
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-emerald-600 shrink-0"
+          size={18}
+        />
+
+        <input
+          ref={inputRef}
+          autoComplete="off"
+          className="h-11 w-full bg-transparent pl-10 pr-20 text-sm text-slate-800 placeholder:text-slate-400 outline-none"
+          id="site-search"
+          name="q"
+          placeholder="Найти свежие продукты, мясо, молоко..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setIsOpen(true)}
+          type="search"
+        />
+
+        {/* Правая панель: Индикатор загрузки / очистка / хоткей Cmd+K */}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
           {isLoading ? (
             <Loader2 className="size-4 animate-spin text-emerald-600" />
           ) : query ? (
             <button
-              className="text-slate-400 hover:text-slate-600 p-1"
-              onClick={() => setQuery("")}
+              className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200/50 transition cursor-pointer"
+              onClick={() => {
+                setQuery("");
+                inputRef.current?.focus();
+              }}
               type="button"
+              aria-label="Очистить поиск"
             >
-              <X size={16} />
+              <X size={15} />
             </button>
           ) : null}
+
+          {/* Хоткей бейдж на десктопе */}
+          <div className="hidden lg:flex items-center gap-0.5 rounded-md border border-slate-200 bg-white/90 px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-400 select-none shadow-2xs">
+            <span>⌘</span>
+            <span>K</span>
+          </div>
         </div>
-        <Button className="h-11 rounded-none px-6 text-sm font-semibold" type="submit">
-          Найти
-        </Button>
       </form>
 
       {/* Popular and recent searches dropdown */}
@@ -219,7 +244,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
                 <button
                   type="button"
                   onClick={clearRecentSearches}
-                  className="text-[11px] text-slate-400 hover:text-rose-600 flex items-center gap-1 font-medium transition"
+                  className="text-[11px] text-slate-400 hover:text-rose-600 flex items-center gap-1 font-medium transition cursor-pointer"
                 >
                   <Trash2 size={11} />
                   Очистить
@@ -231,7 +256,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
                     key={item}
                     type="button"
                     onClick={() => handleSelectSearch(item)}
-                    className="rounded-xl bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition border border-transparent"
+                    className="rounded-xl bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition border border-transparent cursor-pointer"
                   >
                     {item}
                   </button>
@@ -251,7 +276,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
                   key={item}
                   type="button"
                   onClick={() => handleSelectSearch(item)}
-                  className="rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition"
+                  className="rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition cursor-pointer"
                 >
                   {item}
                 </button>
@@ -337,7 +362,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
 
           <div className="mt-2 border-t border-slate-100 pt-2 text-center">
             <button
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition cursor-pointer"
               onClick={handleSubmit}
               type="button"
             >

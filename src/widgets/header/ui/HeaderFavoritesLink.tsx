@@ -63,7 +63,7 @@ export const HeaderFavoritesLink = () => {
 
   return (
     <Link
-      className="group relative flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-rose-50 hover:text-rose-600 active:scale-95"
+      className="group relative hidden md:flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-rose-50 hover:text-rose-600 active:scale-95"
       href={ROUTES.FAVORITES}
     >
       <span className="relative mb-0.5 block">

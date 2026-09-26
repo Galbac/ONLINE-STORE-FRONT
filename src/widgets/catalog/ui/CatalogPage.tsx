@@ -1,18 +1,8 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
-import {
-  Apple,
-  Beef,
-  Cookie,
-  Leaf,
-  Milk,
-  Package,
-  RotateCcw,
-  SprayCan,
-  Wheat,
-} from "lucide-react";
+import { Package } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
-import { categoryApi, type CategoryShortResponse } from "@/entities/category";
+import { categoryApi } from "@/entities/category";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductListParams, type ProductListResponse } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
@@ -22,11 +12,11 @@ import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shar
 import type { ProductViewMode } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
+import { CatalogControls } from "@/components/catalog/CatalogControls";
+import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
+import { formatFoundProducts } from "@/utils/pluralize";
 import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
-import { CatalogPriceFilter } from "./CatalogPriceFilter";
 import { QuickFilterChips } from "./QuickFilterChips";
-import { ProductTypeFilter } from "./ProductTypeFilter";
-import { DietaryFilter } from "./DietaryFilter";
 
 interface CatalogPageProps {
   searchParams: CatalogSearchParams;
@@ -147,35 +137,58 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
 
+  const urlParams = toCatalogUrlParams(searchParams);
+  const sliderMax = getPriceSliderMax(priceBounds.items, minPrice, maxPrice);
+
   return (
     <>
       <Header />
-      <main className="pb-20 md:pb-8">
+      <main className="pb-24 md:pb-12">
         <Container className="py-6">
-          <nav className="text-text-secondary mb-5 flex items-center gap-2 text-sm">
-            <Link className="hover:text-accent-primary" href={ROUTES.HOME}>
+          <nav className="text-slate-500 mb-5 flex items-center gap-2 text-sm">
+            <Link className="hover:text-emerald-700 transition" href={ROUTES.HOME}>
               Главная
             </Link>
             <span>/</span>
-            <span>Каталог</span>
+            <span className="text-slate-800 font-medium">Каталог</span>
           </nav>
 
-          <h1 className="text-text-primary mb-8 text-4xl font-bold">Каталог товаров</h1>
+          <h1 className="text-slate-900 mb-6 text-3xl sm:text-4xl font-black tracking-tight">Каталог товаров</h1>
 
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[330px_minmax(0,1fr)]">
-            <CatalogFilters
-              categories={visibleCategories}
-              currentCategoryId={categoryId}
-              currentParams={toCatalogUrlParams(searchParams)}
-              hasDiscount={hasDiscount}
-              inStock={inStock}
-              maxPrice={maxPrice}
-              minPrice={minPrice}
-              sliderMax={getPriceSliderMax(priceBounds.items, minPrice, maxPrice)}
-            />
-            <section>
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+            {/* Сайдбар фильтров на десктопе */}
+            <div className="hidden lg:block">
+              <CatalogSidebar
+                categories={visibleCategories}
+                currentCategoryId={categoryId}
+                currentParams={urlParams}
+                hasDiscount={hasDiscount}
+                inStock={inStock}
+                isHalal={tag === "halal"}
+                maxPrice={maxPrice}
+                minPrice={minPrice}
+                sliderMax={sliderMax}
+              />
+            </div>
+
+            <section className="min-w-0">
+              {/* Мобильная панель фильтров и сортировки (sticky) */}
+              <CatalogControls
+                categories={visibleCategories}
+                currentParams={urlParams}
+                currentSort={sort}
+                hasDiscount={hasDiscount}
+                inStock={inStock}
+                isHalal={tag === "halal"}
+                maxPrice={maxPrice}
+                minPrice={minPrice}
+                productsTotal={products.total}
+                sliderMax={sliderMax}
+              />
+
+              {/* Десктопный тулбар каталога */}
               <CatalogToolbar
-                currentParams={toCatalogUrlParams(searchParams)}
+                currentParams={urlParams}
                 hasDiscount={hasDiscount}
                 selectedCategoryName={selectedCategory?.name}
                 productsTotal={products.total}
@@ -186,45 +199,84 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 viewMode={viewMode}
               />
 
-              <div className="my-6">
-              <QuickFilterChips
-                chips={[
-                  {
-                    id: "all",
-                    label: "Все товары",
-                    active: !categoryId,
-                    href: buildCatalogHref({ ...toCatalogUrlParams(searchParams), category_id: undefined, page: undefined }),
-                  },
-                  {
-                    id: "halal",
-                    label: "🥩 Халяль",
-                    active: categoryId === 100,
-                    href: buildCatalogHref({
-                      ...toCatalogUrlParams(searchParams),
-                      category_id: categoryId === 100 ? undefined : "100",
-                      page: undefined,
-                    }),
-                  },
-                  ...categories.items.map((cat) => ({
-                    id: String(cat.id),
-                    label: cat.name,
-                    active: categoryId === cat.id,
-                    href: buildCatalogHref({
-                      ...toCatalogUrlParams(searchParams),
-                      category_id: categoryId === cat.id ? undefined : String(cat.id),
-                      page: undefined,
-                    }),
-                  })),
-                ]}
-                className="py-1"
-              />
+              {/* Компактная лента БЫСТРЫХ ТЕГОВ (без дублирования 12 категорий из сайдбара) */}
+              <div className="my-5">
+                <QuickFilterChips
+                  chips={[
+                    {
+                      id: "all",
+                      label: "Все товары",
+                      active: !categoryId && !hasDiscount && !tag && sort !== "newest",
+                      href: buildCatalogHref({
+                        ...urlParams,
+                        category_id: undefined,
+                        has_discount: undefined,
+                        tag: undefined,
+                        page: undefined,
+                      }),
+                    },
+                    {
+                      id: "halal",
+                      label: "🥩 Халяль",
+                      active: tag === "halal",
+                      href: buildCatalogHref({
+                        ...urlParams,
+                        tag: tag === "halal" ? undefined : "halal",
+                        page: undefined,
+                      }),
+                    },
+                    {
+                      id: "discount",
+                      label: "🔥 Акции %",
+                      active: hasDiscount,
+                      href: buildCatalogHref({
+                        ...urlParams,
+                        has_discount: hasDiscount ? undefined : "true",
+                        page: undefined,
+                      }),
+                    },
+                    {
+                      id: "newest",
+                      label: "✨ Новинки",
+                      active: sort === "newest",
+                      href: buildCatalogHref({
+                        ...urlParams,
+                        sort: sort === "newest" ? undefined : "newest",
+                        page: undefined,
+                      }),
+                    },
+                    {
+                      id: "farm",
+                      label: "🌿 Фермерское",
+                      active: tag === "farm",
+                      href: buildCatalogHref({
+                        ...urlParams,
+                        tag: tag === "farm" ? undefined : "farm",
+                        page: undefined,
+                      }),
+                    },
+                    {
+                      id: "popular",
+                      label: "⭐ Популярное",
+                      active: sort === "popular",
+                      href: buildCatalogHref({
+                        ...urlParams,
+                        sort: sort === "popular" ? undefined : "popular",
+                        page: undefined,
+                      }),
+                    },
+                  ]}
+                  className="py-1"
+                />
               </div>
+
+              {/* Сетка товаров */}
               {products.items.length > 0 ? (
                 <>
                   <div
                     className={cn(
-                      "mt-5 grid gap-4",
-                      viewMode === "grid" ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-1",
+                      "mt-5 grid gap-3.5 sm:gap-4",
+                      viewMode === "grid" ? "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" : "grid-cols-1",
                     )}
                   >
                     {products.items.map((product) => (
@@ -235,9 +287,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                         initialInCart={cartProductIds.has(product.id)}
                         cartControl={
                           <CatalogCartButton
+                            className="w-full h-10 font-bold"
                             initialInCart={cartProductIds.has(product.id)}
                             productId={product.id}
-                            productName={product.name}
+                            productName={(product.name ?? "").trim()}
                             minQuantity={product.min_quantity}
                             quantityStep={product.quantity_step}
                             unit={product.unit}
@@ -247,7 +300,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                           <CatalogFavoriteButton
                             initialFavorite={favoriteProductIds.has(product.id)}
                             productId={product.id}
-                            productName={product.name}
+                            productName={(product.name ?? "").trim()}
                           />
                         }
                       />
@@ -270,197 +323,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
       </main>
       <Footer />
     </>
-  );
-};
-
-interface CatalogFiltersProps {
-  categories: CategoryShortResponse[];
-  currentCategoryId?: number | undefined;
-  currentParams: CatalogUrlParams;
-  hasDiscount: boolean;
-  inStock: boolean;
-  minPrice?: string | undefined;
-  maxPrice?: string | undefined;
-  sliderMax: number;
-}
-
-const CatalogFilters = ({
-  categories,
-  currentCategoryId,
-  currentParams,
-  hasDiscount,
-  inStock,
-  maxPrice,
-  minPrice,
-  sliderMax,
-}: CatalogFiltersProps) => {
-  return (
-    <aside className="min-w-0 space-y-4">
-      <FilterPanel title="Категории">
-        <ul className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
-          {categories.map((category) => {
-            const Icon = getCategoryIcon(category.name);
-
-            return (
-              <li key={category.id}>
-                <Link
-                  className={cn(
-                    "flex items-center justify-between gap-3 rounded-md px-1 py-1.5 text-sm transition",
-                    currentCategoryId === category.id
-                      ? "text-accent-primary"
-                      : "text-text-primary hover:text-accent-primary",
-                  )}
-                  href={buildCatalogHref({
-                    ...currentParams,
-                    category_id: String(category.id),
-                    page: undefined,
-                  })}
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <Icon className="shrink-0" size={18} />
-                    <span className="truncate">{category.name}</span>
-                  </span>
-                  <span className="text-text-muted">{category.products_count ?? 0}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </FilterPanel>
-
-      <FilterPanel>
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold">Только в наличии</h2>
-            <p className="text-text-muted mt-2 text-xs leading-5">
-              Показывать товары, которые есть в наличии
-            </p>
-          </div>
-          <Link
-            className={cn(
-              "relative h-8 w-14 shrink-0 rounded-full transition",
-              inStock ? "bg-accent-primary" : "bg-border",
-            )}
-            href={buildCatalogHref({
-              ...currentParams,
-              in_stock: inStock ? "false" : "true",
-              page: undefined,
-            })}
-            aria-label="Переключить фильтр наличия"
-          >
-            <span
-              className={cn(
-                "absolute top-1 grid size-6 place-items-center rounded-full bg-white transition",
-                inStock ? "right-1" : "left-1",
-              )}
-            />
-          </Link>
-        </div>
-      </FilterPanel>
-
-      <FilterPanel>
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold">Акции</h2>
-            <p className="text-text-muted mt-2 text-xs leading-5">
-              Показывать только товары со скидкой
-            </p>
-          </div>
-          <Link
-            aria-label="Переключить фильтр акций"
-            className={cn(
-              "relative h-8 w-14 shrink-0 rounded-full transition",
-              hasDiscount ? "bg-accent-primary" : "bg-border",
-            )}
-            href={buildCatalogHref({
-              ...currentParams,
-              has_discount: hasDiscount ? undefined : "true",
-              page: undefined,
-            })}
-          >
-            <span
-              className={cn(
-                "absolute top-1 grid size-6 place-items-center rounded-full bg-white transition",
-                hasDiscount ? "right-1" : "left-1",
-              )}
-            />
-          </Link>
-        </div>
-      </FilterPanel>
-
-      <FilterPanel title="Диета и состав">
-        <DietaryFilter
-          currentTag={currentParams.tag}
-          buildHref={(t) =>
-            buildCatalogHref({
-              ...currentParams,
-              tag: t,
-              page: undefined,
-            })
-          }
-        />
-      </FilterPanel>
-
-      <FilterPanel title="Тип товара">
-        <ProductTypeFilter
-          currentType={currentParams.product_type}
-          buildHref={(type) =>
-            buildCatalogHref({
-              ...currentParams,
-              product_type: type,
-              page: undefined,
-            })
-          }
-        />
-      </FilterPanel>
-
-      <FilterPanel title="Цена, ₽">
-        <CatalogPriceFilter
-          currentParams={currentParams}
-          maxPrice={maxPrice}
-          minPrice={minPrice}
-          sliderMax={sliderMax}
-        />
-      </FilterPanel>
-
-
-
-      {hasDiscount ? (
-        <Link
-          className="border-border text-text-secondary hover:bg-bg-hover flex h-12 items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition"
-          href={buildCatalogHref({
-            ...currentParams,
-            has_discount: undefined,
-            page: undefined,
-          })}
-        >
-          <RotateCcw size={16} />
-          Убрать скидки
-        </Link>
-      ) : null}
-
-      <Link
-        className="border-border text-text-secondary hover:bg-bg-hover flex h-12 items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition"
-        href={ROUTES.CATALOG}
-      >
-        <RotateCcw size={16} />
-        Сбросить фильтры
-      </Link>
-    </aside>
-  );
-};
-
-interface FilterPanelProps {
-  title?: string;
-  children: React.ReactNode;
-}
-
-const FilterPanel = ({ children, title }: FilterPanelProps) => {
-  return (
-    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-[0_10px_26px_rgb(20_28_18/0.05)]">
-      {title ? <h2 className="mb-4 text-sm font-bold">{title}</h2> : null}
-      {children}
-    </section>
   );
 };
 
@@ -491,7 +353,10 @@ const CatalogToolbar = ({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-text-secondary text-sm">Найдено {productsTotal} товара</p>
+          {/* Исправлена ошибка склонения русских числительных: 159 товаров */}
+          <p className="text-slate-600 text-sm font-semibold">
+            {formatFoundProducts(productsTotal)}
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {selectedCategoryName ? <FilterChip label={selectedCategoryName} /> : null}
             {inStock ? <FilterChip label="В наличии" /> : null}
@@ -499,14 +364,14 @@ const CatalogToolbar = ({
             {maxPrice ? <FilterChip label={`Цена: до ${maxPrice} ₽`} /> : null}
             {minPrice ? <FilterChip label={`Цена: от ${minPrice} ₽`} /> : null}
             <Link
-              className="text-accent-primary px-2 py-2 text-sm font-semibold"
+              className="text-emerald-700 hover:text-emerald-800 px-2 py-2 text-sm font-semibold transition"
               href={ROUTES.CATALOG}
             >
               Сбросить все
             </Link>
           </div>
         </div>
-        <div className="flex max-w-full flex-wrap items-center gap-4">
+        <div className="hidden lg:flex max-w-full flex-wrap items-center gap-4">
           <AutoSubmitSelect
             action={ROUTES.CATALOG}
             defaultValue={sort}
@@ -540,7 +405,7 @@ interface FilterChipProps {
 
 const FilterChip = ({ label }: FilterChipProps) => {
   return (
-    <span className="border-accent-primary/25 bg-bg-hover text-accent-primary rounded-lg border px-4 py-2 text-sm font-semibold">
+    <span className="border border-emerald-200/80 bg-emerald-50/70 text-emerald-800 rounded-lg px-3 py-1.5 text-xs font-semibold">
       {label}
     </span>
   );
@@ -548,13 +413,16 @@ const FilterChip = ({ label }: FilterChipProps) => {
 
 const CatalogEmptyState = () => {
   return (
-    <div className="border-border mt-5 rounded-lg border p-8 text-center">
-      <h2 className="text-text-primary text-xl font-bold">Товары не найдены</h2>
-      <p className="text-text-secondary mt-3 text-sm">
-        Измените фильтры или сбросьте параметры каталога.
+    <div className="border border-slate-200 mt-5 rounded-2xl bg-white p-10 text-center shadow-xs">
+      <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-3">
+        <Package size={28} />
+      </div>
+      <h2 className="text-slate-900 text-lg font-bold">Товары не найдены</h2>
+      <p className="text-slate-500 mt-2 text-xs leading-relaxed max-w-sm mx-auto">
+        По выбранным фильтрам ничего не найдено. Попробуйте сбросить параметры или изменить поисковый запрос.
       </p>
       <Link
-        className="bg-accent-primary text-accent-contrast hover:bg-accent-hover mt-5 inline-flex h-12 items-center justify-center rounded-lg px-5 text-sm font-bold transition"
+        className="bg-emerald-600 text-white hover:bg-emerald-700 mt-5 inline-flex h-11 items-center justify-center rounded-xl px-6 text-xs font-bold transition shadow-sm"
         href={ROUTES.CATALOG}
       >
         Сбросить фильтры
@@ -579,8 +447,8 @@ const CatalogPagination = ({
   const pages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => index + 1);
 
   return (
-    <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center justify-center gap-2">
+    <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-6">
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
         <PageLink disabled={currentPage <= 1} page={currentPage - 1} searchParams={searchParams}>
           ‹
         </PageLink>
@@ -594,7 +462,7 @@ const CatalogPagination = ({
             {page}
           </PageLink>
         ))}
-        {totalPages > 6 ? <span className="text-text-muted px-2">...</span> : null}
+        {totalPages > 6 ? <span className="text-slate-400 px-2">...</span> : null}
         {totalPages > 5 ? (
           <PageLink page={totalPages} searchParams={searchParams}>
             {totalPages}
@@ -608,122 +476,153 @@ const CatalogPagination = ({
           ›
         </PageLink>
       </div>
-      <div className="text-text-secondary flex items-center gap-3 text-sm">
-        <AutoSubmitSelect
-          action={ROUTES.CATALOG}
-          defaultValue={String(pageSize)}
-          hiddenFields={getCatalogSortHiddenFields({
-            category_id: searchParams.category_id,
-            has_discount: searchParams.has_discount,
-            in_stock: searchParams.in_stock,
-            max_price: searchParams.max_price,
-            min_price: searchParams.min_price,
-            sort: searchParams.sort,
-            view: searchParams.view,
-          })}
-          label="Показать по:"
-          name="limit"
-          options={pageSizeOptions}
-        />
+
+      <div className="hidden sm:flex items-center gap-2">
+        <span className="text-slate-400 text-xs">Показывать по:</span>
+        <div className="flex items-center gap-1">
+          {pageSizeOptions.map((opt) => (
+            <Link
+              key={opt.value}
+              href={buildCatalogHref({
+                ...toCatalogUrlParams(searchParams),
+                limit: opt.value === "24" ? undefined : opt.value,
+                page: undefined,
+              })}
+              className={`flex h-8 w-9 items-center justify-center rounded-lg text-xs font-bold transition ${
+                String(pageSize) === opt.value
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              {opt.label}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
 interface PageLinkProps {
+  page: number;
+  children: React.ReactNode;
   active?: boolean;
   disabled?: boolean;
-  page: number;
   searchParams: CatalogSearchParams;
-  children: React.ReactNode;
 }
 
-const PageLink = ({ active, children, disabled, page, searchParams }: PageLinkProps) => {
+const PageLink = ({
+  active = false,
+  children,
+  disabled = false,
+  page,
+  searchParams,
+}: PageLinkProps) => {
   if (disabled) {
     return (
-      <span className="border-border text-text-muted grid size-10 place-items-center rounded-lg border">
+      <span className="flex size-9 items-center justify-center rounded-xl border border-slate-200/60 bg-slate-50 text-xs font-bold text-slate-300">
         {children}
       </span>
     );
   }
 
+  const href = buildCatalogHref({
+    ...toCatalogUrlParams(searchParams),
+    page: page > 1 ? String(page) : undefined,
+  });
+
   return (
     <Link
       className={cn(
-        "border-border grid size-10 place-items-center rounded-lg border text-sm font-semibold transition",
+        "flex size-9 items-center justify-center rounded-xl text-xs font-bold transition",
         active
-          ? "border-accent-primary bg-accent-primary text-white"
-          : "bg-bg-primary hover:bg-bg-hover",
+          ? "bg-emerald-600 text-white shadow-xs"
+          : "border border-slate-200/80 bg-white text-slate-700 hover:border-emerald-500 hover:text-emerald-700",
       )}
-      scroll={false}
-      href={buildCatalogHref({ ...searchParams, page: String(page) })}
+      href={href}
     >
       {children}
     </Link>
   );
 };
 
+const getPriceSliderMax = (
+  items: Array<{ price: string }>,
+  minPrice?: string,
+  maxPrice?: string,
+): number => {
+  const highestPrice = items[0]?.price ? Math.ceil(Number(items[0].price)) : 2000;
+  const currentMax = maxPrice ? Number(maxPrice) : 0;
+  const currentMin = minPrice ? Number(minPrice) : 0;
+
+  return Math.max(highestPrice, currentMax, currentMin, 1000);
+};
+
+const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams => ({
+  article: searchParams.article,
+  category_id: searchParams.category_id,
+  has_discount: searchParams.has_discount,
+  in_stock: searchParams.in_stock,
+  limit: searchParams.limit,
+  max_price: searchParams.max_price,
+  min_price: searchParams.min_price,
+  page: searchParams.page,
+  product_type: searchParams.product_type,
+  sort: searchParams.sort,
+  tag: searchParams.tag,
+  view: searchParams.view,
+});
+
+const getCatalogSortHiddenFields = (
+  params: Record<string, string | undefined>,
+): Array<{ name: string; value: string }> =>
+  Object.entries(params)
+    .filter(([, value]) => Boolean(value))
+    .map(([name, value]) => ({ name, value: String(value) }));
+
 const toPositiveNumber = (value: string | undefined, fallback: number): number => {
   const parsed = Number(value);
 
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    return fallback;
-  }
-
-  return parsed;
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 };
 
 const toPageSize = (value: string | undefined): number => {
   const parsed = Number(value);
 
-  return pageSizeOptions.some((option) => Number(option.value) === parsed) ? parsed : 24;
+  return parsed === 48 || parsed === 96 ? parsed : 24;
 };
 
 const toOptionalNumber = (value: string | undefined): number | undefined => {
   const parsed = Number(value);
 
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    return undefined;
-  }
-
-  return parsed;
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
 };
 
 const toOptionalPrice = (value: string | undefined): string | undefined => {
-  const normalizedValue = value?.trim();
+  const parsed = Number(value);
 
-  if (!normalizedValue) {
-    return undefined;
-  }
-
-  const parsed = Number(normalizedValue);
-
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return undefined;
-  }
-
-  return normalizedValue;
+  return Number.isFinite(parsed) && parsed >= 0 ? String(Math.floor(parsed)) : undefined;
 };
 
 const toCatalogSort = (
-  value: ProductListParams["sort"] | undefined,
+  value: string | undefined,
 ): NonNullable<ProductListParams["sort"]> => {
-  const option = sortOptions.find((sortOption) => sortOption.value === value);
+  if (
+    value === "price_asc" ||
+    value === "price_desc" ||
+    value === "newest" ||
+    value === "name_asc" ||
+    value === "name_desc"
+  ) {
+    return value;
+  }
 
-  return option?.value ?? "popular";
+  return "popular";
 };
 
-const toViewMode = (value: ProductViewMode | undefined): ProductViewMode => {
+const toViewMode = (value: string | undefined): ProductViewMode => {
   return value === "list" ? "list" : "grid";
 };
-
-const getEmptyProductListResponse = (page: number, limit: number): ProductListResponse => ({
-  items: [],
-  total: 0,
-  page,
-  limit,
-  pages: 0,
-});
 
 const getCatalogProducts = async (
   params: ProductListParams,
@@ -733,11 +632,17 @@ const getCatalogProducts = async (
   try {
     return await productApi.getList(params);
   } catch (error) {
-    if (isApiErrorStatus(error, 400) || isApiErrorStatus(error, 404)) {
-      return getEmptyProductListResponse(page, limit);
+    if (isApiErrorStatus(error, 404) && page > 1) {
+      return productApi.getList({ ...params, page: 1 });
     }
 
-    throw error;
+    return {
+      items: [],
+      limit,
+      page,
+      pages: 1,
+      total: 0,
+    };
   }
 };
 
@@ -745,78 +650,4 @@ const getAccessToken = async (): Promise<string | undefined> => {
   const cookieStore = await cookies();
 
   return cookieStore.get("access_token")?.value;
-};
-
-const getCategoryIcon = (categoryName: string): typeof Apple => {
-  if (categoryName.includes("Фрукты")) return Apple;
-  if (categoryName.includes("Овощи")) return Leaf;
-  if (categoryName.includes("Молоко")) return Milk;
-  if (categoryName.includes("Мясо")) return Beef;
-  if (categoryName.includes("Хлеб")) return Wheat;
-  if (categoryName.includes("Напитки")) return Cookie;
-  if (categoryName.includes("Бакалея")) return Package;
-  if (categoryName.includes("химия")) return SprayCan;
-
-  return Package;
-};
-
-const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams => {
-  const params: CatalogUrlParams = {};
-
-  setCatalogUrlParam(params, "category_id", searchParams.category_id);
-  setCatalogUrlParam(params, "has_discount", searchParams.has_discount);
-  setCatalogUrlParam(params, "in_stock", searchParams.in_stock);
-  setCatalogUrlParam(params, "limit", searchParams.limit);
-  setCatalogUrlParam(params, "max_price", searchParams.max_price);
-  setCatalogUrlParam(params, "min_price", searchParams.min_price);
-  setCatalogUrlParam(params, "product_type", searchParams.product_type);
-  setCatalogUrlParam(params, "tag", searchParams.tag);
-  setCatalogUrlParam(params, "article", searchParams.article);
-  setCatalogUrlParam(params, "page", searchParams.page);
-  setCatalogUrlParam(params, "sort", searchParams.sort);
-  setCatalogUrlParam(params, "view", searchParams.view);
-
-  return params;
-};
-
-const setCatalogUrlParam = (
-  params: CatalogUrlParams,
-  key: keyof CatalogUrlParams,
-  value: string | undefined,
-): void => {
-  if (value) {
-    params[key] = value;
-  }
-};
-
-const getCatalogSortHiddenFields = (
-  params: Partial<
-    Pick<
-      CatalogUrlParams,
-      | "category_id"
-      | "has_discount"
-      | "in_stock"
-      | "limit"
-      | "max_price"
-      | "min_price"
-      | "sort"
-      | "view"
-    >
-  >,
-): Array<{ name: string; value: string }> => {
-  return Object.entries(params).flatMap(([name, value]) => {
-    return value ? [{ name, value }] : [];
-  });
-};
-
-const getPriceSliderMax = (
-  products: ProductListResponse["items"],
-  minPrice: string | undefined,
-  maxPrice: string | undefined,
-): number => {
-  const prices = products.map((product) => Number(product.price)).filter(Number.isFinite);
-  const selectedPrices = [Number(minPrice), Number(maxPrice)].filter(Number.isFinite);
-  const maxProductPrice = Math.max(100, ...prices, ...selectedPrices);
-
-  return Math.ceil(maxProductPrice / 100) * 100;
 };

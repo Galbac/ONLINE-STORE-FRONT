@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Clock, LayoutGrid, MapPin, Phone } from "lucide-react";
-import { ProductSearch } from "@/features/product-search";
+import { HeaderSearch } from "./HeaderSearch";
 import { ROUTES, STORE_INFO } from "@/shared/config";
 import { Container, Logo, PwaInstallButton } from "@/shared/ui";
 import { HeaderCartLink } from "@/widgets/header/ui/HeaderCartLink";
@@ -107,7 +107,7 @@ export const Header = () => {
 
           {/* Строка поиска: на мобилках занимает полную ширину */}
           <div className="max-lg:order-3 max-lg:col-span-2 w-full">
-            <ProductSearch />
+            <HeaderSearch />
           </div>
 
           {/* Панель пользователя: Избранное и Корзина скрыты на мобилках (< md), т.к. они в BottomNav */}

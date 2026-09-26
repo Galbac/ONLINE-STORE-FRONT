@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  Apple,
+  Beef,
+  Fish,
+  Leaf,
+  Milk,
+  ShoppingBag,
+  UtensilsCrossed,
+  Wheat,
+} from "lucide-react";
 import type { ProductShortResponse } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton, StockAlertButton } from "@/features/catalog-product-actions";
 import { QuickViewButton } from "@/features/quick-view";
@@ -11,13 +21,11 @@ import { toPriceFormat } from "@/shared/lib/format";
 
 export interface ProductCardProps {
   product: ProductShortResponse;
-  cartControl?: React.ReactNode;
-  favoriteControl?: React.ReactNode;
-  variant?: "grid" | "list";
-  initialInCart?: boolean;
+  cartControl?: React.ReactNode | undefined;
+  favoriteControl?: React.ReactNode | undefined;
+  variant?: "grid" | "list" | undefined;
+  initialInCart?: boolean | undefined;
 }
-
-const FALLBACK_IMAGE = "/product-placeholder.svg";
 
 export const ProductCard = ({
   cartControl,
@@ -31,9 +39,13 @@ export const ProductCard = ({
   const rawCategoryName = product.category?.name ?? "Каталог";
   const cleanCategoryName = rawCategoryName.trim();
 
-  // 2. Локальный стейт ошибки изображения с автоподстановкой красивого SVG-плейсхолдера
+  // 2. Определение мета-данных категории для умных заглушек
+  const categoryMeta = getCategoryFallbackMeta(cleanCategoryName, cleanName);
+  const FallbackIcon = categoryMeta.icon;
+
+  // 3. Локальный стейт ошибки изображения
   const rawImageUrl = (product.preview_image_url ?? "").trim();
-  const [imgSrc, setImgSrc] = useState<string>(rawImageUrl || FALLBACK_IMAGE);
+  const [imgSrc, setImgSrc] = useState<string | null>(rawImageUrl || null);
   const [hasError, setHasError] = useState<boolean>(!rawImageUrl);
 
   useEffect(() => {
@@ -42,16 +54,14 @@ export const ProductCard = ({
       setImgSrc(nextUrl);
       setHasError(false);
     } else {
-      setImgSrc(FALLBACK_IMAGE);
+      setImgSrc(null);
       setHasError(true);
     }
   }, [product.preview_image_url]);
 
   const handleImageError = () => {
-    if (!hasError) {
-      setHasError(true);
-      setImgSrc(FALLBACK_IMAGE);
-    }
+    setHasError(true);
+    setImgSrc(null);
   };
 
   const isLowStock = product.is_available && product.stock_display?.startsWith("Осталось");
@@ -78,6 +88,7 @@ export const ProductCard = ({
 
   const unitDisplay = product.unit?.trim() ? `/ ${product.unit.trim()}` : "/ шт";
 
+  // Список (вариант list)
   if (variant === "list") {
     return (
       <article className="group relative grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5 sm:grid-cols-[160px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)_auto]">
@@ -95,7 +106,7 @@ export const ProductCard = ({
           ) : null}
         </div>
 
-        {/* Кнопка избранного */}
+        {/* Кнопка избранного всегда поверх */}
         <div className="absolute top-3 right-3 z-10 flex items-center">
           {favoriteControl ?? (
             <CatalogFavoriteButton
@@ -106,20 +117,31 @@ export const ProductCard = ({
           )}
         </div>
 
-        {/* Контейнер изображения */}
+        {/* Контейнер изображения с фиксированной геометрией */}
         <Link
-          className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-100 block"
+          className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-50 block border border-slate-100"
           href={ROUTES.PRODUCT(product.slug)}
         >
-          <Image
-            alt={cleanName}
-            className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-            fill
-            sizes="(max-width: 640px) 160px, 180px"
-            src={imgSrc}
-            onError={handleImageError}
-            loading="lazy"
-          />
+          {!hasError && imgSrc ? (
+            <Image
+              alt={cleanName}
+              className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+              fill
+              sizes="(max-width: 640px) 160px, 180px"
+              src={imgSrc}
+              onError={handleImageError}
+              loading="lazy"
+            />
+          ) : (
+            <div className={`flex h-full w-full flex-col items-center justify-center p-3 text-center ${categoryMeta.bgClass}`}>
+              <span className={`grid size-12 place-items-center rounded-2xl ${categoryMeta.badgeClass} shadow-2xs transition-transform duration-300 group-hover:scale-110`}>
+                <FallbackIcon size={24} />
+              </span>
+              <span className="mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                {categoryMeta.label}
+              </span>
+            </div>
+          )}
         </Link>
 
         {/* Инфо о товаре */}
@@ -180,13 +202,13 @@ export const ProductCard = ({
     );
   }
 
-  // Основной GRID вариант карточки товара с четкой структурой
+  // Основной вариант GRID
   return (
-    <article className="group relative flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-950/5">
-      {/* 1. Изображение с обязательным контейнером rounded-xl bg-gray-100 */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-100">
-        {/* Бейджи скидок и быстрого просмотра */}
-        <div className="absolute top-2.5 left-2.5 z-10 flex flex-col items-start gap-1.5 pointer-events-none">
+    <article className="group relative flex h-full flex-col rounded-2xl bg-white border border-gray-100 p-3 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+      {/* 1. Контейнер картинки: aspect-square w-full rounded-xl overflow-hidden bg-gray-50 relative */}
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-50 border border-slate-100/80">
+        {/* Бейджи скидок и халяль слева вверху (top-2 left-2) */}
+        <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1 pointer-events-none">
           {product.discount_percent ? (
             <span className="pointer-events-auto rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 px-2 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-sm shadow-rose-500/30">
               -{product.discount_percent}%
@@ -197,13 +219,10 @@ export const ProductCard = ({
               ХАЛЯЛЬ
             </span>
           ) : null}
-          <div className="hidden sm:block pointer-events-auto">
-            <QuickViewButton product={product} initialInCart={initialInCart} />
-          </div>
         </div>
 
-        {/* Кнопка избранного в правом верхнем углу */}
-        <div className="absolute top-2.5 right-2.5 z-10 flex items-center">
+        {/* Кнопка «В избранное» (Heart) справа вверху (top-2 right-2) всегда на месте */}
+        <div className="absolute top-2 right-2 z-10 flex items-center">
           {favoriteControl ?? (
             <CatalogFavoriteButton
               initialFavorite={false}
@@ -213,28 +232,44 @@ export const ProductCard = ({
           )}
         </div>
 
-        {/* Ссылка и картинка с fallback */}
+        {/* Ссылка на товар и фото (или категорийный fallback) */}
         <Link
           className="relative block h-full w-full"
           href={ROUTES.PRODUCT(product.slug)}
           title={cleanName}
         >
-          <Image
-            alt={cleanName}
-            className="object-contain p-2.5 transition-transform duration-300 group-hover:scale-105"
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            src={imgSrc}
-            onError={handleImageError}
-            loading="lazy"
-          />
+          {!hasError && imgSrc ? (
+            <Image
+              alt={cleanName}
+              className="object-contain p-2.5 transition-transform duration-300 group-hover:scale-105"
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              src={imgSrc}
+              onError={handleImageError}
+              loading="lazy"
+            />
+          ) : (
+            <div className={`flex h-full w-full flex-col items-center justify-center p-3 text-center ${categoryMeta.bgClass}`}>
+              <span className={`grid size-14 place-items-center rounded-2xl ${categoryMeta.badgeClass} shadow-2xs transition-transform duration-300 group-hover:scale-110`}>
+                <FallbackIcon size={28} />
+              </span>
+              <span className="mt-2.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                {categoryMeta.label}
+              </span>
+            </div>
+          )}
         </Link>
+
+        {/* Кнопка «Быстрый просмотр» по центру внизу фото (плавно только по ховеру десктопа) */}
+        <div className="absolute inset-x-2 bottom-2 z-10 hidden sm:flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+          <QuickViewButton product={product} initialInCart={initialInCart} />
+        </div>
       </div>
 
-      {/* 2. Название категории и индикатор статуса («В наличии») */}
+      {/* 2. Категория и индикатор статуса («В наличии») */}
       <div className="mt-3 flex h-5 items-center justify-between gap-1.5 text-xs">
         <span
-          className="truncate max-w-[130px] sm:max-w-[160px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]"
+          className="truncate max-w-[130px] sm:max-w-[160px] font-medium text-slate-400 text-[11px]"
           title={cleanCategoryName}
         >
           {cleanCategoryName}
@@ -251,8 +286,8 @@ export const ProductCard = ({
         </span>
       </div>
 
-      {/* 3. Название товара (ограничение в 2 строки: line-clamp-2 и фиксированная мин. высота) */}
-      <div className="mt-2 min-h-[2.5rem]">
+      {/* 3. Название товара (ограничение в 2 строки: line-clamp-2 h-10 min-h-[2.5rem]) */}
+      <div className="mt-1.5 h-10 min-h-[2.5rem]">
         <Link
           className="line-clamp-2 text-xs sm:text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700 leading-snug"
           href={ROUTES.PRODUCT(product.slug)}
@@ -262,8 +297,8 @@ export const ProductCard = ({
         </Link>
       </div>
 
-      {/* 4. Блок цен (текущая со скидкой + зачеркнутая старая) с указанием единицы измерения */}
-      <div className="mt-3 flex flex-wrap items-baseline gap-1.5">
+      {/* 4. Блок цен (актуальная крупно + старая зачеркнутая рядом/над ней + единица измерения) */}
+      <div className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
         <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-none">
           {toPriceFormat(product.price)}
         </span>
@@ -277,7 +312,7 @@ export const ProductCard = ({
         </span>
       </div>
 
-      {/* 5. Полноразмерная кнопка «В корзину» / «Купить» с hover/active анимацией */}
+      {/* 5. Кнопка «В корзину», на десктопе при наличии превращающаяся в степпер [- 1 +] */}
       <div className="mt-3 pt-1">
         {!product.is_available ? (
           <StockAlertButton
@@ -305,32 +340,95 @@ export const ProductCard = ({
 
 export const ProductCardSkeleton = () => {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-sm animate-pulse">
-      {/* Изображение скелетон */}
+    <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-3 shadow-sm animate-pulse">
       <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-200/70" />
-
-      {/* Категория и статус */}
       <div className="mt-3 flex h-5 items-center justify-between gap-2">
-        <div className="h-4 w-20 rounded-md bg-slate-200/70" />
-        <div className="h-4 w-14 rounded-md bg-slate-200/70" />
+        <div className="h-4 w-20 rounded bg-slate-200/70" />
+        <div className="h-4 w-12 rounded bg-slate-200/70" />
       </div>
-
-      {/* Название */}
-      <div className="mt-2 min-h-[2.5rem] space-y-1.5">
+      <div className="mt-1.5 h-10 space-y-1.5">
         <div className="h-4 w-full rounded bg-slate-200/70" />
         <div className="h-4 w-3/4 rounded bg-slate-200/70" />
       </div>
-
-      {/* Цена */}
-      <div className="mt-3 flex items-baseline gap-2">
+      <div className="mt-2.5 flex items-baseline gap-2">
         <div className="h-6 w-20 rounded bg-slate-200/70" />
         <div className="h-4 w-12 rounded bg-slate-200/70" />
       </div>
-
-      {/* Кнопка */}
       <div className="mt-3 pt-1">
         <div className="h-10 w-full rounded-xl bg-slate-200/70" />
       </div>
     </div>
   );
 };
+
+interface CategoryFallbackMeta {
+  icon: typeof ShoppingBag;
+  bgClass: string;
+  badgeClass: string;
+  label: string;
+}
+
+function getCategoryFallbackMeta(categoryName: string, productName: string): CategoryFallbackMeta {
+  const text = `${categoryName} ${productName}`.toLowerCase();
+
+  if (text.includes("рыб") || text.includes("сельдь") || text.includes("скумбр") || text.includes("мидии") || text.includes("морепродукт")) {
+    return {
+      icon: Fish,
+      bgClass: "bg-gradient-to-b from-cyan-50/70 to-cyan-100/40",
+      badgeClass: "bg-cyan-100 text-cyan-700",
+      label: "Рыба и морепродукты",
+    };
+  }
+
+  if (text.includes("мясо") || text.includes("фарш") || text.includes("говяд") || text.includes("куриц") || text.includes("индейк") || text.includes("птиц") || text.includes("баран")) {
+    return {
+      icon: Beef,
+      bgClass: "bg-gradient-to-b from-rose-50/70 to-rose-100/40",
+      badgeClass: "bg-rose-100 text-rose-700",
+      label: "Мясная лавка",
+    };
+  }
+
+  if (text.includes("овощ") || text.includes("томат") || text.includes("огурц") || text.includes("зелен") || text.includes("салат")) {
+    return {
+      icon: Leaf,
+      bgClass: "bg-gradient-to-b from-emerald-50/70 to-emerald-100/40",
+      badgeClass: "bg-emerald-100 text-emerald-700",
+      label: "Свежие овощи",
+    };
+  }
+
+  if (text.includes("фрукт") || text.includes("ягод") || text.includes("яблок") || text.includes("банан") || text.includes("апельсин")) {
+    return {
+      icon: Apple,
+      bgClass: "bg-gradient-to-b from-amber-50/70 to-amber-100/40",
+      badgeClass: "bg-amber-100 text-amber-700",
+      label: "Фрукты и ягоды",
+    };
+  }
+
+  if (text.includes("молок") || text.includes("сыр") || text.includes("творог") || text.includes("йогурт") || text.includes("масло")) {
+    return {
+      icon: Milk,
+      bgClass: "bg-gradient-to-b from-blue-50/70 to-blue-100/40",
+      badgeClass: "bg-blue-100 text-blue-700",
+      label: "Молочные продукты",
+    };
+  }
+
+  if (text.includes("круп") || text.includes("рис") || text.includes("хлеб") || text.includes("макарон") || text.includes("бакалея")) {
+    return {
+      icon: Wheat,
+      bgClass: "bg-gradient-to-b from-orange-50/70 to-orange-100/40",
+      badgeClass: "bg-orange-100 text-orange-700",
+      label: "Бакалея и крупы",
+    };
+  }
+
+  return {
+    icon: UtensilsCrossed,
+    bgClass: "bg-gradient-to-b from-slate-50/70 to-slate-100/40",
+    badgeClass: "bg-emerald-50 text-emerald-600",
+    label: "Победа",
+  };
+}

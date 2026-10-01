@@ -6,16 +6,19 @@ import { usePathname } from "next/navigation";
 import { Heart, Home, LayoutGrid, ShoppingBag, User } from "lucide-react";
 
 import { cartApi } from "@/entities/cart";
+import { useFavoritesStore } from "@/entities/favorite";
+import { cn } from "@/shared/config";
 import { ROUTES } from "@/shared/config";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 import { CART_CHANGED_EVENT, type CartChangedDetail } from "@/shared/lib/cart-events";
-import { FAVORITES_CHANGED_EVENT } from "@/shared/lib/favorite-events";
+import { FAVORITES_CHANGED_EVENT, type FavoritesChangedDetail } from "@/shared/lib/favorite-events";
 import { getStoredAccessToken } from "@/shared/ui";
 
 export const BottomNav = () => {
   const pathname = usePathname();
   const [cartCount, setCartCount] = useState<number>(0);
   const [isAuth, setIsAuth] = useState<boolean>(false);
+  const [favoritesCount, setFavoritesCount] = useState<number>(0);
 
   useEffect(() => {
     const updateAuth = () => {
@@ -39,7 +42,22 @@ export const BottomNav = () => {
       }
     };
 
+    const loadFavorites = async () => {
+      try {
+        const token = getStoredAccessToken();
+        if (token && isAccessTokenValid(token)) {
+          await useFavoritesStore.getState().fetchFavorites();
+          setFavoritesCount(useFavoritesStore.getState().items.length);
+        } else {
+          setFavoritesCount(0);
+        }
+      } catch {
+        setFavoritesCount(0);
+      }
+    };
+
     fetchCartCount();
+    loadFavorites();
 
     const handleCartChanged = (event: Event) => {
       const customEvent = event as CustomEvent<CartChangedDetail>;
@@ -50,12 +68,22 @@ export const BottomNav = () => {
       }
     };
 
+    const handleFavoritesChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<FavoritesChangedDetail>;
+      if (typeof customEvent.detail?.itemsCount === "number") {
+        setFavoritesCount(customEvent.detail.itemsCount);
+      } else {
+        void loadFavorites();
+      }
+      updateAuth();
+    };
+
     window.addEventListener(CART_CHANGED_EVENT, handleCartChanged);
-    window.addEventListener(FAVORITES_CHANGED_EVENT, updateAuth);
+    window.addEventListener(FAVORITES_CHANGED_EVENT, handleFavoritesChanged);
 
     return () => {
       window.removeEventListener(CART_CHANGED_EVENT, handleCartChanged);
-      window.removeEventListener(FAVORITES_CHANGED_EVENT, updateAuth);
+      window.removeEventListener(FAVORITES_CHANGED_EVENT, handleFavoritesChanged);
     };
   }, [pathname]);
 
@@ -95,6 +123,8 @@ export const BottomNav = () => {
       href: ROUTES.PROFILE_FAVORITES,
       label: "Избранное",
       icon: Heart,
+      badge: favoritesCount > 0 ? (favoritesCount > 99 ? "99+" : String(favoritesCount)) : null,
+      badgeClassName: "bg-rose-500 text-white",
       isActive: isFavoritesActive,
     },
     {
@@ -132,7 +162,12 @@ export const BottomNav = () => {
               <div className="relative">
                 <Icon size={20} className={`sm:w-[22px] sm:h-[22px] ${item.isActive ? "stroke-[2.4]" : "stroke-[1.8]"}`} />
                 {item.badge ? (
-                  <span className="bg-emerald-600 text-white absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold shadow-xs">
+                  <span
+                    className={cn(
+                      "absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold shadow-xs",
+                      item.badgeClassName ?? "bg-emerald-600 text-white",
+                    )}
+                  >
                     {item.badge}
                   </span>
                 ) : null}

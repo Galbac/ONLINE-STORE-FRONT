@@ -58,6 +58,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
     removePromoCode,
     moveToFavorites,
     setCart,
+    fetchCart,
   } = useCartStore();
 
   const [promoCodeInput, setPromoCodeInput] = useState("");
@@ -65,12 +66,15 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
   const [promoEnabled, setPromoEnabled] = useState(true);
   const [isPending] = useTransition();
 
-  // Populate from initial props if provided and store is empty
+  // Populate from initial props or fetch latest cart
   useEffect(() => {
-    if (initialCart && initialSummary && cart.items.length === 0 && initialCart.items.length > 0) {
+    if (initialCart && initialSummary) {
       setCart(initialCart, initialSummary);
+    } else {
+      void fetchCart();
     }
-  }, [initialCart, initialSummary, cart.items.length, setCart]);
+  }, [initialCart, initialSummary, setCart,
+    fetchCart, fetchCart]);
 
   // Fetch delivery options threshold & promo settings
   useEffect(() => {

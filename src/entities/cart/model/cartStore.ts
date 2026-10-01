@@ -44,7 +44,7 @@ export interface CartState {
   moveToFavorites: (item: CartItemResponse) => Promise<void>;
   setCart: (cart: CartResponse, summary: CartSummaryResponse) => void;
 }
-const DEFAULT_FREE_DELIVERY_THRESHOLD = 1500;
+const DEFAULT_FREE_DELIVERY_THRESHOLD = 3000;
 
 export const useCartStore = create<CartState>()(
   persist(

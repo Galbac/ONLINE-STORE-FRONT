@@ -10,7 +10,8 @@ import {
   type DeliveryTimeSlotsResponse,
   type PickupPointListResponse,
 } from "@/entities/delivery";
-import { profileApi, type AddressListResponse, type ProfileUserResponse } from "@/entities/profile";
+import { profileApi, type AddressListResponse } from "@/entities/profile";
+import { userApi, type UserMeResponse } from "@/entities/user";
 import { isApiErrorStatus } from "@/shared/api";
 import {
   AuthGuard,
@@ -31,7 +32,7 @@ interface CheckoutPageState {
   pickupPoints: PickupPointListResponse | null;
   summary: CartSummaryResponse | null;
   timeSlots: DeliveryTimeSlotsResponse | null;
-  user: ProfileUserResponse | null;
+  user: UserMeResponse | null;
   status: "loading" | "ready" | "error";
 }
 
@@ -62,20 +63,36 @@ export const CheckoutPage = () => {
     const loadCheckout = async (): Promise<void> => {
       try {
         const today = new Date().toISOString().slice(0, 10);
-        const [cart, summary, addresses, deliveryOptions, pickupPoints, profileSummary] = await Promise.all([
+        const [cart, summary, addresses, deliveryOptions, pickupPoints, userMe] = await Promise.all([
           cartApi.get(),
           cartApi.getSummary(),
           profileApi.getAddresses(accessToken),
           deliveryApi.getOptions(),
           deliveryApi.getPickupPoints(),
-          profileApi.getSummary(accessToken).catch(() => null),
+          userApi.getMe(accessToken).catch(() => null),
         ]);
 
         const defaultAddress =
           addresses.items.find((address) => address.is_default) ?? addresses.items[0];
         const defaultPickupPoint = pickupPoints.items[0];
 
-        const deliveryCalculation = createDeliveryCalculationFallback(summary, deliveryOptions);
+        let deliveryCalculation = createDeliveryCalculationFallback(summary, deliveryOptions);
+        if (defaultAddress) {
+          try {
+            const calculated = await deliveryApi.calculate({
+              delivery_type: "delivery",
+              cart_total: summary.final_price || summary.subtotal || 0,
+              address_id: defaultAddress.id,
+              city: defaultAddress.city,
+            });
+            if (calculated) {
+              deliveryCalculation = calculated;
+            }
+          } catch {
+            // Keep fallback
+          }
+        }
+
         const timeSlots = await deliveryApi.getTimeSlots({
           date: today,
           delivery_type: "delivery",
@@ -92,7 +109,7 @@ export const CheckoutPage = () => {
             pickupPoints,
             summary,
             timeSlots,
-            user: profileSummary?.user ?? null,
+            user: userMe ?? null,
             status: "ready",
           });
         }
@@ -227,13 +244,16 @@ const createDeliveryCalculationFallback = (
   deliveryOptions: DeliveryOptionsResponse,
 ): DeliveryCalculateResponse => {
   const freeFrom = Number(deliveryOptions.delivery.free_from_amount ?? 3000);
-  const subtotal = Number(summary.subtotal || summary.final_price || 0);
-  const amountLeft = Math.max(0, freeFrom - subtotal);
+  const itemsTotal = Number(summary.final_price || summary.subtotal || 0);
+  const isFree = freeFrom > 0 && itemsTotal >= freeFrom;
+  const amountLeft = Math.max(0, freeFrom - itemsTotal);
+  const baseDeliveryPrice = deliveryOptions.delivery.base_price ?? "199.00";
+  const finalDeliveryPrice = isFree ? "0" : (summary.delivery_price ?? baseDeliveryPrice);
 
   return {
     amount_left_for_free_delivery: amountLeft > 0 ? String(amountLeft) : "0",
     available: deliveryOptions.delivery.enabled,
-    delivery_price: summary.delivery_price ?? deliveryOptions.delivery.base_price ?? "199.00",
+    delivery_price: finalDeliveryPrice,
     free_delivery_from: String(freeFrom),
     message: deliveryOptions.delivery.description ?? deliveryOptions.delivery.title,
     min_order_amount: deliveryOptions.delivery.min_order_amount ?? "1000.00",
@@ -241,7 +261,7 @@ const createDeliveryCalculationFallback = (
       id: 1,
       name: "Кизляр — Центральный",
       city: "Кизляр",
-      price: deliveryOptions.delivery.base_price ?? "199.00",
+      price: finalDeliveryPrice,
       free_delivery_from: String(freeFrom),
       min_order_amount: deliveryOptions.delivery.min_order_amount ?? "1000.00",
     } as any,

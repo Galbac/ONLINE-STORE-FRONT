@@ -34,7 +34,8 @@ import type {
 } from "@/entities/delivery";
 import { orderApi, type OrderCreateRequest, type OrderCreateResponse } from "@/entities/order";
 import { paymentApi, type PaymentCreateResponse } from "@/entities/payment";
-import type { AddressListResponse, AddressResponse, ProfileUserResponse } from "@/entities/profile";
+import type { AddressListResponse, AddressResponse } from "@/entities/profile";
+import { userApi, type UserMeResponse } from "@/entities/user";
 import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -49,7 +50,7 @@ interface CheckoutViewProps {
   pickupPoints: PickupPointListResponse;
   summary: CartSummaryResponse;
   timeSlots: DeliveryTimeSlotsResponse;
-  currentUser?: ProfileUserResponse | null;
+  currentUser?: UserMeResponse | null | undefined;
 }
 
 interface ContactState {
@@ -136,9 +137,6 @@ export const CheckoutView = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [isPhoneVerified, setIsPhoneVerified] = useState(
-    Boolean(currentUser?.is_phone_verified ?? currentUser?.is_verified)
-  );
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [idempotencyKey] = useState(() => {
@@ -148,11 +146,7 @@ export const CheckoutView = ({
     return `ord_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   });
 
-  useEffect(() => {
-    if (currentUser) {
-      setIsPhoneVerified(Boolean(currentUser.is_phone_verified ?? currentUser.is_verified));
-    }
-  }, [currentUser]);
+
 
   const selectedAddress = useMemo(() => {
     return addresses.items.find((address) => address.id === selectedAddressId) ?? defaultAddress;
@@ -185,15 +179,18 @@ export const CheckoutView = ({
     return !isKizlyarArea;
   }, [deliveryType, selectedAddress]);
 
-  const deliveryPrice = deliveryType === "pickup" ? "0" : (
-    summary.delivery_price ??
-    deliveryCalculation.delivery_price ??
-    deliveryOptions.delivery.base_price ??
-    "199.00"
-  );
-
   const itemsCount = cart.items.length;
-  const itemsTotal = Number(summary.subtotal || summary.final_price || 0);
+  const itemsTotal = Number(summary.final_price || summary.subtotal || 0);
+  const freeFrom = Number(deliveryCalculation?.free_delivery_from ?? deliveryOptions?.delivery?.free_from_amount ?? 3000);
+  const isFreeDelivery = freeFrom > 0 && itemsTotal >= freeFrom;
+
+  const deliveryPrice = deliveryType === "pickup" ? "0" : (
+    isFreeDelivery ? "0" : (
+      (deliveryCalculation.delivery_price && deliveryCalculation.delivery_price !== "0")
+        ? deliveryCalculation.delivery_price
+        : (deliveryOptions.delivery.base_price ?? "199.00")
+    )
+  );
   const minOrderAmount = Number(deliveryCalculation.min_order_amount || deliveryOptions.delivery.min_order_amount || 1000);
   const isMinOrderMet = itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
@@ -248,10 +245,8 @@ export const CheckoutView = ({
     setErrorMessage(null);
 
 
-    if (!isPhoneVerified) {
-      setIsVerifyModalOpen(true);
-      setErrorMessage("Для оформления заказа необходимо подтвердить номер телефона по SMS.");
-      return;
+    if (marketingConsent && !currentUser?.marketing_consent) {
+      userApi.updateMarketingConsent(true).catch(() => {});
     }
 
     let timeComment = "";
@@ -332,11 +327,7 @@ export const CheckoutView = ({
       return;
     }
 
-    if (paymentMethod === "on_delivery" && !isPhoneVerified) {
-      setIsVerifyModalOpen(true);
-      setErrorMessage("Для оплаты при получении требуется подтверждение номера телефона по SMS.");
-      return;
-    }
+
 
     startTransition(async () => {
       try {
@@ -695,6 +686,7 @@ export const CheckoutView = ({
           <aside className="space-y-5 xl:sticky xl:top-5 xl:self-start">
             <OrderSummary
               cart={cart}
+              currentUser={currentUser}
               deliveryCalculation={deliveryCalculation}
               deliveryPrice={deliveryPrice}
               deliveryType={deliveryType}
@@ -705,8 +697,6 @@ export const CheckoutView = ({
               itemsCount={itemsCount}
               itemsTotal={itemsTotal}
               minOrderAmount={minOrderAmount}
-              isPhoneVerified={isPhoneVerified}
-              onOpenVerifyModal={() => setIsVerifyModalOpen(true)}
               marketingConsent={marketingConsent}
               onMarketingConsentChange={setMarketingConsent}
             />
@@ -721,7 +711,7 @@ export const CheckoutView = ({
           phone={contact.phone || currentUser?.phone || ""}
           onClose={() => setIsVerifyModalOpen(false)}
           onSuccess={() => {
-            setIsPhoneVerified(true);
+            setIsVerifyModalOpen(false);
             setErrorMessage(null);
           }}
         />
@@ -1365,6 +1355,7 @@ const ReviewList = ({ items }: ReviewListProps) => {
 
 interface OrderSummaryProps {
   cart: CartResponse;
+  currentUser?: UserMeResponse | null | undefined;
   deliveryCalculation: DeliveryCalculateResponse;
   deliveryPrice: string;
   deliveryType: "delivery" | "pickup";
@@ -1375,14 +1366,13 @@ interface OrderSummaryProps {
   itemsCount: number;
   itemsTotal: number;
   minOrderAmount: number;
-  isPhoneVerified: boolean;
-  onOpenVerifyModal: () => void;
   marketingConsent: boolean;
   onMarketingConsentChange: (value: boolean) => void;
 }
 
 const OrderSummary = ({
   cart,
+  currentUser,
   deliveryCalculation,
   deliveryPrice,
   deliveryType,
@@ -1393,8 +1383,6 @@ const OrderSummary = ({
   itemsCount,
   itemsTotal,
   minOrderAmount,
-  isPhoneVerified,
-  onOpenVerifyModal,
   marketingConsent,
   onMarketingConsentChange,
 }: OrderSummaryProps) => {
@@ -1462,7 +1450,7 @@ const OrderSummary = ({
         ) : null}
         <SummaryLine 
           label="Доставка" 
-          value={deliveryPrice === "0" ? "Бесплатно (0 ₽)" : toPriceFormat(deliveryPrice)} 
+          value={deliveryPrice === "0" ? "Бесплатно" : toPriceFormat(deliveryPrice)} 
         />
       </div>
 
@@ -1487,33 +1475,13 @@ const OrderSummary = ({
         </div>
       ) : null}
 
-      {!isPhoneVerified ? (
-        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs">
-          <div className="flex items-center gap-2 font-bold text-amber-900 mb-1">
-            <ShieldCheck size={16} className="text-amber-600 shrink-0" />
-            <span>Требуется подтверждение телефона</span>
-          </div>
-          <p className="text-amber-800 leading-relaxed mb-2 text-[11px]">
-            Для защиты от спама при оплате при получении подтвердите номер по SMS.
-          </p>
-          <button
-            type="button"
-            onClick={onOpenVerifyModal}
-            className="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition cursor-pointer"
-          >
-            Подтвердить телефон по SMS
-          </button>
-        </div>
-      ) : null}
-
       <Button
-        className="mt-5 h-14 w-full text-base font-bold shadow-md shadow-emerald-700/20"
+        className="mt-5 h-14 w-full text-base font-bold shadow-md shadow-emerald-700/20 cursor-pointer"
         type="submit"
         disabled={
           isPending || 
           itemsCount === 0 || 
           !isMinOrderMet ||
-          (!isPhoneVerified) ||
           Boolean(order)
         }
       >
@@ -1528,8 +1496,6 @@ const OrderSummary = ({
           "Корзина пуста"
         ) : !isMinOrderMet ? (
           `Минимум ${toPriceFormat(minOrderAmount)}`
-        ) : !isPhoneVerified ? (
-          "Подтвердите телефон"
         ) : (
           "Создать заказ"
         )}
@@ -1586,15 +1552,17 @@ const OrderSummary = ({
       </p>
 
       {/* Опциональное согласие на маркетинговые рассылки (38-ФЗ) */}
-      <label className="mt-3 flex items-start gap-2.5 text-[11px] text-slate-600 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={marketingConsent}
-          onChange={(e) => onMarketingConsentChange(e.target.checked)}
-          className="mt-0.5 size-4 rounded accent-emerald-600"
-        />
-        <span>Получать персональные скидки, промокоды и уведомления об акциях (38-ФЗ)</span>
-      </label>
+      {!currentUser?.marketing_consent ? (
+        <label className="mt-3 flex items-start gap-2.5 text-[11px] text-slate-600 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={marketingConsent}
+            onChange={(e) => onMarketingConsentChange(e.target.checked)}
+            className="mt-0.5 size-4 rounded accent-emerald-600"
+          />
+          <span>Получать персональные скидки, промокоды и уведомления об акциях (38-ФЗ)</span>
+        </label>
+      ) : null}
     </section>
   );
 };

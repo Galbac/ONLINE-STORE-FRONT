@@ -8,7 +8,6 @@ import {
   unsubscribeFromPush,
 } from "@/shared/lib/push-notifications";
 import { getStoredAccessToken } from "@/shared/ui";
-import { toast } from "sonner";
 
 export type PushPermissionStatus =
   | "loading"
@@ -71,7 +70,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (typeof window === "undefined" || !isPushSupported()) {
-      toast.error("Push-уведомления не поддерживаются в вашем браузере");
+      
       return false;
     }
 
@@ -84,14 +83,14 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       if (res.success) {
         setIsSubscribed(true);
         dismissBanner();
-        toast.success("Push-уведомления успешно подключены!");
+        
         return true;
       } else {
-        toast.error(res.error || "Не удалось подключить уведомления");
+        
         return false;
       }
     } catch {
-      toast.error("Ошибка при запросе разрешения на push-уведомления");
+      
       return false;
     } finally {
       setIsLoading(false);
@@ -107,9 +106,9 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         const ok = await unsubscribeFromPush();
         if (ok) {
           setIsSubscribed(false);
-          toast.info("Push-уведомления отключены");
+          
         } else {
-          toast.error("Не удалось отключить push-уведомления");
+          
         }
       } else {
         const res = await subscribeToPush();
@@ -118,9 +117,9 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         if (res.success) {
           setIsSubscribed(true);
           dismissBanner();
-          toast.success("Push-уведомления успешно подключены!");
+          
         } else {
-          toast.error(res.error || "Не удалось подключить push-уведомления");
+          
         }
       }
     } finally {
@@ -147,12 +146,12 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success("Тестовое уведомление отправлено!");
+        
       } else {
-        toast.error(data.detail || data.message || "Ошибка отправки тестового уведомления");
+        
       }
     } catch {
-      toast.error("Не удалось отправить тестовое уведомление");
+      
     } finally {
       setIsTesting(false);
     }

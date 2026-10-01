@@ -31,7 +31,6 @@ import { userApi } from "@/entities/user";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container } from "@/shared/ui";
-import { toast } from "sonner";
 import { ProfileLogoutButton } from "./ProfileLogoutButton";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 
@@ -211,9 +210,9 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
       await userApi.updateMarketingConsent(checked);
       setMarketingConsent(checked);
       onUserUpdated({ ...user, marketing_consent: checked });
-      toast.success(checked ? "Рассылки и акции подключены" : "Рассылки отключены");
+      
     } catch {
-      toast.error("Не удалось обновить согласие на рассылки");
+      
     } finally {
       setIsUpdatingMarketing(false);
     }

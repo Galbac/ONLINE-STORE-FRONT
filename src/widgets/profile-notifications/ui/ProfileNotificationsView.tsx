@@ -27,7 +27,6 @@ import {
 import { cn, ROUTES } from "@/shared/config";
 import { Button, Container, getStoredAccessToken } from "@/shared/ui";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { toast } from "sonner";
 
 type NotificationFilter = "all" | "unread" | "order" | "payment" | "delivery";
 
@@ -138,9 +137,9 @@ export const ProfileNotificationsView = () => {
           ),
         );
         setUnreadCount((current) => Math.max(current - 1, 0));
-        toast.success("Уведомление отмечено как прочитанное");
+        
       } catch {
-        toast.error("Не удалось отметить уведомление как прочитанное");
+        
       } finally {
         setPendingNotificationId(null);
       }
@@ -161,9 +160,9 @@ export const ProfileNotificationsView = () => {
           current.map((item) => ({ ...item, is_read: true, read_at: new Date().toISOString() })),
         );
         setUnreadCount(0);
-        toast.success("Все уведомления прочитаны");
+        
       } catch {
-        toast.error("Часть уведомлений не удалось обновить");
+        
       }
     });
   };

@@ -12,7 +12,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { toast } from "sonner";
 import { STORE_INFO } from "@/shared/config";
 import {
   getGlobalDeferredPrompt,
@@ -51,10 +50,10 @@ export const PwaInstallModal = () => {
       setIsInstalling(true);
       const result = await triggerInstallPrompt();
       if (result === "accepted") {
-        toast.success("Приложение успешно установлено на ваш телефон!");
+        
         setIsOpen(false);
       } else if (result === "dismissed") {
-        toast.info("Вы можете установить приложение в любое удобное время.");
+        
       }
     } finally {
       setIsInstalling(false);

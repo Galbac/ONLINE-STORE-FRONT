@@ -6,7 +6,6 @@ import { AlertTriangle, Loader2, Trash2, X } from "lucide-react";
 import { userApi } from "@/entities/user";
 import { clearStoredAuth } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
-import { toast } from "sonner";
 
 interface DeleteAccountModalProps {
   isOpen: boolean;
@@ -38,7 +37,7 @@ export const DeleteAccountModal = ({ isOpen, onClose }: DeleteAccountModalProps)
       try {
         await userApi.deleteMe({ password: password.trim(), confirm: true });
         clearStoredAuth();
-        toast.success("Ваш аккаунт успешно удалён");
+        
         onClose();
         router.push(ROUTES.HOME);
         router.refresh();

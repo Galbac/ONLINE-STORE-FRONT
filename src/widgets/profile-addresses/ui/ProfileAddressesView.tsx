@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { Info, MapPin, Plus } from "lucide-react";
-import { toast } from "sonner";
 import {
   profileApi,
   type AddressCreateRequest,
@@ -196,7 +195,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
           return next;
         });
 
-        toast.success("Адрес успешно обновлен");
+        
       } else {
         // Create mode
         const shouldBeDefault = formData.isDefault || addresses.length === 0;
@@ -238,12 +237,12 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
           return next;
         });
 
-        toast.success("Адрес успешно добавлен");
+        
       }
 
       handleCloseModal();
     } catch {
-      toast.error("Не удалось сохранить адрес. Попробуйте снова.");
+      
     } finally {
       setIsSubmitting(false);
     }
@@ -277,7 +276,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
         return next;
       });
 
-      toast.success("Основной адрес доставки изменен");
+      
     });
   };
 

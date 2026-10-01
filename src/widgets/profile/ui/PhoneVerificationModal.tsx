@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { AlertCircle, Loader2, ShieldCheck, X } from "lucide-react";
 import { userApi } from "@/entities/user";
-import { toast } from "sonner";
 
 interface PhoneVerificationModalProps {
   isOpen: boolean;
@@ -30,7 +29,7 @@ export const PhoneVerificationModal = ({
       try {
         await userApi.sendPhoneOtp();
         setCountdown(60);
-        toast.info(`Код подтверждения отправлен на ${phone}`);
+        
       } catch {
         setError("Не удалось отправить SMS. Повторите попытку позже.");
       }
@@ -64,7 +63,7 @@ export const PhoneVerificationModal = ({
     startVerifying(async () => {
       try {
         await userApi.verifyPhoneOtp(code.trim());
-        toast.success("Номер телефона успешно подтвержден!");
+        
         onSuccess();
         onClose();
       } catch (err: any) {

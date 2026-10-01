@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/shared/config";
 
 interface ProductArticleCopyProps {
@@ -49,7 +48,7 @@ export const ProductArticleCopy = ({ article, className }: ProductArticleCopyPro
   const handleCopy = async () => {
         setCopied(true);
     void copyToClipboard(article);
-    toast.success("Артикул «" + article + "» скопирован в буфер обмена");
+    
     setTimeout(() => setCopied(false), 3000);
   };
 

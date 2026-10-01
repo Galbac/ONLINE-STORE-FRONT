@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Heart, Star, ThumbsUp } from "lucide-react";
-import { toast } from "sonner";
 
 interface OrderCourierTipsProps {
   orderId: number;
@@ -20,7 +19,7 @@ export const OrderCourierTips = ({ orderId: _orderId }: OrderCourierTipsProps) =
     if (typeof window !== "undefined" && "vibrate" in navigator) {
       try { navigator.vibrate(12); } catch (_) {}
     }
-    toast.success(`Спасибо за оценку: ${score} из 5!`);
+    
   };
 
   const handleSendTip = (amount: number) => {
@@ -29,7 +28,7 @@ export const OrderCourierTips = ({ orderId: _orderId }: OrderCourierTipsProps) =
       try { navigator.vibrate(20); } catch (_) {}
     }
     setIsSubmitted(true);
-    toast.success(`Спасибо! Чаевые ${amount} ₽ отправлены курьеру ❤️`);
+    
   };
 
   return (

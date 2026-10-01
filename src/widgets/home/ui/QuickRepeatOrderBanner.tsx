@@ -6,7 +6,6 @@ import { orderApi, type OrderShortResponse } from "@/entities/order";
 import { getStoredAccessToken } from "@/shared/ui";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { toPriceFormat } from "@/shared/lib/format";
-import { toast } from "sonner";
 import { openCartDrawer } from "@/widgets/cart-drawer";
 
 export const QuickRepeatOrderBanner = () => {
@@ -43,14 +42,9 @@ export const QuickRepeatOrderBanner = () => {
       try {
         const response = await orderApi.repeatProfile(lastOrder.id, { replace_cart: false }, token);
         notifyCartChanged({ itemsCount: response.cart.items.length });
-        toast.success("Товары из прошлого заказа добавлены в корзину!", {
-          action: {
-            label: "В корзину",
-            onClick: () => openCartDrawer(),
-          },
-        });
+        openCartDrawer();
       } catch {
-        toast.error("Не удалось повторить заказ. Возможно, некоторые товары недоступны.");
+        // silent
       }
     });
   };

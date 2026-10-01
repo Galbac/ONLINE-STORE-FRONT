@@ -2,7 +2,6 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { toast } from "sonner";
 import { favoriteApi } from "../api/favoriteApi";
 import { cartApi } from "@/entities/cart";
 import type { FavoriteProductResponse } from "../types";
@@ -24,6 +23,7 @@ export interface FavoriteState {
   addFavorite: (product: FavoriteProductResponse) => Promise<boolean>;
   removeFavorite: (productId: number, productName?: string) => Promise<boolean>;
   toggleFavorite: (product: FavoriteProductResponse) => Promise<boolean>;
+  toggleFavoriteById: (productId: number, productName?: string, extra?: Partial<FavoriteProductResponse>) => Promise<boolean>;
   clearFavorites: () => Promise<void>;
   addAllToCart: () => Promise<{ addedCount: number; failedCount: number }>;
   isFavorite: (productId: number) => boolean;
@@ -93,7 +93,6 @@ export const useFavoritesStore = create<FavoriteState>()(
         try {
           await favoriteApi.add(product.id, token);
           set({ pendingProductId: null });
-          toast.success('«' + product.name + '» добавлен в избранное');
           return true;
         } catch {
           // If 409 already exists, keep it
@@ -102,12 +101,10 @@ export const useFavoritesStore = create<FavoriteState>()(
         }
       },
 
-      removeFavorite: async (productId: number, productName?: string) => {
+      removeFavorite: async (productId: number, _productName?: string) => {
         const token = getAccessToken();
         const prevItems = get().items;
-        const target = prevItems.find((it) => it.id === productId);
-        const name = productName || target?.name || "Товар";
-
+                
         // Optimistic removal
         const nextItems = prevItems.filter((it) => it.id !== productId);
         set({ items: nextItems, pendingProductId: productId, errorMessage: null });
@@ -116,11 +113,9 @@ export const useFavoritesStore = create<FavoriteState>()(
         try {
           await favoriteApi.remove(productId, token);
           set({ pendingProductId: null });
-          toast('«' + name + '» удален из избранного');
           return true;
         } catch {
           set({ items: prevItems, pendingProductId: null, errorMessage: "Не удалось удалить из избранного" });
-          toast.error("Не удалось удалить из избранного");
           return false;
         }
       },
@@ -130,6 +125,25 @@ export const useFavoritesStore = create<FavoriteState>()(
           return get().removeFavorite(product.id, product.name);
         } else {
           return get().addFavorite(product);
+        }
+      },
+
+      toggleFavoriteById: async (productId: number, productName?: string, extra?: Partial<FavoriteProductResponse>) => {
+        if (get().isFavorite(productId)) {
+          return get().removeFavorite(productId, productName);
+        } else {
+          const minimalProduct: FavoriteProductResponse = {
+            id: productId,
+            name: productName || "Товар",
+            slug: extra?.slug ?? `product-${productId}`,
+            price: extra?.price ?? "0",
+            unit: extra?.unit ?? "шт",
+            product_type: extra?.product_type ?? "simple",
+            is_available: extra?.is_available ?? true,
+            stock_display: extra?.stock_display ?? "В наличии",
+            ...extra,
+          };
+          return get().addFavorite(minimalProduct);
         }
       },
 
@@ -146,7 +160,6 @@ export const useFavoritesStore = create<FavoriteState>()(
             prevItems.map((prod) => favoriteApi.remove(prod.id, token).catch(() => null)),
           );
           set({ isClearing: false });
-          toast.success("Избранное очищено");
         } catch {
           set({ isClearing: false });
         }
@@ -181,24 +194,6 @@ export const useFavoritesStore = create<FavoriteState>()(
 
         if (latestCartItemsCount > 0) {
           notifyCartChanged({ itemsCount: latestCartItemsCount });
-        }
-
-        if (addedCount > 0) {
-          toast.success(
-            'Добавлено в корзину: ' + addedCount + ' ' + (addedCount === 1 ? 'товар' : 'товаров'),
-            {
-              action: {
-                label: "В корзину",
-                onClick: () => {
-                  if (typeof window !== "undefined") {
-                    window.location.assign("/cart");
-                  }
-                },
-              },
-            },
-          );
-        } else if (failedCount > 0) {
-          toast.error("Не удалось добавить товары в корзину");
         }
 
         return { addedCount, failedCount };

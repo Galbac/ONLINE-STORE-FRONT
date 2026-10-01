@@ -1,15 +1,12 @@
 "use client";
 
-import { toast } from "sonner";
 
 import { useState, useTransition } from "react";
 import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { cartApi } from "@/entities/cart";
-import { favoriteApi } from "@/entities/favorite";
-import { isApiErrorStatus } from "@/shared/api";
+import { useFavoritesStore, useFavoritesHydrated } from "@/entities/favorite";
 import { cn } from "@/shared/config";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
-import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 import { toPriceFormat } from "@/shared/lib/format";
 
 interface ProductPurchaseActionsProps {
@@ -43,7 +40,11 @@ export const ProductPurchaseActions = ({
   const min = toPositiveNumber(minQuantity, step);
   const stock = toPositiveNumber(stockQuantity, 0);
   const [quantity, setQuantity] = useState(min);
-  const [isFavorite, setIsFavorite] = useState(initialFavorite);
+  const isFavorite = useFavoritesHydrated(
+    (state) => state.items.some((it) => it.id === productId),
+    initialFavorite,
+  );
+  const toggleFavoriteById = useFavoritesStore((state) => state.toggleFavoriteById);
   const [isCartPending, startCartTransition] = useTransition();
   const [isFavoritePending, startFavoriteTransition] = useTransition();
 
@@ -83,31 +84,23 @@ export const ProductPurchaseActions = ({
           quantity: formatQuantityValue(quantity),
         });
         notifyCartChanged({ itemsCount: response.cart.items_count });
-        toast.success(`Товар «${productName}» (${formatQuantityValue(quantity)} ${unitLabel(unit)}) добавлен в корзину`);
       } catch {
-        toast.error("Не удалось добавить товар в корзину");
+        // silent
       }
     });
   };
 
   const handleToggleFavorite = (): void => {
     startFavoriteTransition(async () => {
-      const nextValue = !isFavorite;
-
-      if (nextValue) {
-        await favoriteApi.add(productId).catch((error: unknown) => {
-          if (isApiErrorStatus(error, 409)) {
-            return;
-          }
-
-          throw error;
-        });
-      } else {
-        await favoriteApi.remove(productId);
-      }
-
-      setIsFavorite(nextValue);
-      notifyFavoritesChanged();
+      await toggleFavoriteById(productId, productName, {
+        price,
+        old_price: oldPrice ?? null,
+        discount_percent: discountPercent ?? null,
+        unit,
+        min_quantity: minQuantity,
+        quantity_step: quantityStep,
+        is_available: isAvailable,
+      });
     });
   };
 

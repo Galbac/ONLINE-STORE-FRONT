@@ -8,7 +8,6 @@ import { authApi } from "@/entities/auth";
 import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { storeAuthTokens } from "@/shared/ui";
-import { toast } from "sonner";
 
 interface LoginFormValues {
   login: string;
@@ -73,7 +72,6 @@ export const LoginForm = () => {
       } catch (_) {}
 
       setStatus("success");
-      toast.success("Вход выполнен успешно!");
 
       const targetUrl = getSafeNextPath(searchParams.get("next"));
       // Мгновенный переход без очистки полей и без дергания интерфейса

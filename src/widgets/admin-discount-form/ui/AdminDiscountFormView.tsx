@@ -12,6 +12,7 @@ import {
 } from "@/entities/admin-discount";
 import type { AdminProductListItemResponse } from "@/entities/admin-product";
 import { ROUTES } from "@/shared/config";
+import { AdminApiError } from "@/shared/api";
 
 interface AdminDiscountFormViewProps {
   categories: AdminCategoryListItemResponse[];
@@ -56,8 +57,12 @@ export const AdminDiscountFormView = ({
         router.push(ROUTES.ADMIN_DISCOUNT_EDIT(response.id));
         router.refresh();
       })
-      .catch(() => {
-        setError("Не удалось сохранить скидку. Проверьте поля и права доступа.");
+      .catch((submitError: unknown) => {
+        if (submitError instanceof AdminApiError && submitError.detail) {
+          setError(submitError.detail);
+        } else {
+          setError("Не удалось сохранить скидку. Проверьте поля и права доступа.");
+        }
       })
       .finally(() => {
         setIsPending(false);
@@ -106,11 +111,11 @@ export const AdminDiscountFormView = ({
                   <span className="mb-2 block text-sm font-bold">Расчет</span>
                   <select
                     className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm transition outline-none"
-                    defaultValue={discount?.discount_type ?? "percent"}
+                    defaultValue={discount?.discount_type === "fixed" ? "fixed_amount" : (discount?.discount_type ?? "percent")}
                     name="discount_type"
                   >
-                    <option value="percent">Процент</option>
-                    <option value="fixed">Фиксированная сумма</option>
+                    <option value="percent">Процент (%)</option>
+                    <option value="fixed_amount">Фиксированная сумма (₽)</option>
                   </select>
                 </label>
                 <Input

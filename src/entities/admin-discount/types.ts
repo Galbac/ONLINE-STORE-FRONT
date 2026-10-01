@@ -1,6 +1,6 @@
 export type AdminDiscountTargetType = "product" | "category" | "cart" | string;
 
-export type AdminDiscountValueType = "percent" | "fixed" | string;
+export type AdminDiscountValueType = "percent" | "fixed_amount" | "fixed_price" | "fixed" | string;
 
 export interface AdminDiscountProductResponse {
   id: number;

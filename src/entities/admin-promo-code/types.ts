@@ -1,4 +1,4 @@
-export type AdminPromoCodeDiscountType = "percent" | "fixed" | string;
+export type AdminPromoCodeDiscountType = "percent" | "fixed_amount" | "fixed" | string;
 
 export interface AdminPromoCodeProductResponse {
   id: number;

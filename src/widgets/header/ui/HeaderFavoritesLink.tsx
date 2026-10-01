@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
-import { favoriteApi } from "@/entities/favorite";
+import { useFavoritesStore } from "@/entities/favorite";
 import { ROUTES } from "@/shared/config";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 import {
@@ -27,10 +27,10 @@ export const HeaderFavoritesLink = () => {
       }
 
       try {
-        const favorites = await favoriteApi.getList({ page: 1, limit: 1 });
-
+        await useFavoritesStore.getState().fetchFavorites();
+        const count = useFavoritesStore.getState().items.length;
         if (isMounted) {
-          setItemsCount(favorites.total);
+          setItemsCount(count);
         }
       } catch {
         if (isMounted) {

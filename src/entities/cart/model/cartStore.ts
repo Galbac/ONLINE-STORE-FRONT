@@ -2,7 +2,6 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { toast } from "sonner";
 import { cartApi } from "../api/cartApi";
 import { favoriteApi } from "@/entities/favorite";
 import type {
@@ -86,7 +85,7 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      addItem: async ({product_id, quantity, name}) => {
+      addItem: async ({product_id, quantity}) => {
         set({ pendingAction: 'add-' + product_id, errorMessage: null });
         try {
           const res = await cartApi.addItem({ product_id, quantity });
@@ -104,14 +103,14 @@ export const useCartStore = create<CartState>()(
           });
 
           notifyCartChanged({ itemsCount: res.cart.items_count });
-          toast.success(name ? '«' + name + '» добавлен в корзину' : "Товар добавлен в корзину");
+          
           return true;
         } catch {
           set({
             pendingAction: null,
             errorMessage: "Не удалось добавить товар в корзину",
           });
-          toast.error("Не удалось добавить товар в корзину");
+          
           return false;
         }
       },
@@ -179,11 +178,11 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
             errorMessage: "Не удалось обновить количество",
           });
-          toast.error("Не удалось изменить количество товара");
+          
         }
       },
 
-      removeItem: async (cartItemId: number, productName?: string) => {
+      removeItem: async (cartItemId: number, _productName?: string) => {
         const prevCart = get().cart;
         const prevSummary = get().summary;
 
@@ -221,7 +220,7 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
           });
           notifyCartChanged({ itemsCount: nextSummary.items_count });
-          toast(productName ? '«' + productName + '» удален из корзины' : 'Товар удален из корзины');
+          
         } catch {
           set({
             cart: prevCart,
@@ -229,7 +228,7 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
             errorMessage: "Не удалось удалить товар",
           });
-          toast.error("Не удалось удалить товар");
+          
         }
       },
 
@@ -244,13 +243,13 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
           });
           notifyCartChanged({ itemsCount: 0 });
-          toast.success("Корзина очищена");
+          
         } catch {
           set({
             pendingAction: null,
             errorMessage: "Не удалось очистить корзину",
           });
-          toast.error("Ошибка при очистке корзины");
+          
         }
       },
 
@@ -264,14 +263,14 @@ export const useCartStore = create<CartState>()(
             summary: nextSummary,
             pendingAction: null,
           });
-          toast.success("Промокод успешно применен!");
+          
           return { success: true, message: response.message || "Промокод применен" };
         } catch {
           set({
             pendingAction: null,
             errorMessage: "Неверный или недействительный промокод",
           });
-          toast.error("Не удалось применить промокод");
+          
           return { success: false, message: "Не удалось применить промокод" };
         }
       },
@@ -286,14 +285,14 @@ export const useCartStore = create<CartState>()(
             summary: nextSummary,
             pendingAction: null,
           });
-          toast.success("Промокод удален");
+          
           return { success: true, message: response.message || "Промокод удален" };
         } catch {
           set({
             pendingAction: null,
             errorMessage: "Не удалось удалить промокод",
           });
-          toast.error("Не удалось удалить промокод");
+          
           return { success: false, message: "Не удалось применить промокод" };
         }
       },
@@ -304,10 +303,10 @@ export const useCartStore = create<CartState>()(
           await favoriteApi.add(item.product_id);
           notifyFavoritesChanged();
           await get().removeItem(item.id, item.name);
-          toast.success('«' + item.name + '» перемещен в избранное');
+          
         } catch {
           set({ pendingAction: null });
-          toast.error("Не удалось переместить в избранное");
+          
         }
       },
     }),

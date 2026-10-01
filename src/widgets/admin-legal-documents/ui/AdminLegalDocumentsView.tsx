@@ -9,7 +9,6 @@ import {
   Save,
   ShieldCheck,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import {
   legalDocumentApi,
@@ -65,7 +64,7 @@ export const AdminLegalDocumentsView: React.FC<AdminLegalDocumentsViewProps> = (
         setCurrentDoc(doc);
       })
       .catch(() => {
-        toast.error("Не удалось загрузить документ " + selectedSlug);
+        
       })
       .finally(() => {
         setIsLoadingDoc(false);
@@ -100,12 +99,12 @@ export const AdminLegalDocumentsView: React.FC<AdminLegalDocumentsViewProps> = (
     setContentHtml(currentDoc.content_html || "");
     setIsActive(currentDoc.is_active);
     setHasChanges(false);
-    toast.info("Изменения сброшены до сохраненных");
+    
   };
 
   const handleSave = useCallback(() => {
     if (!selectedSlug || !title.trim()) {
-      toast.error("Укажите название документа");
+      
       return;
     }
 
@@ -136,10 +135,10 @@ export const AdminLegalDocumentsView: React.FC<AdminLegalDocumentsViewProps> = (
           ),
         );
 
-        toast.success("Документ успешно сохранен!");
+        
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Ошибка при сохранении документа";
-        toast.error(msg);
+        
       }
     });
   }, [selectedSlug, title, description, contentHtml, isActive]);

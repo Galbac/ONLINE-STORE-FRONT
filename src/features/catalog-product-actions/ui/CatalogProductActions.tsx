@@ -3,13 +3,9 @@
 import { useState, useTransition } from "react";
 import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { cartApi } from "@/entities/cart";
-import { favoriteApi } from "@/entities/favorite";
-import { isApiErrorStatus } from "@/shared/api";
+import { useFavoritesStore, useFavoritesHydrated } from "@/entities/favorite";
 import { cn } from "@/shared/config";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
-import { toast } from "sonner";
-import { openCartDrawer } from "@/widgets/cart-drawer";
-import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
 interface CatalogCartButtonProps {
@@ -44,16 +40,9 @@ export const CatalogCartButton = ({
       ? (window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token"))
       : null;
     if (!token || !isAccessTokenValid(token)) {
-      toast.error("Войдите в аккаунт, чтобы добавить товар в корзину", {
-        action: {
-          label: "Войти",
-          onClick: () => {
-            if (typeof window !== "undefined") {
-              window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-            }
-          },
-        },
-      });
+      if (typeof window !== "undefined") {
+        window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      }
       return false;
     }
     return true;
@@ -79,15 +68,8 @@ export const CatalogCartButton = ({
           setQuantity(finalQuantity);
         }
         notifyCartChanged({ itemsCount: response.cart.items_count });
-        toast.success(`«${productName}» добавлен в корзину`, {
-          action: {
-            label: "Открыть корзину",
-            onClick: () => openCartDrawer(),
-          },
-        });
       } catch {
         setQuantity(0);
-        toast.error(`Не удалось добавить «${productName}» в корзину`);
       }
     });
   };
@@ -118,7 +100,6 @@ export const CatalogCartButton = ({
         }
       } catch {
         setQuantity(prevQty); // Rollback on error
-        toast.error(`Не удалось обновить количество для «${productName}»`);
       }
     });
   };
@@ -147,7 +128,6 @@ export const CatalogCartButton = ({
         }
       } catch {
         setQuantity(prevQty); // Rollback on error
-        toast.error(`Не удалось уменьшить количество для «${productName}»`);
       }
     });
   };
@@ -216,48 +196,36 @@ export const CatalogCartButton = ({
 interface CatalogFavoriteButtonProps {
   productId: number;
   productName: string;
-  initialFavorite: boolean;
+  initialFavorite?: boolean;
   className?: string;
 }
 
 export const CatalogFavoriteButton = ({
-  initialFavorite,
+  initialFavorite = false,
   productId,
   productName,
   className,
 }: CatalogFavoriteButtonProps) => {
-  const [isFavorite, setIsFavorite] = useState(initialFavorite);
+  const isFavorite = useFavoritesHydrated(
+    (state) => state.items.some((it) => it.id === productId),
+    initialFavorite,
+  );
+  const toggleFavoriteById = useFavoritesStore((state) => state.toggleFavoriteById);
   const [isPending, startTransition] = useTransition();
 
-  const handleToggleFavorite = (): void => {
+  const handleToggleFavorite = (e: React.MouseEvent): void => {
+    e.preventDefault();
+    e.stopPropagation();
+
     startTransition(async () => {
-      const nextValue = !isFavorite;
-
-      try {
-        if (nextValue) {
-          await favoriteApi.add(productId);
-        } else {
-          await favoriteApi.remove(productId);
-        }
-        setIsFavorite(nextValue);
-        notifyFavoritesChanged();
-        toast(nextValue ? `«${productName}» добавлен в избранное` : `«${productName}» удален из избранного`);
-      } catch (error) {
-        if (nextValue && isApiErrorStatus(error, 409)) {
-          setIsFavorite(true);
-          notifyFavoritesChanged();
-          return;
-        }
-
-        setIsFavorite(isFavorite);
-      }
+      await toggleFavoriteById(productId, productName);
     });
   };
 
   return (
     <button
       className={cn(
-        "flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95",
+        "flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-rose-50 hover:text-rose-500 active:scale-95 cursor-pointer",
         isFavorite && "text-rose-500",
         isPending && "cursor-wait opacity-70",
         className,

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Toaster } from "sonner";
 import { STORE_INFO } from "@/shared/config";
 import { CookieBanner, PwaInstallPrompt, PwaInstallModal, ScrollRestorationKeeper } from "@/shared/ui";
 import { OfflineIndicator } from "@/shared/ui/offline-indicator";
@@ -67,7 +66,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <BottomNav />
         <ScrollRestorationKeeper />
         <CartDrawer />
-        <Toaster position="bottom-right" richColors closeButton />
         <CookieBanner />
         <PwaInstallPrompt />
         <PwaInstallModal />

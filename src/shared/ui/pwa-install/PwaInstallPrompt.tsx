@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Bell, Download, HelpCircle, Smartphone, Sparkles, X } from "lucide-react";
-import { toast } from "sonner";
 import { STORE_INFO } from "@/shared/config";
 import { registerServiceWorker, subscribeToPush } from "@/shared/lib/push-notifications";
 import {
@@ -83,7 +82,7 @@ export const PwaInstallPrompt = () => {
     const outcome = await triggerInstallPrompt();
     if (outcome === "accepted") {
       setShowPrompt(false);
-      toast.success("Приложение успешно установлено!");
+      
     } else if (outcome === "unsupported") {
       openPwaInstallModal();
       setShowPrompt(false);
@@ -100,10 +99,10 @@ export const PwaInstallPrompt = () => {
       setIsSubscribing(true);
       const res = await subscribeToPush();
       if (res.success) {
-        toast.success("Уведомления успешно подключены!");
+        
         setShowPrompt(false);
       } else {
-        toast.error(res.error || "Не удалось включить уведомления");
+        
       }
     } finally {
       setIsSubscribing(false);

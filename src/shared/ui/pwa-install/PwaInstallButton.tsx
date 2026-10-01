@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Download, Smartphone, Sparkles } from "lucide-react";
 import { cn } from "@/shared/config";
-import { toast } from "sonner";
 import { isAppStandalone, isIosDevice, getGlobalDeferredPrompt, openPwaInstallModal, triggerInstallPrompt } from "@/shared/lib/pwa-install";
 
 interface PwaInstallButtonProps {
@@ -28,7 +27,7 @@ export const PwaInstallButton = ({ variant = "compact", className }: PwaInstallB
     if (!isIosDevice() && getGlobalDeferredPrompt()) {
       const outcome = await triggerInstallPrompt();
       if (outcome === "accepted") {
-        toast.success("Приложение успешно установлено на ваш телефон!");
+        
         return;
       }
     }

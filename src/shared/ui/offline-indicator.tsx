@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { WifiOff } from "lucide-react";
-import { toast } from "sonner";
 
 export const OfflineIndicator = () => {
   const [isOffline, setIsOffline] = useState(false);
@@ -16,7 +15,7 @@ export const OfflineIndicator = () => {
 
     const handleOnline = () => {
       setIsOffline(false);
-      toast.success("Подключение к интернету восстановлено");
+      
     };
 
     if (!navigator.onLine) {

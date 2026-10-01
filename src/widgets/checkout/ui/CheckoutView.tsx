@@ -184,14 +184,38 @@ export const CheckoutView = ({
   const minOrderAmount = Number(deliveryCalculation.min_order_amount || deliveryOptions.delivery.min_order_amount || 1000);
   const isMinOrderMet = itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
+  const isStep1Done = Boolean(contact.name.trim().length >= 2 && contact.phone.trim().length >= 10);
+  const isStep2Done = Boolean(deliveryType === "delivery" || deliveryType === "pickup");
+  const isStep3Done = deliveryType === "pickup" ? Boolean(selectedPickupPointId) : Boolean(selectedAddressId);
+  const isStep4Done = Boolean(selectedDate && selectedSlotId);
+  const isStep5Done = Boolean(paymentMethod);
+  const isStep6Done = Boolean(order);
+
+  const completedSteps = useMemo(() => ({
+    1: isStep1Done,
+    2: isStep2Done,
+    3: isStep3Done,
+    4: isStep4Done,
+    5: isStep5Done,
+    6: isStep6Done,
+  }), [isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done, isStep6Done]);
+
   const currentStep = useMemo(() => {
     if (order) return 6;
-    if (paymentMethod && (selectedSlotId || selectedDate)) return 5;
-    if (selectedSlotId || selectedDate) return 4;
-    if (deliveryType === "pickup" ? selectedPickupPointId : selectedAddressId) return 3;
-    if (contact.name && contact.phone) return 2;
-    return 1;
-  }, [contact.name, contact.phone, deliveryType, order, paymentMethod, selectedAddressId, selectedDate, selectedPickupPointId, selectedSlotId]);
+    if (!isStep1Done) return 1;
+    if (!isStep2Done) return 2;
+    if (!isStep3Done) return 3;
+    if (!isStep4Done) return 4;
+    if (!isStep5Done) return 5;
+    return 6;
+  }, [order, isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done]);
+
+  const handleScrollToStep = (stepNumber: number) => {
+    const elem = document.getElementById("checkout-step-" + stepNumber);
+    if (elem) {
+      elem.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   const handleContactChange = (field: keyof ContactState, value: string): void => {
     setContact((current) => ({
@@ -327,7 +351,7 @@ export const CheckoutView = ({
 
         <h1 className="text-text-primary mb-7 text-4xl font-bold md:text-5xl">Оформление заказа</h1>
 
-        <CheckoutSteps activeStep={currentStep} />
+        <CheckoutSteps currentStep={currentStep} completedSteps={completedSteps} onStepClick={handleScrollToStep} />
 
         {errorMessage ? (
           <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -657,47 +681,84 @@ export const CheckoutView = ({
 };
 
 interface CheckoutStepsProps {
-  activeStep: number;
+  currentStep: number;
+  completedSteps: Record<number, boolean>;
+  onStepClick?: (stepNumber: number) => void;
 }
 
-const CheckoutSteps = ({ activeStep }: CheckoutStepsProps) => {
+const CheckoutSteps = ({ currentStep, completedSteps, onStepClick }: CheckoutStepsProps) => {
   return (
-    <div className="relative">
+    <div className="relative mb-2">
       <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <ol className="flex min-w-[560px] md:min-w-0 md:grid md:grid-cols-6 gap-3 pr-8 md:pr-0">
-        {steps.map((step, index) => {
-          const stepNumber = index + 1;
-          const isActive = stepNumber <= activeStep;
+        <ol className="flex min-w-[580px] md:min-w-0 md:grid md:grid-cols-6 gap-3 pr-8 md:pr-0">
+          {steps.map((step, index) => {
+            const stepNumber = index + 1;
+            const isStepDone = Boolean(completedSteps[stepNumber]);
+            const allPreviousDone = Boolean(
+              completedSteps[1] &&
+              completedSteps[2] &&
+              completedSteps[3] &&
+              completedSteps[4] &&
+              completedSteps[5]
+            );
 
-          return (
-            <li className="relative flex flex-1 items-center gap-2.5 md:block md:text-center shrink-0" key={step}>
-              <span
-                className={cn(
-                  "relative z-10 grid size-8 md:size-9 shrink-0 place-items-center rounded-full border text-xs md:text-sm font-bold transition",
-                  isActive
-                    ? "border-accent-primary bg-accent-primary text-accent-contrast shadow-xs"
-                    : "border-border bg-bg-primary text-text-muted",
-                )}
+            // Для шагов 1-5: если данные заполнены — показываем галочку
+            // Для шага 6 (Проверка): галочка только если заказ уже отправлен, иначе активен если все 1-5 заполнены
+            const isCompleted = stepNumber === 6 ? isStepDone : isStepDone;
+            const isCurrent = stepNumber === 6 ? !isStepDone && allPreviousDone : !isStepDone && stepNumber === currentStep;
+            const isUpcoming = !isCompleted && !isCurrent;
+
+            return (
+              <li
+                className="relative flex flex-1 items-center gap-2.5 md:block md:text-center shrink-0 cursor-pointer group"
+                key={step}
+                onClick={() => onStepClick?.(stepNumber)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onStepClick?.(stepNumber);
+                  }
+                }}
               >
-                {stepNumber}
-              </span>
-              {stepNumber < steps.length ? (
-                <span className="bg-border absolute top-4 left-1/2 hidden h-px w-full md:block" />
-              ) : null}
-              <p
-                className={cn(
-                  "text-xs md:text-sm leading-tight md:mt-2 truncate max-w-[85px] md:max-w-none",
-                  isActive ? "text-accent-primary font-bold" : "text-text-secondary",
-                )}
-              >
-                {step}
-              </p>
-            </li>
-          );
-        })}
-      </ol>
+                <span
+                  className={cn(
+                    "relative z-10 grid size-8 md:size-9 mx-auto shrink-0 place-items-center rounded-full border text-xs md:text-sm font-bold transition-all duration-200",
+                    isCompleted && "border-emerald-600 bg-emerald-600 text-white shadow-xs",
+                    isCurrent && "border-2 border-emerald-600 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-100 shadow-sm",
+                    isUpcoming && "border-slate-200 bg-slate-100 text-slate-400 group-hover:border-slate-300",
+                  )}
+                >
+                  {isCompleted ? <Check className="size-4 md:size-4.5 stroke-[2.5]" /> : stepNumber}
+                </span>
+                {stepNumber < steps.length ? (
+                  <span
+                    className={cn(
+                      "absolute top-4 left-1/2 hidden h-0.5 w-full md:block transition-colors duration-200",
+                      isCompleted ? "bg-emerald-500" : "bg-slate-200",
+                    )}
+                  />
+                ) : null}
+                <p
+                  className={cn(
+                    "text-xs md:text-sm leading-tight md:mt-2 truncate max-w-[85px] md:max-w-none transition-colors",
+                    isCompleted && "text-slate-700 font-medium group-hover:text-emerald-700",
+                    isCurrent && "text-emerald-700 font-bold",
+                    isUpcoming && "text-slate-400 font-normal group-hover:text-slate-600",
+                  )}
+                >
+                  {step}
+                </p>
+              </li>
+            );
+          })}
+        </ol>
       </div>
-      <div aria-hidden="true" className="pointer-events-none absolute top-0 right-0 bottom-2 w-8 bg-gradient-to-l from-slate-50 via-slate-50/80 to-transparent md:hidden" />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 right-0 bottom-2 w-8 bg-gradient-to-l from-slate-50 via-slate-50/80 to-transparent md:hidden"
+      />
     </div>
   );
 };
@@ -711,7 +772,7 @@ interface CheckoutSectionProps {
 
 const CheckoutSection = ({ children, icon, number, title }: CheckoutSectionProps) => {
   return (
-    <section className="border-border bg-bg-primary rounded-lg border p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
+    <section id={"checkout-step-" + number} className="scroll-mt-24 border-border bg-bg-primary rounded-lg border p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
       <h2 className="mb-5 flex items-center gap-3 text-xl font-bold">
         <span className="text-accent-primary">{icon}</span>
         {number}. {title}

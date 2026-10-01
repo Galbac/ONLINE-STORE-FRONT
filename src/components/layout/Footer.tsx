@@ -33,7 +33,7 @@ export interface FooterProps {
 
 export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) => {
   return (
-    <footer className="mt-16 border-t border-slate-200 bg-white text-slate-600">
+    <footer className="hidden lg:block mt-16 border-t border-slate-200 bg-white text-slate-600">
       <Container className="py-12">
         {/* Строгая 4-колоночная сетка */}
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">

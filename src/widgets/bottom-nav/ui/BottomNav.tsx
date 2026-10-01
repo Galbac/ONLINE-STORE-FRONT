@@ -63,6 +63,14 @@ export const BottomNav = () => {
     return null;
   }
 
+  const isFavoritesActive =
+    pathname === ROUTES.PROFILE_FAVORITES ||
+    pathname === "/favorites" ||
+    pathname.startsWith("/profile/favorites");
+
+  const isProfileActive =
+    (pathname.startsWith("/profile") && !isFavoritesActive) || pathname === ROUTES.LOGIN;
+
   const items = [
     {
       href: ROUTES.HOME,
@@ -87,13 +95,13 @@ export const BottomNav = () => {
       href: ROUTES.PROFILE_FAVORITES,
       label: "Избранное",
       icon: Heart,
-      isActive: pathname === ROUTES.PROFILE_FAVORITES,
+      isActive: isFavoritesActive,
     },
     {
       href: isAuth ? ROUTES.PROFILE : ROUTES.LOGIN,
       label: isAuth ? "Профиль" : "Войти",
       icon: User,
-      isActive: pathname.startsWith("/profile") || pathname === ROUTES.LOGIN,
+      isActive: isProfileActive,
     },
   ];
 

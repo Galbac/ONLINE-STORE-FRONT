@@ -37,9 +37,18 @@ const mapResponseToAddress = (item: AddressResponse): Address => ({
 });
 
 const sortAddresses = (items: Address[]): Address[] => {
-  return [...items].sort((a, b) => {
-    if (a.isDefault === b.isDefault) return 0;
-    return a.isDefault ? -1 : 1;
+  if (items.length === 0) return [];
+  const hasDefault = items.some((item) => Boolean(item.isDefault));
+  const normalized = hasDefault
+    ? items
+    : items.map((item, idx) => (idx === 0 ? { ...item, isDefault: true } : item));
+
+  return [...normalized].sort((a, b) => {
+    const aDef = Boolean(a.isDefault);
+    const bDef = Boolean(b.isDefault);
+    if (aDef && !bDef) return -1;
+    if (!aDef && bDef) return 1;
+    return 0;
   });
 };
 
@@ -281,11 +290,6 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
   };
 
   const handleDelete = (address: Address) => {
-    const isConfirmed = window.confirm(
-      "Удалить адрес: " + address.city + ", ул. " + address.street + ", д. " + address.house + "?",
-    );
-    if (!isConfirmed) return;
-
     startTransition(async () => {
       const token =
         typeof window !== "undefined"

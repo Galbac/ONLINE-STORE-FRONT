@@ -42,7 +42,7 @@ export const adminNavigationGroups: AdminNavigationGroup[] = [
       {
         href: ROUTES.ADMIN_DASHBOARD,
         icon: LayoutDashboard,
-        label: "Dashboard",
+        label: "Панель управления",
         requiredPermissions: ["admin.dashboard.read", "dashboard.read", "dashboard:view"],
       },
       {
@@ -162,7 +162,7 @@ export const adminNavigationGroups: AdminNavigationGroup[] = [
       {
         href: ROUTES.ADMIN_SYSTEM_HEALTH,
         icon: Activity,
-        label: "Состояние (Health)",
+        label: "Состояние системы",
         requiredPermissions: ["admin.system.health.read", "system.health.read", "system-health:view"],
       },
       {

@@ -202,7 +202,7 @@ export const AdminOneCIntegrationView = ({
               label="API URL"
               value={status?.api_url_configured ? "Настроен" : "Не настроен"}
             />
-            <InfoRow label="Health status" value={health?.status ?? "Нет данных"} />
+            <InfoRow label="Состояние сервиса" value={health?.status === "healthy" || health?.status === "ok" ? "В норме" : (health?.status ?? "Нет данных")} />
             <InfoRow label="Health available" value={health?.available ? "Да" : "Нет"} />
             <InfoRow label="Latency" value={formatLatency(health?.latency_ms)} />
             <InfoRow label="Health message" value={health?.message ?? "Нет сообщения"} />
@@ -326,7 +326,7 @@ const SyncResultPanel = ({ result }: { result: SyncResult }) => (
     <dl className="mt-5 grid gap-4 sm:grid-cols-[160px_minmax(0,1fr)]">
       <InfoRow label="Тип" value={getSyncKindLabel(result.kind)} />
       <InfoRow label="Job ID" value={String(result.response.job_id)} />
-      <InfoRow label="Статус" value={result.response.status} />
+      <InfoRow label="Статус" value={result.response.status === "success" ? "Успешно" : result.response.status === "started" ? "Выполняется" : "Ошибка"} />
       {"processed" in result.response ? (
         <>
           <InfoRow label="Обработано" value={String(result.response.processed)} />

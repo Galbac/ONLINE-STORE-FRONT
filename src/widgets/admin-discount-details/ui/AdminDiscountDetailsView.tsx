@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { adminDiscountApi, type AdminDiscountDetailResponse } from "@/entities/admin-discount";
 import { ROUTES } from "@/shared/config";
+import { formatDiscountType } from "@/shared/lib/format";
 
 interface AdminDiscountDetailsViewProps {
   discount: AdminDiscountDetailResponse;
@@ -100,7 +101,7 @@ export const AdminDiscountDetailsView = ({ discount }: AdminDiscountDetailsViewP
             <div className="grid gap-4 md:grid-cols-2">
               <DetailRow label="Название" value={discount.name} />
               <DetailRow label="Тип" value={getTargetTypeLabel(discount.type)} />
-              <DetailRow label="Расчет" value={discount.discount_type} />
+              <DetailRow label="Расчет" value={formatDiscountType(discount.discount_type)} />
               <DetailRow
                 label="Значение"
                 value={formatDiscountValue(discount.discount_type, discount.discount_value)}

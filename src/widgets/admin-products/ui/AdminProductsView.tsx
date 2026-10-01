@@ -4,6 +4,7 @@ import type { AdminCategoryListResponse } from "@/entities/admin-category";
 import type { AdminLowStockResponse } from "@/entities/admin-dashboard";
 import type { AdminProductListItemResponse, AdminProductListResponse } from "@/entities/admin-product";
 import { ROUTES } from "@/shared/config";
+import { formatProductType } from "@/shared/lib/format";
 import { toPriceFormat, formatSyncStatus } from "@/shared/lib/format";
 
 export interface AdminProductFilters {
@@ -114,7 +115,7 @@ export const AdminProductsView = ({
             {lowStock.items.map((product) => (
               <div className="border-border rounded-lg border p-4" key={product.id}>
                 <p className="truncate font-bold text-text-primary">{product.name}</p>
-                <p className="text-text-muted mt-1 text-sm">{product.sku ?? product.product_type}</p>
+                <p className="text-text-muted mt-1 text-sm">{product.sku ? `Арт: ${product.sku}` : formatProductType(product.product_type)}</p>
                 <p className="mt-3 text-sm font-bold text-error">
                   {formatQuantity(product.stock_quantity)} {product.unit}
                   <span className="text-text-muted font-normal">

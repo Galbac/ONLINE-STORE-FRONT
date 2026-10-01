@@ -13,6 +13,7 @@ import { emptyCartResponse, emptyCartSummaryResponse } from "../lib/emptyCart";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 import { useIsHydrated } from "@/shared/lib/hooks";
+import { extractErrorMessage } from "@/shared/api";
 
 export interface CartState {
   cart: CartResponse;
@@ -265,13 +266,14 @@ export const useCartStore = create<CartState>()(
           });
           
           return { success: true, message: response.message || "Промокод применен" };
-        } catch {
+        } catch (error: unknown) {
+          const message = extractErrorMessage(error, "Не удалось применить промокод");
           set({
             pendingAction: null,
-            errorMessage: "Неверный или недействительный промокод",
+            errorMessage: message,
           });
           
-          return { success: false, message: "Не удалось применить промокод" };
+          return { success: false, message };
         }
       },
 
@@ -287,13 +289,14 @@ export const useCartStore = create<CartState>()(
           });
           
           return { success: true, message: response.message || "Промокод удален" };
-        } catch {
+        } catch (error: unknown) {
+          const message = extractErrorMessage(error, "Не удалось удалить промокод");
           set({
             pendingAction: null,
-            errorMessage: "Не удалось удалить промокод",
+            errorMessage: message,
           });
           
-          return { success: false, message: "Не удалось применить промокод" };
+          return { success: false, message };
         }
       },
 

@@ -10,7 +10,9 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   pending: "Ожидает оплаты",
   paid: "Оплачен",
+  succeeded: "Оплачен",
   cancelled: "Отменён",
+  canceled: "Отменён",
   refunded: "Возвращён",
   failed: "Ошибка оплаты",
 };
@@ -32,11 +34,14 @@ export const USER_ROLE_LABELS: Record<string, string> = {
 
 export const DELIVERY_TYPE_LABELS: Record<string, string> = {
   delivery: "Доставка курьером",
+  courier: "Доставка курьером",
   pickup: "Самовывоз",
 };
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   online: "Онлайн картой",
+  card: "Банковская карта",
+  cash: "Наличными",
   sbp: "СБП (в 1 клик)",
   on_delivery: "При получении",
 };
@@ -59,4 +64,28 @@ export const formatSyncStatus = (status: string | null | undefined): string => {
 export const formatUserRole = (role: string | null | undefined): string => {
   if (!role) return "-";
   return USER_ROLE_LABELS[role] || role;
+};
+
+export const formatDeliveryType = (type: string | null | undefined): string => {
+  if (!type) return "-";
+  return DELIVERY_TYPE_LABELS[type] || type;
+};
+
+export const formatPaymentMethod = (method: string | null | undefined): string => {
+  if (!method) return "-";
+  return PAYMENT_METHOD_LABELS[method] || method;
+};
+
+export const formatDiscountType = (type: string | null | undefined): string => {
+  if (!type) return "-";
+  if (type === "percent") return "Процент (%)";
+  if (type === "fixed_amount" || type === "fixed") return "Фиксированная сумма (₽)";
+  return type;
+};
+
+export const formatProductType = (type: string | null | undefined): string => {
+  if (!type) return "-";
+  if (type === "weight") return "Весовой товар";
+  if (type === "piece") return "Штучный товар";
+  return type;
 };

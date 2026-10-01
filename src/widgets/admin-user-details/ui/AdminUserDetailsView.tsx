@@ -13,7 +13,7 @@ import {
 } from "@/entities/admin-user";
 import { ROUTES } from "@/shared/config";
 import { getAdminErrorMessage } from "@/shared/api";
-import { toPriceFormat, formatOrderStatus, formatPaymentStatus } from "@/shared/lib/format";
+import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatDeliveryType } from "@/shared/lib/format";
 
 interface AdminUserDetailsViewProps {
   initialOrders: AdminUserOrdersResponse;
@@ -320,7 +320,7 @@ const OrdersTable = ({ orders }: { orders: AdminUserOrderShortResponse[] }) => {
               </TableCell>
               <TableCell>{formatOrderStatus(order.status)}</TableCell>
               <TableCell>{formatPaymentStatus(order.payment_status)}</TableCell>
-              <TableCell>{order.delivery_type ?? "-"}</TableCell>
+              <TableCell>{formatDeliveryType(order.delivery_type)}</TableCell>
               <TableCell>{toPriceFormat(order.final_price)}</TableCell>
               <TableCell>{formatDate(order.created_at)}</TableCell>
             </tr>

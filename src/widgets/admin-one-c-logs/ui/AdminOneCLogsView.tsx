@@ -146,14 +146,14 @@ const LogsFilters = ({ filters }: { filters: AdminOneCLogFilters }) => (
           </option>
         ))}
       </FilterSelect>
-      <FilterSelect defaultValue={filters.entity_type} label="Entity type" name="entity_type">
+      <FilterSelect defaultValue={filters.entity_type} label="Тип сущности" name="entity_type">
         {entityTypeOptions.map((option) => (
           <option key={option.value || "all"} value={option.value}>
             {option.label}
           </option>
         ))}
       </FilterSelect>
-      <FilterSelect defaultValue={filters.status} label="Status" name="status">
+      <FilterSelect defaultValue={filters.status} label="Статус" name="status">
         {statusOptions.map((option) => (
           <option key={option.value || "all"} value={option.value}>
             {option.label}

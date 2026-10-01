@@ -12,6 +12,8 @@ import {
   type AdminPromoCodePayload,
 } from "@/entities/admin-promo-code";
 import { ROUTES } from "@/shared/config";
+import { getAdminErrorMessage } from "@/shared/api";
+import { AdminApiError } from "@/shared/api/adminClient";
 
 interface AdminPromoCodeFormViewProps {
   categories: AdminCategoryListItemResponse[];
@@ -45,6 +47,22 @@ export const AdminPromoCodeFormView = ({
     setIsPending(true);
     setError(null);
 
+    if (typeof payload.starts_at === "string" && typeof payload.ends_at === "string") {
+      if (new Date(payload.starts_at).getTime() >= new Date(payload.ends_at).getTime()) {
+        setError("Дата начала должна быть строго раньше даты окончания.");
+        setIsPending(false);
+        return;
+      }
+    }
+    if (payload.discount_type === "percent") {
+      const val = Number(payload.discount_value);
+      if (Number.isNaN(val) || val < 1 || val > 100) {
+        setError("Размер процентной скидки должен быть от 1 до 100%.");
+        setIsPending(false);
+        return;
+      }
+    }
+
     const request =
       promoCode === undefined
         ? adminPromoCodeApi.create(payload)
@@ -55,8 +73,12 @@ export const AdminPromoCodeFormView = ({
         router.push(ROUTES.ADMIN_PROMO_CODE_EDIT(response.id));
         router.refresh();
       })
-      .catch(() => {
-        setError("Не удалось сохранить промокод. Проверьте поля и права доступа.");
+      .catch((submitError: unknown) => {
+        if (submitError instanceof AdminApiError && submitError.detail) {
+          setError(submitError.detail);
+        } else {
+          setError(getAdminErrorMessage(submitError, "Не удалось сохранить промокод. Проверьте поля и права доступа."));
+        }
       })
       .finally(() => {
         setIsPending(false);
@@ -91,11 +113,11 @@ export const AdminPromoCodeFormView = ({
                   <span className="mb-2 block text-sm font-bold">Тип скидки</span>
                   <select
                     className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm transition outline-none"
-                    defaultValue={promoCode?.discount_type ?? "percent"}
+                    defaultValue={promoCode?.discount_type === "fixed" ? "fixed_amount" : (promoCode?.discount_type ?? "percent")}
                     name="discount_type"
                   >
-                    <option value="percent">Процент</option>
-                    <option value="fixed">Фиксированная сумма</option>
+                    <option value="percent">Процент (%)</option>
+                    <option value="fixed_amount">Фиксированная сумма (₽)</option>
                   </select>
                 </label>
                 <Input

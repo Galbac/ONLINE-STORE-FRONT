@@ -268,7 +268,7 @@ const RolePreview = ({ role }: { role: AdminRoleResponse | null }) => {
       <p className="text-text-primary text-sm font-bold">{role.name}</p>
       <p className="text-text-secondary mt-1 text-sm">{role.description}</p>
       <p className="text-text-muted mt-2 text-xs">
-        Permissions: {role.permissions.length.toLocaleString("ru-RU")}
+        Прав доступа: {role.permissions.length.toLocaleString("ru-RU")}
       </p>
     </div>
   );

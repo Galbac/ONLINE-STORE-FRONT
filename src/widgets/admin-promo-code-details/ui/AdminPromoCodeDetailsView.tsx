@@ -2,9 +2,11 @@
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { adminPromoCodeApi, type AdminPromoCodeDetailResponse } from "@/entities/admin-promo-code";
 import { ROUTES } from "@/shared/config";
+import { formatDiscountType } from "@/shared/lib/format";
 
 interface AdminPromoCodeDetailsViewProps {
   promoCode: AdminPromoCodeDetailResponse;
@@ -47,7 +49,16 @@ export const AdminPromoCodeDetailsView = ({ promoCode }: AdminPromoCodeDetailsVi
           <h1 className="text-text-primary text-2xl font-bold sm:text-3xl">{promoCode.code}</h1>
           <p className="text-text-secondary mt-2">{promoCode.name ?? "Без названия"}</p>
         </div>
-        <StatusPill active={promoCode.is_active} falseLabel="Неактивен" trueLabel="Активен" />
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            className="border-border hover:bg-bg-hover inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition"
+            href={ROUTES.ADMIN_PROMO_CODE_EDIT(promoCode.id)}
+          >
+            <Edit2 size={16} />
+            Редактировать
+          </Link>
+          <StatusPill active={promoCode.is_active} falseLabel="Неактивен" trueLabel="Активен" />
+        </div>
       </section>
 
       {message ? <Alert tone="success">{message}</Alert> : null}
@@ -67,7 +78,7 @@ export const AdminPromoCodeDetailsView = ({ promoCode }: AdminPromoCodeDetailsVi
               <DetailRow label="Код" value={promoCode.code} />
               <DetailRow label="Название" value={promoCode.name ?? "-"} />
               <DetailRow label="Описание" value={promoCode.description ?? "-"} />
-              <DetailRow label="Тип скидки" value={promoCode.discount_type} />
+              <DetailRow label="Тип скидки" value={formatDiscountType(promoCode.discount_type)} />
               <DetailRow
                 label="Минимальный заказ"
                 value={formatMoney(promoCode.min_order_amount)}

@@ -8,7 +8,7 @@ import { adminOrderApi, type AdminOrderDetailResponse } from "@/entities/admin-o
 import { paymentApi, type PaymentDetailResponse } from "@/entities/payment";
 import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus } from "@/shared/lib/format";
+import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus, formatDeliveryType } from "@/shared/lib/format";
 
 interface AdminOrderDetailsViewProps {
   initialOrder: AdminOrderDetailResponse;
@@ -293,7 +293,7 @@ export const AdminOrderDetailsView = ({
 
           <Card title="Доставка или самовывоз">
             <div className="grid gap-4 md:grid-cols-2">
-              <DetailRow label="Тип" value={order.delivery_type} />
+              <DetailRow label="Тип" value={formatDeliveryType(order.delivery_type)} />
               <DetailRow label="Стоимость" value={toPriceFormat(order.delivery_price)} />
               <DetailRow label="Адрес" value={formatDeliveryAddress(order)} />
               <DetailRow label="Пункт самовывоза" value={formatPickupPoint(order)} />
@@ -389,11 +389,11 @@ export const AdminOrderDetailsView = ({
             {paymentSummary ? (
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <DetailRow label="Payment ID" value={String(paymentSummary.id)} />
-                  <DetailRow label="Статус" value={paymentSummary.status} />
+                  <DetailRow label="ID платежа" value={String(paymentSummary.id)} />
+                  <DetailRow label="Статус" value={formatPaymentStatus(paymentSummary.status)} />
                   <DetailRow label="Сумма" value={toPriceFormat(paymentSummary.amount)} />
-                  <DetailRow label="Валюта" value={paymentSummary.currency} />
-                  <DetailRow label="Провайдер" value={paymentSummary.provider ?? "-"} />
+                  <DetailRow label="Валюта" value={paymentSummary.currency === "RUB" ? "Рубли (₽)" : paymentSummary.currency} />
+                  <DetailRow label="Провайдер" value={paymentSummary.provider === "mock" ? "Тестовый провайдер" : (paymentSummary.provider ?? "-")} />
                   <DetailRow label="Ссылка оплаты" value={getPaymentUrl(paymentSummary)} />
                   <DetailRow
                     label="Создан"

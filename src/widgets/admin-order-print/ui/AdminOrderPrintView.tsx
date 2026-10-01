@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
 import type { AdminOrderDetailResponse, AdminOrderPrintResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat, formatPaymentStatus, formatOrderStatus } from "@/shared/lib/format";
+import { toPriceFormat, formatPaymentStatus, formatOrderStatus, formatDeliveryType } from "@/shared/lib/format";
 
 interface AdminOrderPrintViewProps {
   orderId: number;
@@ -84,7 +84,7 @@ const PrintableOrder = ({ order }: { order: AdminOrderDetailResponse }) => {
         <div>
           <h2 className="text-lg font-bold">Получение</h2>
           <div className="mt-3 space-y-2 text-sm">
-            <PrintRow label="Тип" value={order.delivery_type} />
+            <PrintRow label="Тип доставки" value={formatDeliveryType(order.delivery_type)} />
             <PrintRow label="Адрес" value={formatDeliveryAddress(order)} />
             <PrintRow label="Самовывоз" value={formatPickupPoint(order)} />
           </div>

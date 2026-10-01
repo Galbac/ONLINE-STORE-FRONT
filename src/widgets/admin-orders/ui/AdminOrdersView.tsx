@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Download, Eye, Search } from "lucide-react";
 import type { AdminOrderListItemResponse, AdminOrderListResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, SYNC_STATUS_LABELS, DELIVERY_TYPE_LABELS } from "@/shared/lib/format";
+import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus,
+  formatDeliveryType,
+  formatPaymentMethod, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, SYNC_STATUS_LABELS, DELIVERY_TYPE_LABELS } from "@/shared/lib/format";
 
 export interface AdminOrderFilters {
   date_from: string;
@@ -260,9 +262,9 @@ const OrderRow = ({ order }: { order: AdminOrderListItemResponse }) => {
       </TableCell>
       <TableCell>
         <p className="text-text-primary font-bold">{formatPaymentStatus(order.payment_status)}</p>
-        <p className="text-text-muted mt-1 text-xs">{order.payment_method ?? "-"}</p>
+        <p className="text-text-muted mt-1 text-xs">{formatPaymentMethod(order.payment_method)}</p>
       </TableCell>
-      <TableCell>{order.delivery_type}</TableCell>
+      <TableCell>{formatDeliveryType(order.delivery_type)}</TableCell>
       <TableCell>{formatSyncStatus(order.sync_status)}</TableCell>
       <TableCell>{formatDate(order.created_at)}</TableCell>
       <TableCell>

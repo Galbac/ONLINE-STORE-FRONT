@@ -43,7 +43,7 @@ export const AdminUploadsView = () => {
       return null;
     }
 
-    return `${selectedFile.type || "unknown"} · ${formatFileSize(selectedFile.size)}`;
+    return `${selectedFile.type || "неизвестно"} · ${formatFileSize(selectedFile.size)}`;
   }, [selectedFile]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -253,7 +253,7 @@ export const AdminUploadsView = () => {
                 <FileInfo label="Файл" value={currentFile.original_filename} />
                 <FileInfo label="MIME" value={currentFile.mime_type} />
                 <FileInfo label="Размер" value={formatFileSize(currentFile.size)} />
-                <FileInfo label="Хранилище" value={currentFile.storage_type} />
+                <FileInfo label="Хранилище" value={currentFile.storage_type === "local" ? "Локальное (диск)" : currentFile.storage_type === "s3" ? "Облачное (S3)" : currentFile.storage_type} />
                 <FileInfo label="Назначение" value={getEntityTypeLabel(currentFile.entity_type)} />
                 <FileInfo label="Дата" value={formatDateTime(currentFile.created_at)} />
                 <FileInfo label="URL" value={currentFile.url} />

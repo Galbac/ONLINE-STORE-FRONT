@@ -43,7 +43,7 @@ export const AdminSystemHealthView = ({ health }: AdminSystemHealthViewProps) =>
   return (
     <div className="space-y-6">
       <section>
-        <h1 className="text-text-primary text-2xl font-bold sm:text-3xl">Health / Monitoring</h1>
+        <h1 className="text-text-primary text-2xl font-bold sm:text-3xl">Состояние системы / Мониторинг</h1>
         <p className="text-text-secondary mt-2">
           Внутренний мониторинг API, базы данных, хранилища и интеграции с 1С.
         </p>
@@ -115,9 +115,9 @@ export const AdminSystemHealthView = ({ health }: AdminSystemHealthViewProps) =>
 
       <section className="grid gap-5 xl:grid-cols-2">
         <DetailsCard icon={<Server size={18} />} result={health.api} title="API /api/health">
-          <InfoRow label="service" value={health.api.data?.service ?? "-"} />
-          <InfoRow label="version" value={health.api.data?.version ?? "-"} />
-          <InfoRow label="environment" value={health.api.data?.environment ?? "-"} />
+          <InfoRow label="Сервис" value={health.api.data?.service ?? "-"} />
+          <InfoRow label="Версия" value={health.api.data?.version ?? "-"} />
+          <InfoRow label="Окружение" value={health.api.data?.environment ?? "-"} />
         </DetailsCard>
 
         <DetailsCard icon={<Server size={18} />} result={health.root} title="Root /health">
@@ -127,31 +127,31 @@ export const AdminSystemHealthView = ({ health }: AdminSystemHealthViewProps) =>
         </DetailsCard>
 
         <DetailsCard icon={<Database size={18} />} result={health.database} title="База данных">
-          <InfoRow label="database" value={health.database.data?.database ?? "-"} />
+          <InfoRow label="База данных" value={health.database.data?.database ?? "-"} />
           <InfoRow
-            label="latency"
+            label="Задержка"
             value={formatNullableLatency(health.database.data?.latency_ms)}
           />
-          <InfoRow label="message" value={health.database.data?.message ?? "-"} />
+          <InfoRow label="Сообщение" value={health.database.data?.message ?? "-"} />
         </DetailsCard>
 
         <DetailsCard icon={<HardDrive size={18} />} result={health.storage} title="Хранилище">
-          <InfoRow label="storage_type" value={health.storage.data?.storage_type ?? "-"} />
+          <InfoRow label="Тип хранилища" value={health.storage.data?.storage_type ?? "-"} />
           <InfoRow
-            label="available"
+            label="Доступность"
             value={formatNullableBoolean(health.storage.data?.available)}
           />
-          <InfoRow label="readable" value={formatNullableBoolean(health.storage.data?.readable)} />
-          <InfoRow label="writable" value={formatNullableBoolean(health.storage.data?.writable)} />
-          <InfoRow label="latency" value={formatNullableLatency(health.storage.data?.latency_ms)} />
-          <InfoRow label="message" value={health.storage.data?.message ?? "-"} />
+          <InfoRow label="Чтение" value={formatNullableBoolean(health.storage.data?.readable)} />
+          <InfoRow label="Запись" value={formatNullableBoolean(health.storage.data?.writable)} />
+          <InfoRow label="Задержка" value={formatNullableLatency(health.storage.data?.latency_ms)} />
+          <InfoRow label="Сообщение" value={health.storage.data?.message ?? "-"} />
         </DetailsCard>
 
         <DetailsCard icon={<Database size={18} />} result={health.one_c} title="1С">
-          <InfoRow label="enabled" value={formatNullableBoolean(health.one_c.data?.enabled)} />
-          <InfoRow label="available" value={formatNullableBoolean(health.one_c.data?.available)} />
-          <InfoRow label="latency" value={formatNullableLatency(health.one_c.data?.latency_ms)} />
-          <InfoRow label="message" value={health.one_c.data?.message ?? "-"} />
+          <InfoRow label="Включено" value={formatNullableBoolean(health.one_c.data?.enabled)} />
+          <InfoRow label="Доступность" value={formatNullableBoolean(health.one_c.data?.available)} />
+          <InfoRow label="Задержка" value={formatNullableLatency(health.one_c.data?.latency_ms)} />
+          <InfoRow label="Сообщение" value={health.one_c.data?.message ?? "-"} />
         </DetailsCard>
       </section>
     </div>
@@ -199,9 +199,9 @@ const DetailsCard = ({
       <StatusIcon status={result.status} />
     </div>
     <dl className="mt-5 grid gap-4 sm:grid-cols-[150px_minmax(0,1fr)]">
-      <InfoRow label="status" value={getDataStatus(result.data)} />
-      <InfoRow label="response_time" value={`${result.responseTimeMs} мс`} />
-      {result.error ? <InfoRow label="error" value={result.error} /> : null}
+      <InfoRow label="Статус" value={getDataStatus(result.data)} />
+      <InfoRow label="Время ответа" value={`${result.responseTimeMs} мс`} />
+      {result.error ? <InfoRow label="Ошибка" value={result.error} /> : null}
       {children}
     </dl>
   </article>

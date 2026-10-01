@@ -18,7 +18,6 @@ import {
   Package,
   Percent,
   ReceiptText,
-  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Trash2,
@@ -34,7 +33,6 @@ import { toPriceFormat } from "@/shared/lib/format";
 import { Container } from "@/shared/ui";
 import { toast } from "sonner";
 import { ProfileLogoutButton } from "./ProfileLogoutButton";
-import { PhoneVerificationModal } from "./PhoneVerificationModal";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 
 interface ProfileViewProps {
@@ -204,10 +202,8 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
   const [showEmail, setShowEmail] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(user.marketing_consent ?? false);
   const [isUpdatingMarketing, setIsUpdatingMarketing] = useState(false);
-  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const isPhoneVerified = Boolean(user.is_phone_verified ?? user.is_verified);
 
   const handleToggleMarketing = async (checked: boolean) => {
     setIsUpdatingMarketing(true);
@@ -278,36 +274,7 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
             </span>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
-            <span className="text-text-secondary">Подтвержден:</span>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              {isPhoneVerified ? (
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-xs border border-emerald-200/60">
-                  <ShieldCheck size={14} className="text-emerald-600" />
-                  Да (телефон подтвержден)
-                </span>
-              ) : (
-                <>
-                  <span className="font-bold text-rose-600 text-xs">Нет</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsVerifyModalOpen(true)}
-                    className="inline-flex h-7 items-center justify-center rounded-lg bg-emerald-600 px-2.5 text-[11px] font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition cursor-pointer"
-                  >
-                    Подтвердить телефон по SMS
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
-            <span className="text-text-secondary">Статус:</span>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-              <span className={`size-2 rounded-full ${user.is_active ? "bg-emerald-500" : "bg-slate-400"}`} />
-              {user.is_active ? "Активен" : "Неактивен"}
-            </span>
-          </div>
+          
 
           {/* Маркетинговые рассылки с интерактивным переключателем 38-ФЗ */}
           <div className="pt-3 border-t border-slate-100">
@@ -355,38 +322,19 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
         </div>
       </div>
 
-      {/* Удаление аккаунта и персональных данных (152-ФЗ РФ) */}
-      <div className="mt-4 rounded-xl border border-rose-200/70 bg-rose-50/30 p-4 sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
-              <Trash2 size={20} />
-            </span>
-            <div>
-              <p className="text-sm font-bold text-slate-900">Удаление персональных данных (152-ФЗ)</p>
-              <p className="text-xs text-slate-500">Отзыв согласий и полное обезличивание аккаунта</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-300 bg-white px-3.5 text-xs font-bold text-rose-700 shadow-2xs transition hover:bg-rose-50 cursor-pointer"
-          >
-            Удалить аккаунт
-          </button>
-        </div>
+      {/* Лаконичная кнопка удаления аккаунта */}
+      <div className="mt-6 flex justify-end pt-4 border-t border-slate-100">
+        <button
+          type="button"
+          onClick={() => setIsDeleteModalOpen(true)}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-700 transition cursor-pointer"
+        >
+          <Trash2 size={14} />
+          <span>Удалить аккаунт</span>
+        </button>
       </div>
 
       {/* Модалки верификации и удаления */}
-      <PhoneVerificationModal
-        isOpen={isVerifyModalOpen}
-        phone={user.phone}
-        onClose={() => setIsVerifyModalOpen(false)}
-        onSuccess={() => {
-          onUserUpdated({ ...user, is_phone_verified: true, is_verified: true });
-        }}
-      />
-
       <DeleteAccountModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

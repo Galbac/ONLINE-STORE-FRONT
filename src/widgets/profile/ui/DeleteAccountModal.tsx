@@ -29,7 +29,7 @@ export const DeleteAccountModal = ({ isOpen, onClose }: DeleteAccountModalProps)
       return;
     }
     if (!confirm) {
-      setError("Подтвердите согласие на отзыв персональных данных");
+      setError("Подтвердите удаление аккаунта");
       return;
     }
 
@@ -38,7 +38,7 @@ export const DeleteAccountModal = ({ isOpen, onClose }: DeleteAccountModalProps)
       try {
         await userApi.deleteMe({ password: password.trim(), confirm: true });
         clearStoredAuth();
-        toast.success("Ваш аккаунт и персональные данные успешно удалены");
+        toast.success("Ваш аккаунт успешно удалён");
         onClose();
         router.push(ROUTES.HOME);
         router.refresh();
@@ -63,9 +63,9 @@ export const DeleteAccountModal = ({ isOpen, onClose }: DeleteAccountModalProps)
           <AlertTriangle size={26} />
         </div>
 
-        <h3 className="text-lg font-bold text-slate-900">Удаление аккаунта и данных</h3>
+        <h3 className="text-lg font-bold text-slate-900">Удаление аккаунта</h3>
         <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-          В соответствии со ст. 9 и 14 Федерального закона № 152-ФЗ «О персональных данных», ваши личные данные будут безвозвратно обезличены. Вы не сможете войти в данный аккаунт.
+          Вы уверены, что хотите удалить свой аккаунт? Профиль будет деактивирован, и доступ к аккаунту будет закрыт.
         </p>
 
         {error ? (
@@ -98,7 +98,7 @@ export const DeleteAccountModal = ({ isOpen, onClose }: DeleteAccountModalProps)
               className="mt-0.5 size-4 rounded text-rose-600 accent-rose-600 cursor-pointer"
             />
             <span className="text-xs text-slate-600 leading-normal font-medium">
-              Я подтверждаю отзыв согласия на обработку персональных данных и удаление профиля
+              Подтверждаю деактивацию и удаление своего аккаунта
             </span>
           </label>
 

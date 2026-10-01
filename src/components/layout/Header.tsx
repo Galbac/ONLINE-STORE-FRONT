@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Clock, LayoutGrid, MapPin, Phone } from "lucide-react";
 import { HeaderSearch } from "./HeaderSearch";
@@ -13,7 +13,6 @@ import { HeaderUserLink } from "@/widgets/header/ui/HeaderUserLink";
 
 export const Header = () => {
   const [isScrolledCompact, setIsScrolledCompact] = useState(false);
-  const lastScrollYRef = useRef(0);
 
   useEffect(() => {
     let ticking = false;
@@ -23,20 +22,12 @@ export const Header = () => {
 
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          if (currentScrollY > 70) {
-            // Если прокрутили вниз более 70px
-            if (currentScrollY > lastScrollYRef.current) {
-              // Скролл вниз — сжимаем хедер
-              setIsScrolledCompact(true);
-            } else if (lastScrollYRef.current - currentScrollY > 10) {
-              // Заметный скролл вверх — возвращаем навигацию
-              setIsScrolledCompact(false);
-            }
-          } else {
-            // В самом верху страницы всегда полный вид
+          // Гистерезис с широкой мертвой зоной (30px - 110px), исключающий дергание хедера при медленном скролле
+          if (currentScrollY > 110) {
+            setIsScrolledCompact(true);
+          } else if (currentScrollY < 30) {
             setIsScrolledCompact(false);
           }
-          lastScrollYRef.current = currentScrollY;
           ticking = false;
         });
         ticking = true;

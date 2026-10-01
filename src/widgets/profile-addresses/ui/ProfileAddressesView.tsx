@@ -37,10 +37,17 @@ const mapResponseToAddress = (item: AddressResponse): Address => ({
   isDefault: item.is_default,
 });
 
+const sortAddresses = (items: Address[]): Address[] => {
+  return [...items].sort((a, b) => {
+    if (a.isDefault === b.isDefault) return 0;
+    return a.isDefault ? -1 : 1;
+  });
+};
+
 export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewProps) => {
   const [addresses, setAddresses] = useState<Address[]>(() => {
     if (initialAddresses?.items && initialAddresses.items.length > 0) {
-      return initialAddresses.items.map(mapResponseToAddress);
+      return sortAddresses(initialAddresses.items.map(mapResponseToAddress));
     }
     return [];
   });
@@ -69,7 +76,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
         if (token) {
           const res = await profileApi.getAddresses(token);
           if (isSubscribed && res?.items) {
-            const mapped = res.items.map(mapResponseToAddress);
+            const mapped = sortAddresses(res.items.map(mapResponseToAddress));
             setAddresses(mapped);
             try {
               window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
@@ -91,7 +98,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
           if (cached) {
             const parsed = JSON.parse(cached) as Address[];
             if (isSubscribed && Array.isArray(parsed)) {
-              setAddresses(parsed);
+              setAddresses(sortAddresses(parsed));
               setIsLoading(false);
               return;
             }
@@ -175,7 +182,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
         }
 
         setAddresses((prev) => {
-          const next = prev.map((item) => {
+          const updated = prev.map((item) => {
             if (item.id === addressId) {
               return updatedAddress;
             }
@@ -184,6 +191,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
             }
             return item;
           });
+          const next = sortAddresses(updated);
           saveToLocalCache(next);
           return next;
         });
@@ -194,7 +202,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
         const shouldBeDefault = formData.isDefault || addresses.length === 0;
         let createdAddress: Address = {
           ...formData,
-          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          id: "local_" + Date.now().toString(),
           isDefault: shouldBeDefault,
         };
 
@@ -219,12 +227,13 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
         }
 
         setAddresses((prev) => {
-          const next = [
+          const updated = [
             createdAddress,
             ...prev.map((item) =>
               createdAddress.isDefault ? { ...item, isDefault: false } : item,
             ),
           ];
+          const next = sortAddresses(updated);
           saveToLocalCache(next);
           return next;
         });
@@ -259,10 +268,11 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
       }
 
       setAddresses((prev) => {
-        const next = prev.map((item) => ({
+        const updated = prev.map((item) => ({
           ...item,
           isDefault: item.id === address.id,
         }));
+        const next = sortAddresses(updated);
         saveToLocalCache(next);
         return next;
       });
@@ -273,7 +283,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
 
   const handleDelete = (address: Address) => {
     const isConfirmed = window.confirm(
-      `Удалить адрес: ${address.city}, ул. ${address.street}, д. ${address.house}?`,
+      "Удалить адрес: " + address.city + ", ул. " + address.street + ", д. " + address.house + "?",
     );
     if (!isConfirmed) return;
 
@@ -296,14 +306,12 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
         const filtered = prev.filter((item) => item.id !== address.id);
         // If the removed address was default and there are remaining addresses, make the first one default
         if (address.isDefault && filtered.length > 0 && filtered[0]) {
-          const first = filtered[0];
-          filtered[0] = { ...first, isDefault: true };
+          filtered[0] = { ...filtered[0], isDefault: true };
         }
-        saveToLocalCache(filtered);
-        return filtered;
+        const next = sortAddresses(filtered);
+        saveToLocalCache(next);
+        return next;
       });
-
-      toast.success("Адрес удален");
     });
   };
 

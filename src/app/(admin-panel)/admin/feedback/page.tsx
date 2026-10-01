@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { CheckCircle2, Mail, MessageSquare, Phone, Send } from "lucide-react";
-import { apiClient } from "@/shared/api";
-import { Button, getStoredAccessToken } from "@/shared/ui";
+import { apiClient, getStoredAdminAccessToken } from "@/shared/api";
+import { Button } from "@/shared/ui";
 
 interface FeedbackItem {
   id: number;
@@ -24,7 +24,7 @@ export default function AdminFeedbackPage() {
   const [isPending, startTransition] = useTransition();
 
   const loadFeedback = async () => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
     try {
       const data = await apiClient.get<{ items: FeedbackItem[] }>("/api/admin/feedback", undefined, {
@@ -41,7 +41,7 @@ export default function AdminFeedbackPage() {
   }, []);
 
   const handleReply = (feedbackId: number) => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token || !replyText.trim()) return;
 
     startTransition(async () => {

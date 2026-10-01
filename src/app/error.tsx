@@ -1,9 +1,8 @@
 "use client";
 
 import { captureClientException } from "@/shared/lib/sentry";
-
-import { useEffect } from "react";
-import Link from "next/link";
+import { useEffect, startTransition } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 
 import { ROUTES } from "@/shared/config";
@@ -15,10 +14,28 @@ interface ErrorProps {
 }
 
 export default function GlobalError({ error, reset }: ErrorProps) {
+  const router = useRouter();
+
   useEffect(() => {
     console.error("Application runtime error:", error);
     captureClientException(error, { digest: error.digest });
   }, [error]);
+
+  const handleRetry = () => {
+    try {
+      startTransition(() => {
+        router.refresh();
+        reset();
+      });
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
+    } catch {
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
+    }
+  };
 
   return (
     <main className="bg-bg-primary flex min-h-[70vh] items-center justify-center py-16">
@@ -34,19 +51,19 @@ export default function GlobalError({ error, reset }: ErrorProps) {
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Button
-            className="gap-2"
+            className="gap-2 cursor-pointer"
             type="button"
-            onClick={() => reset()}
+            onClick={handleRetry}
           >
             <RefreshCw size={18} />
             Попробовать снова
           </Button>
-          <Link href={ROUTES.HOME}>
-            <Button className="gap-2" variant="secondary" type="button">
+          <a href={ROUTES.HOME}>
+            <Button className="gap-2 cursor-pointer" variant="secondary" type="button">
               <Home size={18} />
               На главную
             </Button>
-          </Link>
+          </a>
         </div>
       </Container>
     </main>

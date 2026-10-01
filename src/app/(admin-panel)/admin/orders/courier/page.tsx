@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Check, Phone, Truck } from "lucide-react";
-import { apiClient } from "@/shared/api";
+import { apiClient, getStoredAdminAccessToken } from "@/shared/api";
 import { toPriceFormat } from "@/shared/lib/format";
-import { Button, getStoredAccessToken } from "@/shared/ui";
+import { Button } from "@/shared/ui";
 
 interface CourierOrderItem {
   id: number;
@@ -22,7 +22,7 @@ export default function AdminCourierPage() {
   const [isPending, startTransition] = useTransition();
 
   const loadQueue = async () => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
     try {
       const data = await apiClient.get<{ items: CourierOrderItem[] }>("/api/admin/orders/courier/queue", undefined, {
@@ -41,7 +41,7 @@ export default function AdminCourierPage() {
   }, []);
 
   const handleTake = (orderId: number) => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
     startTransition(async () => {
       try {
@@ -56,7 +56,7 @@ export default function AdminCourierPage() {
   };
 
   const handleDelivered = (orderId: number) => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
     startTransition(async () => {
       try {

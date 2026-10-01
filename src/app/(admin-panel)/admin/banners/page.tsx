@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { apiClient } from "@/shared/api";
-import { Button, getStoredAccessToken } from "@/shared/ui";
+import { apiClient, getStoredAdminAccessToken } from "@/shared/api";
+import { Button } from "@/shared/ui";
 
 interface BannerItem {
   id: number;
@@ -30,13 +30,15 @@ export default function AdminBannersPage() {
   const [isPending, startTransition] = useTransition();
 
   const loadBanners = async () => {
+    const token = getStoredAdminAccessToken();
+    if (!token) return;
     try {
-      const data = await apiClient.get<{ items: BannerItem[] }>("/api/banners");
+      const data = await apiClient.get<{ items: BannerItem[] }>("/api/admin/banners", undefined, {
+        Authorization: `Bearer ${token}`,
+      });
       setBanners(data.items);
     } catch {
       // Fallback
-    } finally {
-      
     }
   };
 
@@ -46,7 +48,7 @@ export default function AdminBannersPage() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token || !title.trim()) return;
 
     startTransition(async () => {
@@ -76,7 +78,7 @@ export default function AdminBannersPage() {
   };
 
   const handleDelete = (bannerId: number) => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
 
     startTransition(async () => {

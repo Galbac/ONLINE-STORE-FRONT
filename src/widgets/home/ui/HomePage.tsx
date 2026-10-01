@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
-import { deliveryApi } from "@/entities/delivery";
+import { deliveryApi, type DeliveryOptionsResponse } from "@/entities/delivery";
 import { discountApi, type DiscountShortResponse } from "@/entities/discount";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductShortResponse } from "@/entities/product";
@@ -31,6 +31,25 @@ import { QuickRepeatOrderBanner } from "./QuickRepeatOrderBanner";
 
 export const HomePage = async () => {
   const accessToken = await getAccessToken();
+  const defaultDeliveryOptions: DeliveryOptionsResponse = {
+    delivery: {
+      enabled: true,
+      title: "Курьерская доставка",
+      description: "Доставка свежих продуктов до вашей двери",
+      base_price: "150.00",
+      min_order_amount: "1000.00",
+      free_from_amount: "1500.00",
+      has_time_slots: true,
+    },
+    pickup: {
+      enabled: true,
+      title: "Быстрый самовывоз",
+      description: "Соберем ваш заказ заранее",
+      price: "0.00",
+      has_pickup_points: true,
+    },
+  };
+
   const [
     categoryTree,
     categories,
@@ -43,32 +62,34 @@ export const HomePage = async () => {
     favorites,
     banners,
   ] = await Promise.all([
-    categoryApi.getTree(),
-    categoryApi.getList(),
-    productApi.getPopular(),
-    discountApi.getProducts(),
-    productApi.getNew(),
-    discountApi.getActive(),
-    deliveryApi.getOptions(),
-    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    categoryApi.getTree().catch(() => ({ items: [] })),
+    categoryApi.getList().catch(() => ({ items: [], total: 0, limit: 100, offset: 0 })),
+    productApi.getPopular().catch(() => ({ items: [] })),
+    discountApi.getProducts().catch(() => ({ items: [] })),
+    productApi.getNew().catch(() => ({ items: [] })),
+    discountApi.getActive().catch(() => ({ items: [] })),
+    deliveryApi.getOptions().catch(() => defaultDeliveryOptions),
+    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse).catch(() => emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
       emptyFavoritesResponse,
-    ),
+    ).catch(() => emptyFavoritesResponse),
     apiClient.get<{ items: any[] }>("/api/banners").catch(() => ({ items: [] })),
   ]);
 
   const visibleCategories: CategoryShortResponse[] =
-    categories.items.length > 0 ? categories.items : categoryTree.items;
-  const cartProductIds = new Set(cart.items.map((item) => item.product_id));
-  const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
+    (categories?.items && categories.items.length > 0)
+      ? categories.items
+      : (categoryTree?.items ?? []);
+  const cartProductIds = new Set((cart?.items ?? []).map((item) => item.product_id));
+  const favoriteProductIds = new Set((favorites?.items ?? []).map((product) => product.id));
 
   return (
     <>
       <Header />
       <main className="space-y-12 pb-20 md:pb-8">
         <Container className="pt-6">
-          <Hero totalProducts={categories.items.reduce((acc, cat) => acc + (cat.products_count ?? 0), 0)} />
+          <Hero totalProducts={(categories?.items ?? []).reduce((acc, cat) => acc + (cat.products_count ?? 0), 0)} />
         </Container>
 
         {/* Блок 3 ключевых преимуществ сразу под Hero-баннером */}
@@ -125,13 +146,13 @@ export const HomePage = async () => {
         {/* 2-колоночный сплит-блок доставки и самовывоза */}
         <Container>
           <DeliveryWidgets
-            deliveryTitle={delivery.delivery.title}
-            deliveryDescription={delivery.delivery.description}
-            deliveryPrice={delivery.delivery.base_price ?? delivery.delivery.price}
-            freeFromAmount={delivery.delivery.free_from_amount}
-            pickupTitle={delivery.pickup.title}
-            pickupDescription={delivery.pickup.description}
-            currentCartAmount={parseFloat(cart.subtotal || "0")}
+            deliveryTitle={delivery?.delivery?.title ?? "Курьерская доставка"}
+            deliveryDescription={delivery?.delivery?.description ?? "Доставка до двери"}
+            deliveryPrice={delivery?.delivery?.base_price ?? delivery?.delivery?.price ?? "150"}
+            freeFromAmount={delivery?.delivery?.free_from_amount ?? "1500"}
+            pickupTitle={delivery?.pickup?.title ?? "Быстрый самовывоз"}
+            pickupDescription={delivery?.pickup?.description ?? "Самовывоз из магазина"}
+            currentCartAmount={parseFloat(cart?.subtotal || "0")}
           />
         </Container>
 

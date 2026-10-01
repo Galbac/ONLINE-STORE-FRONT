@@ -110,8 +110,8 @@ export const Header = () => {
             <HeaderSearch />
           </div>
 
-          {/* Панель пользователя: Избранное и Корзина скрыты на мобилках (< md), т.к. они в BottomNav */}
-          <div className="flex items-center gap-1 max-lg:justify-end sm:gap-2 shrink-0">
+          {/* Панель пользователя: скрыта на мобилках (< md), т.к. всё есть в BottomNav */}
+          <div className="hidden md:flex items-center gap-1 sm:gap-2 shrink-0">
             <HeaderUserLink />
             <HeaderFavoritesLink />
             <HeaderCartLink />

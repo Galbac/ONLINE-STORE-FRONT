@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, UserRound } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Eye, EyeOff, Loader2, LockKeyhole, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { storeAuthTokens } from "@/shared/ui";
+import { toast } from "sonner";
 
 interface LoginFormValues {
   login: string;
@@ -21,63 +22,71 @@ const initialValues: LoginFormValues = {
   rememberMe: true,
 };
 
+type LoginStatus = "idle" | "submitting" | "success";
+
 export const LoginForm = () => {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [values, setValues] = useState<LoginFormValues>(initialValues);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [status, setStatus] = useState<LoginStatus>("idle");
+
+  const isLoading = status === "submitting" || status === "success";
 
   const handleChange = (field: keyof LoginFormValues, value: string | boolean): void => {
     setValues((currentValues) => ({
       ...currentValues,
       [field]: value,
     }));
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    const validationMessage = validateForm(values);
+    if (isLoading) return;
 
+    const validationMessage = validateForm(values);
     if (validationMessage) {
       setErrorMessage(validationMessage);
-      setSuccessMessage(null);
       return;
     }
 
-    startTransition(async () => {
+    setErrorMessage(null);
+    setStatus("submitting");
+
+    try {
+      const response = await authApi.login({
+        login: values.login.trim(),
+        password: values.password,
+      });
+
+      storeAuthTokens({
+        accessToken: response.access_token,
+        refreshToken: response.refresh_token,
+        remember: values.rememberMe,
+      });
+
       try {
-        setErrorMessage(null);
-        setSuccessMessage(null);
-
-        const response = await authApi.login({
-          login: values.login.trim(),
-          password: values.password,
-        });
-
-        storeAuthTokens({
-          accessToken: response.access_token,
-          refreshToken: response.refresh_token,
-          remember: values.rememberMe,
-        });
-
         await authApi.getMe(response.access_token);
+      } catch (_) {}
 
-        setSuccessMessage("Вы успешно вошли в аккаунт.");
-        setValues(initialValues);
-        router.replace(getSafeNextPath(searchParams.get("next")));
-        router.refresh();
-      } catch (err: any) {
-        setErrorMessage(extractErrorMessage(err, "Неверный email, телефон или пароль."));
-      }
-    });
+      setStatus("success");
+      toast.success("Вход выполнен успешно!");
+
+      const targetUrl = getSafeNextPath(searchParams.get("next"));
+      // Мгновенный переход без очистки полей и без дергания интерфейса
+      window.location.assign(targetUrl);
+    } catch (err: any) {
+      setStatus("idle");
+      setErrorMessage(extractErrorMessage(err, "Неверный email, телефон или пароль."));
+    }
   };
 
   return (
     <form
-      className="space-y-6 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-10"
+      className="space-y-6 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-10 transition-all"
       onSubmit={handleSubmit}
     >
       <div>
@@ -90,12 +99,19 @@ export const LoginForm = () => {
           <label className="block text-xs font-bold text-slate-700 mb-1.5">
             Email или номер телефона <span className="text-rose-500">*</span>
           </label>
-          <div className="relative flex items-center rounded-xl border border-slate-200 bg-white px-3.5 transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10">
+          <div
+            className={cn(
+              "relative flex items-center rounded-xl border border-slate-200 bg-white px-3.5 transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10",
+              isLoading && "bg-slate-50/70 opacity-80 cursor-not-allowed",
+              errorMessage && "border-rose-300 focus-within:border-rose-500 focus-within:ring-rose-500/10",
+            )}
+          >
             <UserRound className="text-slate-400 shrink-0 mr-2.5" size={18} />
             <input
-              className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none disabled:cursor-not-allowed"
               autoComplete="username"
               name="login"
+              disabled={isLoading}
               placeholder="user@example.com или +7 999 000-00-00"
               type="text"
               value={values.login}
@@ -110,26 +126,37 @@ export const LoginForm = () => {
               Пароль <span className="text-rose-500">*</span>
             </label>
             <Link
-              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition"
+              className={cn(
+                "text-xs font-bold text-emerald-600 hover:text-emerald-700 transition",
+                isLoading && "pointer-events-none opacity-50",
+              )}
               href={ROUTES.FORGOT_PASSWORD}
             >
               Забыли пароль?
             </Link>
           </div>
-          <div className="relative flex items-center rounded-xl border border-slate-200 bg-white px-3.5 transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10">
+          <div
+            className={cn(
+              "relative flex items-center rounded-xl border border-slate-200 bg-white px-3.5 transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10",
+              isLoading && "bg-slate-50/70 opacity-80 cursor-not-allowed",
+              errorMessage && "border-rose-300 focus-within:border-rose-500 focus-within:ring-rose-500/10",
+            )}
+          >
             <LockKeyhole className="text-slate-400 shrink-0 mr-2.5" size={18} />
             <input
-              className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
+              className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none disabled:cursor-not-allowed"
               autoComplete="current-password"
               name="password"
+              disabled={isLoading}
               placeholder="Введите ваш пароль"
               type={showPassword ? "text" : "password"}
               value={values.password}
               onChange={(event) => handleChange("password", event.target.value)}
             />
             <button
-              className="text-slate-400 hover:text-slate-700 shrink-0 p-1 transition"
+              className="text-slate-400 hover:text-slate-700 shrink-0 p-1 transition disabled:cursor-not-allowed"
               type="button"
+              disabled={isLoading}
               onClick={() => setShowPassword((isVisible) => !isVisible)}
               aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
             >
@@ -140,10 +167,16 @@ export const LoginForm = () => {
       </div>
 
       <div className="flex items-center">
-        <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none">
+        <label
+          className={cn(
+            "flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none",
+            isLoading && "cursor-not-allowed opacity-60",
+          )}
+        >
           <input
-            className="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600"
+            className="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer accent-emerald-600 disabled:cursor-not-allowed"
             checked={values.rememberMe}
+            disabled={isLoading}
             type="checkbox"
             onChange={(event) => handleChange("rememberMe", event.target.checked)}
           />
@@ -154,12 +187,6 @@ export const LoginForm = () => {
       {errorMessage ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-700 animate-in fade-in-0 duration-150">
           {errorMessage}
-        </div>
-      ) : null}
-
-      {successMessage ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-700 animate-in fade-in-0 duration-150">
-          {successMessage}
         </div>
       ) : null}
 
@@ -176,29 +203,41 @@ export const LoginForm = () => {
 
       <button
         className={cn(
-          "flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-xs font-extrabold uppercase tracking-wider text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/30 active:scale-[0.99] transition-all disabled:opacity-60",
-          isPending && "cursor-wait opacity-75",
+          "flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-extrabold uppercase tracking-wider text-white shadow-lg transition-all duration-200 select-none",
+          status === "idle" &&
+            "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-600/30 active:scale-[0.99] cursor-pointer",
+          status === "submitting" &&
+            "bg-emerald-600 shadow-emerald-600/20 cursor-wait opacity-90",
+          status === "success" &&
+            "bg-emerald-600 shadow-emerald-600/25 cursor-wait opacity-95",
         )}
         type="submit"
-        disabled={isPending}
+        disabled={isLoading}
       >
-        {isPending ? (
+        {status === "submitting" && (
           <>
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={16} className="animate-spin shrink-0" />
             <span>Входим...</span>
           </>
-        ) : (
+        )}
+        {status === "success" && (
           <>
-            <span>Войти</span>
-            <ArrowRight size={15} />
+            <Loader2 size={16} className="animate-spin shrink-0" />
+            <span>Перенаправляем...</span>
           </>
+        )}
+        {status === "idle" && (
+          <span>Войти</span>
         )}
       </button>
 
       <div className="border-t border-slate-100 pt-5 text-center text-xs text-slate-500">
         Впервые у нас?{" "}
         <Link
-          className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
+          className={cn(
+            "font-bold text-emerald-600 hover:text-emerald-700 hover:underline",
+            isLoading && "pointer-events-none opacity-50",
+          )}
           href={ROUTES.REGISTER}
         >
           Создать аккаунт

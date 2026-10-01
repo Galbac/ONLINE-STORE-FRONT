@@ -3,10 +3,10 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { CheckCircle2, Play, Printer } from "lucide-react";
-import { apiClient } from "@/shared/api";
+import { apiClient, getStoredAdminAccessToken } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
-import { Button, getStoredAccessToken } from "@/shared/ui";
+import { Button } from "@/shared/ui";
 
 interface AssemblyOrderItem {
   id: number;
@@ -24,7 +24,7 @@ export default function AdminAssemblyPage() {
   const [isPending, startTransition] = useTransition();
 
   const loadOrders = async () => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
     try {
       const data = await apiClient.get<{ items: AssemblyOrderItem[] }>("/api/admin/orders/assembly", undefined, {
@@ -43,7 +43,7 @@ export default function AdminAssemblyPage() {
   }, []);
 
   const handleStart = (orderId: number) => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
     startTransition(async () => {
       try {
@@ -58,7 +58,7 @@ export default function AdminAssemblyPage() {
   };
 
   const handleComplete = (orderId: number) => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
     startTransition(async () => {
       try {

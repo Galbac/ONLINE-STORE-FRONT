@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { adminAuthApi } from "@/entities/admin-auth";
 import { AdminApiError, storeAdminAuthTokens } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
@@ -27,7 +27,6 @@ const initialValues: AdminLoginFormValues = {
 export const AdminLoginForm = () => {
   const [values, setValues] = useState<AdminLoginFormValues>(initialValues);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -45,15 +44,13 @@ export const AdminLoginForm = () => {
 
     if (validationMessage) {
       setErrorMessage(validationMessage);
-      setSuccessMessage(null);
       return;
     }
 
     startTransition(async () => {
       try {
         setErrorMessage(null);
-        setSuccessMessage(null);
-
+  
         const response = await adminAuthApi.login({
           login: values.login.trim(),
           password: values.password,
@@ -66,14 +63,9 @@ export const AdminLoginForm = () => {
         });
 
         await adminAuthApi.getMe(response.access_token);
-
-        setValues(initialValues);
-        setSuccessMessage("Доступ подтвержден.");
-
-        window.location.href = ROUTES.ADMIN_DASHBOARD;
+        window.location.assign(ROUTES.ADMIN_DASHBOARD);
       } catch (error) {
-        setSuccessMessage(null);
-        setErrorMessage(getAuthErrorMessage(error));
+          setErrorMessage(getAuthErrorMessage(error));
       }
     });
   };
@@ -148,17 +140,11 @@ export const AdminLoginForm = () => {
         <span>Запомнить этот браузер</span>
       </label>
 
-      {/* Сообщения об ошибках / успехе */}
+      {/* Сообщения об ошибках */}
       {errorMessage ? (
         <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-200/80 bg-rose-50/80 px-3.5 py-2.5 text-xs font-medium text-rose-700 animate-in fade-in slide-in-from-top-1">
           <AlertCircle className="size-4 shrink-0 text-rose-500" />
           <span>{errorMessage}</span>
-        </div>
-      ) : null}
-      {successMessage ? (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-2.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-top-1">
-          <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-          <span>{successMessage}</span>
         </div>
       ) : null}
 

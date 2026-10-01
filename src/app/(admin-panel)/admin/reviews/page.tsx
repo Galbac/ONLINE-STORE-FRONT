@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { Check, Star, X } from "lucide-react";
-import { apiClient, API_ENDPOINTS } from "@/shared/api";
-import { Button, getStoredAccessToken } from "@/shared/ui";
+import { apiClient, API_ENDPOINTS, getStoredAdminAccessToken } from "@/shared/api";
+import { Button } from "@/shared/ui";
 
 interface ReviewItem {
   id: number;
@@ -23,8 +23,8 @@ export default function AdminReviewsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
 
-  const loadReviews = async () => {
-    const token = getStoredAccessToken();
+  const loadReviews = useCallback(async () => {
+    const token = getStoredAdminAccessToken();
     if (!token) return;
     try {
       let url = "/api/admin/reviews";
@@ -40,32 +40,14 @@ export default function AdminReviewsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    const fetchReviews = async () => {
-      const token = getStoredAccessToken();
-      if (!token) return;
-      try {
-        let url = "/api/admin/reviews";
-        if (filterApproved === "approved") url += "?is_approved=true";
-        if (filterApproved === "pending") url += "?is_approved=false";
-
-        const data = await apiClient.get<{ items: ReviewItem[] }>(url, undefined, {
-          Authorization: `Bearer ${token}`,
-        });
-        setReviews(data.items);
-      } catch {
-        // Fallback
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    void fetchReviews();
   }, [filterApproved]);
 
+  useEffect(() => {
+    void loadReviews();
+  }, [loadReviews]);
+
   const handleModerate = (reviewId: number, isApproved: boolean) => {
-    const token = getStoredAccessToken();
+    const token = getStoredAdminAccessToken();
     if (!token) return;
 
     startTransition(async () => {

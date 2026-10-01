@@ -137,7 +137,7 @@ export const AdminLegalDocumentsView: React.FC<AdminLegalDocumentsViewProps> = (
 
         
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Ошибка при сохранении документа";
+        console.error("Ошибка при сохранении документа:", err);
         
       }
     });

@@ -12,6 +12,8 @@ import {
   Container,
   getLoginRedirectHref,
   getStoredAccessToken,
+  getStoredRefreshToken,
+  storeAuthTokens,
 } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
@@ -65,6 +67,34 @@ export const ProfilePage = () => {
         }
 
         if (isApiErrorStatus(error, 401)) {
+          const refreshToken = getStoredRefreshToken();
+          if (refreshToken) {
+            try {
+              const res = await authApi.refresh({ refresh_token: refreshToken });
+              if (isActive && res.access_token) {
+                storeAuthTokens({
+                  accessToken: res.access_token,
+                  refreshToken: res.refresh_token,
+                });
+                // Retry loading profile with fresh token
+                const retryAuthUser = await authApi.getMe(res.access_token);
+                const [retryProfile, retryUser] = await Promise.all([
+                  profileApi.getSummary(res.access_token),
+                  userApi.getMe(res.access_token),
+                ]);
+                const isVerified = retryAuthUser.is_verified ?? retryUser.is_verified;
+                const enrichedUser =
+                  isVerified === undefined
+                    ? { ...retryUser, permissions: retryAuthUser.permissions }
+                    : { ...retryUser, is_verified: isVerified, permissions: retryAuthUser.permissions };
+                setState({ profile: retryProfile, status: "ready", user: enrichedUser });
+                return;
+              }
+            } catch {
+              // refresh failed, proceed to logout
+            }
+          }
+
           clearStoredAuth();
           setState({ profile: null, user: null, status: "unauthorized" });
           router.replace(getLoginRedirectHref(pathname || "/profile"));

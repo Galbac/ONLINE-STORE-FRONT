@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
 import { STORE_INFO } from "@/shared/config";
 
-export const runtime = "edge";
 export const alt = "Превью товара";
 export const size = {
   width: 1200,

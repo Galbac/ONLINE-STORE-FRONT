@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Save } from "lucide-react";
 import { adminDeliveryApi, type AdminDeliverySettingsResponse } from "@/entities/admin-delivery";
 import { ROUTES } from "@/shared/config";
+import { getAdminErrorMessage } from "@/shared/api";
 
 interface AdminDeliverySettingsViewProps {
   settings: AdminDeliverySettingsResponse;
@@ -41,8 +42,8 @@ export const AdminDeliverySettingsView = ({
         setSettings(response);
         setMessage("Настройки доставки сохранены.");
       })
-      .catch(() => {
-        setError("Не удалось сохранить настройки. Проверьте данные или войдите заново.");
+      .catch((err: unknown) => {
+        setError(getAdminErrorMessage(err, "Не удалось сохранить настройки. Проверьте данные или войдите заново."));
       })
       .finally(() => {
         setIsPending(false);

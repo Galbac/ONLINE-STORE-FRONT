@@ -8,6 +8,7 @@ import {
   type AdminPickupPointResponse,
 } from "@/entities/admin-delivery";
 import { ROUTES } from "@/shared/config";
+import { getAdminErrorMessage } from "@/shared/api";
 import { DeliveryTabs } from "@/widgets/admin-delivery-settings";
 import { Filters, Pagination, type AdminDeliveryFilters } from "@/widgets/admin-delivery-zones";
 
@@ -40,7 +41,7 @@ export const AdminPickupPointsView = ({
         event.currentTarget.reset();
         setMessage("Точка самовывоза создана.");
       })
-      .catch(() => setError("Не удалось создать точку самовывоза."))
+      .catch((err: unknown) => setError(getAdminErrorMessage(err, "Не удалось создать точку самовывоза.")))
       .finally(() => setPendingId(null));
   };
 
@@ -58,7 +59,7 @@ export const AdminPickupPointsView = ({
         setEditingPointId(null);
         setMessage("Точка самовывоза сохранена.");
       })
-      .catch(() => setError("Не удалось сохранить точку самовывоза."))
+      .catch((err: unknown) => setError(getAdminErrorMessage(err, "Не удалось сохранить точку самовывоза.")))
       .finally(() => setPendingId(null));
   };
 
@@ -74,7 +75,7 @@ export const AdminPickupPointsView = ({
         setPickupPoints((current) => current.filter((point) => point.id !== pointId));
         setMessage(response.message);
       })
-      .catch(() => setError("Не удалось удалить точку самовывоза."))
+      .catch((err: unknown) => setError(getAdminErrorMessage(err, "Не удалось удалить точку самовывоза.")))
       .finally(() => setPendingId(null));
   };
 

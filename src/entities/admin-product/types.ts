@@ -41,6 +41,8 @@ export interface AdminProductCreateRequest {
   is_active: boolean;
   is_available: boolean;
   low_stock_threshold: string;
+  meta_description?: string | null;
+  meta_title?: string | null;
   min_quantity: string;
   name: string;
   old_price?: string | null;

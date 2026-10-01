@@ -15,18 +15,20 @@ export const middleware = (request: NextRequest) => {
 
   if (isGuestOnlyPath) {
     const accessToken = request.cookies.get("access_token")?.value;
+    const refreshToken = request.cookies.get("refresh_token")?.value;
 
-    if (accessToken) {
-      if (isAccessTokenValid(accessToken)) {
-        const homeUrl = request.nextUrl.clone();
-        homeUrl.pathname = "/";
-        homeUrl.search = "";
-        return NextResponse.redirect(homeUrl);
-      }
+    if (accessToken && isAccessTokenValid(accessToken)) {
+      const homeUrl = request.nextUrl.clone();
+      homeUrl.pathname = "/";
+      homeUrl.search = "";
+      return NextResponse.redirect(homeUrl);
+    }
 
-      const response = NextResponse.next();
-      response.cookies.delete("access_token");
-      return response;
+    if (refreshToken) {
+      const homeUrl = request.nextUrl.clone();
+      homeUrl.pathname = "/";
+      homeUrl.search = "";
+      return NextResponse.redirect(homeUrl);
     }
 
     return NextResponse.next();
@@ -62,8 +64,14 @@ export const middleware = (request: NextRequest) => {
   }
 
   const accessToken = request.cookies.get("access_token")?.value;
+  const refreshToken = request.cookies.get("refresh_token")?.value;
 
   if (accessToken && isAccessTokenValid(accessToken)) {
+    return NextResponse.next();
+  }
+
+  if (refreshToken) {
+    // User has a persistent refresh token, let client-side AuthGuard / apiClient refresh access_token
     return NextResponse.next();
   }
 
@@ -73,6 +81,7 @@ export const middleware = (request: NextRequest) => {
 
   const response = NextResponse.redirect(loginUrl);
   response.cookies.delete("access_token");
+  response.cookies.delete("refresh_token");
 
   return response;
 };

@@ -21,7 +21,7 @@ import type {
   AdminCategoryPayload,
   AdminCategorySortPayload,
 } from "@/entities/admin-category";
-import { getStoredAdminAccessToken } from "@/shared/api";
+import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 import { cn } from "@/shared/config";
 
 interface AdminCategoriesViewProps {
@@ -105,8 +105,8 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
         setSuccessMessage(editingCategory ? "Категория обновлена." : "Категория создана.");
         setErrorMessage(null);
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось сохранить категорию. Проверьте поля и попробуйте снова.");
+      } catch (err: unknown) {
+        setErrorMessage(getAdminErrorMessage(err, "Не удалось сохранить категорию. Проверьте поля и попробуйте снова."));
         setSuccessMessage(null);
       }
     });

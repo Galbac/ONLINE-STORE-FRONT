@@ -11,7 +11,7 @@ import type {
   AdminProductImageResponse,
   AdminProductUpdateRequest,
 } from "@/entities/admin-product";
-import { getStoredAdminAccessToken } from "@/shared/api";
+import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { formatSyncStatus } from "@/shared/lib/format";
 
@@ -99,8 +99,8 @@ export const AdminProductEditForm = ({ categories, product }: AdminProductEditFo
 
         setSuccessMessage("Товар обновлен.");
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось сохранить товар. Проверьте поля и попробуйте снова.");
+      } catch (error: unknown) {
+        setErrorMessage(getAdminErrorMessage(error, "Не удалось сохранить товар. Проверьте поля и попробуйте снова."));
       }
     });
   };

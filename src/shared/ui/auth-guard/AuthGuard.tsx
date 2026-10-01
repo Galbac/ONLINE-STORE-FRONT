@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { authApi } from "@/entities/auth";
 import { ROUTES } from "@/shared/config";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
@@ -9,10 +10,10 @@ interface AuthGuardProps {
   children: ReactNode;
 }
 
-interface AuthTokens {
+export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  remember: boolean;
+  remember?: boolean;
 }
 
 const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
@@ -36,31 +37,45 @@ export const getStoredAccessToken = (): string | null => {
   }
 
   if (!isAccessTokenValid(accessToken)) {
-    clearStoredAuth();
     return null;
   }
 
   return accessToken;
 };
 
+export const getStoredRefreshToken = (): string | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return (
+    window.localStorage.getItem("refresh_token") ??
+    window.sessionStorage.getItem("refresh_token") ??
+    getCookieValue("refresh_token")
+  );
+};
+
 export const clearStoredAuth = (): void => {
+  if (typeof window === "undefined") return;
   window.localStorage.removeItem("access_token");
   window.localStorage.removeItem("refresh_token");
   window.sessionStorage.removeItem("access_token");
   window.sessionStorage.removeItem("refresh_token");
   document.cookie = "access_token=; path=/; max-age=0; samesite=lax";
+  document.cookie = "refresh_token=; path=/; max-age=0; samesite=lax";
 };
 
-export const storeAuthTokens = ({ accessToken, refreshToken, remember }: AuthTokens): void => {
-  const storage = remember ? window.localStorage : window.sessionStorage;
-  const staleStorage = remember ? window.sessionStorage : window.localStorage;
-  const cookieMaxAge = remember ? `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}` : "";
+export const storeAuthTokens = ({ accessToken, refreshToken }: AuthTokens): void => {
+  if (typeof window === "undefined") return;
+  const cookieMaxAge = `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}`;
 
-  staleStorage.removeItem("access_token");
-  staleStorage.removeItem("refresh_token");
-  storage.setItem("access_token", accessToken);
-  storage.setItem("refresh_token", refreshToken);
+  window.localStorage.setItem("access_token", accessToken);
+  window.localStorage.setItem("refresh_token", refreshToken);
+  window.sessionStorage.removeItem("access_token");
+  window.sessionStorage.removeItem("refresh_token");
+
   document.cookie = `access_token=${encodeURIComponent(accessToken)}; path=/; samesite=lax${cookieMaxAge}`;
+  document.cookie = `refresh_token=${encodeURIComponent(refreshToken)}; path=/; samesite=lax${cookieMaxAge}`;
 };
 
 const getCookieValue = (name: string): string | null => {
@@ -83,14 +98,43 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isAllowed, setIsAllowed] = useState(false);
 
   useEffect(() => {
-    const accessToken = getStoredAccessToken();
+    let isCancelled = false;
 
-    if (!accessToken) {
-      router.replace(getLoginRedirectHref(pathname || ROUTES.PROFILE));
-      return;
-    }
+    const checkAuthOrRefresh = async () => {
+      const accessToken = getStoredAccessToken();
+      if (accessToken) {
+        setIsAllowed(true);
+        return;
+      }
 
-    setIsAllowed(true);
+      const refreshToken = getStoredRefreshToken();
+      if (refreshToken) {
+        try {
+          const res = await authApi.refresh({ refresh_token: refreshToken });
+          if (!isCancelled && res.access_token) {
+            storeAuthTokens({
+              accessToken: res.access_token,
+              refreshToken: res.refresh_token,
+            });
+            setIsAllowed(true);
+            return;
+          }
+        } catch {
+          // refresh failed
+        }
+      }
+
+      if (!isCancelled) {
+        clearStoredAuth();
+        router.replace(getLoginRedirectHref(pathname || ROUTES.PROFILE));
+      }
+    };
+
+    void checkAuthOrRefresh();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [pathname, router]);
 
   return isAllowed ? children : null;

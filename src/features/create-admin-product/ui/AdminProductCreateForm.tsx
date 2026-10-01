@@ -7,7 +7,7 @@ import { ImagePlus, Save, X } from "lucide-react";
 import type { AdminCategoryListItemResponse } from "@/entities/admin-category";
 import { adminProductApi } from "@/entities/admin-product";
 import type { AdminProductCreateRequest } from "@/entities/admin-product";
-import { getStoredAdminAccessToken } from "@/shared/api";
+import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 
 interface AdminProductCreateFormProps {
@@ -78,8 +78,8 @@ export const AdminProductCreateForm = ({ categories }: AdminProductCreateFormPro
         setSuccessMessage("Товар создан.");
         router.replace(ROUTES.ADMIN_PRODUCT_EDIT(product.id));
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось создать товар. Проверьте поля и попробуйте снова.");
+      } catch (error: unknown) {
+        setErrorMessage(getAdminErrorMessage(error, "Не удалось создать товар. Проверьте поля и попробуйте снова."));
       }
     });
   };

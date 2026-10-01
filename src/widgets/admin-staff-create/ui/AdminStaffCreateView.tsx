@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import { adminStaffApi, type AdminRoleResponse } from "@/entities/admin-staff";
 import { ROUTES } from "@/shared/config";
+import { getAdminErrorMessage } from "@/shared/api";
 
 interface AdminStaffCreateViewProps {
   roles: AdminRoleResponse[];
@@ -42,8 +43,8 @@ export const AdminStaffCreateView = ({ roles }: AdminStaffCreateViewProps) => {
         router.push(ROUTES.ADMIN_STAFF_DETAILS(staff.id));
         router.refresh();
       })
-      .catch(() => {
-        setError("Не удалось создать сотрудника. Проверьте поля и права доступа.");
+      .catch((err: unknown) => {
+        setError(getAdminErrorMessage(err, "Не удалось создать сотрудника. Проверьте поля и права доступа."));
       })
       .finally(() => {
         setIsPending(false);

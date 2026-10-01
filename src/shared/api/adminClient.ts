@@ -319,8 +319,20 @@ class AdminApiClient {
     try {
       const data: unknown = await response.json();
 
-      if (isRecord(data) && typeof data.detail === "string") {
-        return data.detail;
+      if (isRecord(data)) {
+        if (typeof data.detail === "string") {
+          return data.detail;
+        }
+        if (Array.isArray(data.detail) && data.detail.length > 0) {
+          const first = data.detail[0];
+          if (isRecord(first)) {
+            const loc = Array.isArray(first.loc)
+              ? first.loc.filter((item) => item !== "body").join(" -> ")
+              : "";
+            const msg = typeof first.msg === "string" ? first.msg : "Неверные данные";
+            return loc ? `${loc}: ${msg}` : msg;
+          }
+        }
       }
     } catch {
       return null;
@@ -335,3 +347,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 };
 
 export const adminApiClient = new AdminApiClient({ baseUrl: API_BASE_URL });
+
+
+export const getAdminErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof AdminApiError && error.detail) {
+    return error.detail;
+  }
+  if (error instanceof Error && error.message && !error.message.startsWith("Admin API request failed")) {
+    return error.message;
+  }
+  return fallback;
+};

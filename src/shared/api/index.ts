@@ -1,6 +1,7 @@
 export { ApiError, apiClient, isApiErrorStatus, extractErrorMessage } from "./client";
 export {
   AdminApiError,
+  getAdminErrorMessage,
   adminApiClient,
   clearStoredAdminAuth,
   getStoredAdminAccessToken,

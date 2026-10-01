@@ -46,47 +46,35 @@ const getStoredRefreshToken = (): StoredRefreshToken | null => {
     return null;
   }
 
-  const localRefreshToken = window.localStorage.getItem("refresh_token");
+  const token =
+    window.localStorage.getItem("refresh_token") ??
+    window.sessionStorage.getItem("refresh_token") ??
+    getBrowserCookieValue("refresh_token");
 
-  if (localRefreshToken) {
-    return {
-      remember: true,
-      token: localRefreshToken,
-    };
-  }
-
-  const sessionRefreshToken = window.sessionStorage.getItem("refresh_token");
-
-  return sessionRefreshToken
-    ? {
-        remember: false,
-        token: sessionRefreshToken,
-      }
-    : null;
+  return token ? { remember: true, token } : null;
 };
 
 const storeBrowserAuthTokens = ({
   accessToken,
   refreshToken,
-  remember,
 }: {
   accessToken: string;
   refreshToken: string;
-  remember: boolean;
+  remember?: boolean;
 }): void => {
   if (typeof window === "undefined") {
     return;
   }
 
-  const targetStorage = remember ? window.localStorage : window.sessionStorage;
-  const staleStorage = remember ? window.sessionStorage : window.localStorage;
-  const cookieMaxAge = remember ? `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}` : "";
+  const cookieMaxAge = `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}`;
 
-  staleStorage.removeItem("access_token");
-  staleStorage.removeItem("refresh_token");
-  targetStorage.setItem("access_token", accessToken);
-  targetStorage.setItem("refresh_token", refreshToken);
+  window.localStorage.setItem("access_token", accessToken);
+  window.localStorage.setItem("refresh_token", refreshToken);
+  window.sessionStorage.removeItem("access_token");
+  window.sessionStorage.removeItem("refresh_token");
+
   document.cookie = `access_token=${encodeURIComponent(accessToken)}; path=/; samesite=lax${cookieMaxAge}`;
+  document.cookie = `refresh_token=${encodeURIComponent(refreshToken)}; path=/; samesite=lax${cookieMaxAge}`;
 };
 
 const clearBrowserAuth = (): void => {
@@ -99,6 +87,7 @@ const clearBrowserAuth = (): void => {
   window.sessionStorage.removeItem("access_token");
   window.sessionStorage.removeItem("refresh_token");
   document.cookie = "access_token=; path=/; max-age=0; samesite=lax";
+  document.cookie = "refresh_token=; path=/; max-age=0; samesite=lax";
 };
 
 const redirectToLogin = (): void => {

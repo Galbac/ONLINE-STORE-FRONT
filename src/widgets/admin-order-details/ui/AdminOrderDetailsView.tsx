@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Printer, RefreshCw, Save, X } from "lucide-react";
 import { adminOrderApi, type AdminOrderDetailResponse } from "@/entities/admin-order";
 import { paymentApi, type PaymentDetailResponse } from "@/entities/payment";
-import { getStoredAdminAccessToken } from "@/shared/api";
+import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus } from "@/shared/lib/format";
 
@@ -43,8 +43,8 @@ export const AdminOrderDetailsView = ({
     try {
       await handler();
       router.refresh();
-    } catch {
-      setError("Операция не выполнена. Проверьте данные или войдите заново.");
+    } catch (err: unknown) {
+      setError(getAdminErrorMessage(err, "Операция не выполнена. Проверьте данные или войдите заново."));
     } finally {
       setPendingAction(null);
     }

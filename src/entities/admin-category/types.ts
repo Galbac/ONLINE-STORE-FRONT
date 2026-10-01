@@ -57,6 +57,8 @@ export interface AdminCategoryPayload {
   description?: string | null;
   image_id?: number | null;
   is_active: boolean;
+  meta_description?: string | null;
+  meta_title?: string | null;
   name: string;
   parent_id?: number | null;
   seo?: AdminCategorySeoPayload | null;

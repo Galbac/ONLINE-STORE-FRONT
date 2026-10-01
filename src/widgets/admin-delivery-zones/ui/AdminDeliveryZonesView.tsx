@@ -9,6 +9,7 @@ import {
   type AdminDeliveryZoneResponse,
 } from "@/entities/admin-delivery";
 import { ROUTES } from "@/shared/config";
+import { getAdminErrorMessage } from "@/shared/api";
 import { DeliveryTabs } from "@/widgets/admin-delivery-settings";
 
 export interface AdminDeliveryFilters {
@@ -47,7 +48,7 @@ export const AdminDeliveryZonesView = ({
         event.currentTarget.reset();
         setMessage("Зона доставки создана.");
       })
-      .catch(() => setError("Не удалось создать зону."))
+      .catch((err: unknown) => setError(getAdminErrorMessage(err, "Не удалось создать зону.")))
       .finally(() => setPendingId(null));
   };
 
@@ -65,7 +66,7 @@ export const AdminDeliveryZonesView = ({
         setEditingZoneId(null);
         setMessage("Зона доставки сохранена.");
       })
-      .catch(() => setError("Не удалось сохранить зону."))
+      .catch((err: unknown) => setError(getAdminErrorMessage(err, "Не удалось сохранить зону.")))
       .finally(() => setPendingId(null));
   };
 
@@ -81,7 +82,7 @@ export const AdminDeliveryZonesView = ({
         setZones((current) => current.filter((zone) => zone.id !== zoneId));
         setMessage(response.message);
       })
-      .catch(() => setError("Не удалось удалить зону."))
+      .catch((err: unknown) => setError(getAdminErrorMessage(err, "Не удалось удалить зону.")))
       .finally(() => setPendingId(null));
   };
 

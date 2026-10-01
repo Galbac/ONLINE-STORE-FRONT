@@ -216,32 +216,45 @@ export const CartDrawer = () => {
               </button>
             </div>
           ) : (
-            items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3.5 rounded-xl border border-slate-100 bg-white p-3 shadow-2xs"
-              >
-                <div className="relative flex size-14 shrink-0 items-center justify-center rounded-lg bg-slate-50 overflow-hidden">
-                  {item.preview_image_url ? (
-                    <Image
-                      src={item.preview_image_url}
-                      alt={item.name}
-                      width={56}
-                      height={56}
-                      className="object-contain"
-                    />
-                  ) : (
-                    <ShoppingBag size={20} className="text-slate-300" />
-                  )}
-                </div>
+            items.map((item) => {
+              const productHref = item.slug ? ROUTES.PRODUCT(item.slug) : `/catalog?search=${encodeURIComponent(item.name)}`;
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3.5 rounded-xl border border-slate-100 bg-white p-3 shadow-2xs group/card"
+                >
+                  <Link
+                    href={productHref}
+                    onClick={() => setIsOpen(false)}
+                    className="relative flex size-14 shrink-0 items-center justify-center rounded-lg bg-slate-50 overflow-hidden hover:opacity-90 transition cursor-pointer"
+                    title={item.name}
+                  >
+                    {item.preview_image_url ? (
+                      <Image
+                        src={item.preview_image_url}
+                        alt={item.name}
+                        width={56}
+                        height={56}
+                        unoptimized
+                        className="object-contain transition-transform group-hover/card:scale-105"
+                      />
+                    ) : (
+                      <ShoppingBag size={20} className="text-slate-300" />
+                    )}
+                  </Link>
 
-                <div className="min-w-0 flex-1">
-                  <p className="line-clamp-1 text-xs font-bold text-slate-900">
-                    {item.name}
-                  </p>
-                  <p className="mt-0.5 text-[11px] font-extrabold text-slate-800">
-                    {toPriceFormat(item.total_price)}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={productHref}
+                      onClick={() => setIsOpen(false)}
+                      className="line-clamp-1 text-xs font-bold text-slate-900 hover:text-emerald-700 hover:underline transition cursor-pointer block"
+                      title={item.name}
+                    >
+                      {item.name}
+                    </Link>
+                    <p className="mt-0.5 text-[11px] font-extrabold text-slate-800">
+                      {toPriceFormat(item.total_price)}
+                    </p>
 
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex h-7 items-center rounded-lg bg-slate-100 px-1 select-none">
@@ -277,7 +290,8 @@ export const CartDrawer = () => {
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -289,27 +303,40 @@ export const CartDrawer = () => {
               <span className="text-xs font-bold text-slate-800">Часто забывают добавить:</span>
             </div>
             <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {availableSuggestions.slice(0, 6).map((product) => (
+              {availableSuggestions.slice(0, 6).map((product) => {
+                const suggestionHref = product.slug ? ROUTES.PRODUCT(product.slug) : `/catalog?search=${encodeURIComponent(product.name)}`;
+                return (
                 <div
                   key={product.id}
-                  className="flex flex-col justify-between w-28 shrink-0 rounded-xl border border-slate-200/80 bg-white p-2 shadow-2xs"
+                  className="flex flex-col justify-between w-28 shrink-0 rounded-xl border border-slate-200/80 bg-white p-2 shadow-2xs group/sugg"
                 >
-                  <div className="relative flex h-14 w-full items-center justify-center rounded-lg bg-slate-50 overflow-hidden mb-1.5">
+                  <Link
+                    href={suggestionHref}
+                    onClick={() => setIsOpen(false)}
+                    className="relative flex h-14 w-full items-center justify-center rounded-lg bg-slate-50 overflow-hidden mb-1.5 hover:opacity-90 transition cursor-pointer"
+                    title={product.name}
+                  >
                     {product.preview_image_url ? (
                       <Image
                         src={product.preview_image_url}
                         alt={product.name}
                         width={48}
                         height={48}
-                        className="object-contain"
+                        unoptimized
+                        className="object-contain transition-transform group-hover/sugg:scale-105"
                       />
                     ) : (
                       <ShoppingBag size={18} className="text-slate-300" />
                     )}
-                  </div>
-                  <p className="line-clamp-1 text-[11px] font-bold text-slate-900 leading-tight">
+                  </Link>
+                  <Link
+                    href={suggestionHref}
+                    onClick={() => setIsOpen(false)}
+                    className="line-clamp-1 text-[11px] font-bold text-slate-900 leading-tight hover:text-emerald-700 hover:underline transition cursor-pointer block"
+                    title={product.name}
+                  >
                     {product.name}
-                  </p>
+                  </Link>
                   <div className="mt-1.5 flex items-center justify-between">
                     <span className="text-xs font-black text-slate-900">
                       {toPriceFormat(product.price)}
@@ -325,7 +352,8 @@ export const CartDrawer = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : null}

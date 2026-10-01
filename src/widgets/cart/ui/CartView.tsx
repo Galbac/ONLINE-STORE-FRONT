@@ -380,6 +380,7 @@ const CartItemCard = ({
               src={item.preview_image_url}
               alt={item.name}
               fill
+              unoptimized
               sizes="112px"
               className="object-contain p-1 transition-transform group-hover:scale-105"
             />

@@ -129,6 +129,8 @@ export const CheckoutView = ({
   );
   const [selectedDate, setSelectedDate] = useState(timeSlots.date);
   const [selectedSlotId, setSelectedSlotId] = useState(firstAvailableSlot?.id ?? null);
+  const [timeMode, setTimeMode] = useState<"slot" | "asap" | "custom">("slot");
+  const [customTime, setCustomTime] = useState<string>("");
   const [order, setOrder] = useState<OrderCreateResponse | null>(null);
   const [payment, setPayment] = useState<PaymentCreateResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -168,8 +170,19 @@ export const CheckoutView = ({
 
   const isOutsideKizlyar = useMemo(() => {
     if (deliveryType !== "delivery" || !selectedAddress) return false;
-    const city = (selectedAddress.city || "").trim().toLowerCase();
-    return city !== "" && city !== "кизляр";
+    const rawCity = (selectedAddress.city || "").trim().toLowerCase();
+    const cleanCity = rawCity.replace(/^(?:г\.|г|город|пос\.|пос|поселок)\s*/i, "").trim();
+    if (!cleanCity) return false;
+    const isKizlyarArea =
+      cleanCity.includes("кизляр") ||
+      cleanCity.includes("черёмушки") ||
+      cleanCity.includes("черемушки") ||
+      cleanCity.includes("южный") ||
+      cleanCity.includes("комсомольский") ||
+      cleanCity.includes("первомайское") ||
+      cleanCity.includes("кардоновка") ||
+      cleanCity.includes("бабах-юрт");
+    return !isKizlyarArea;
   }, [deliveryType, selectedAddress]);
 
   const deliveryPrice = deliveryType === "pickup" ? "0" : (
@@ -187,7 +200,13 @@ export const CheckoutView = ({
   const isStep1Done = Boolean(contact.name.trim().length >= 2 && contact.phone.trim().length >= 10);
   const isStep2Done = Boolean(deliveryType === "delivery" || deliveryType === "pickup");
   const isStep3Done = deliveryType === "pickup" ? Boolean(selectedPickupPointId) : Boolean(selectedAddressId);
-  const isStep4Done = Boolean(selectedDate && selectedSlotId);
+  const isStep4Done = Boolean(
+    selectedDate && (
+      timeMode === "asap" ||
+      (timeMode === "custom" && customTime.trim().length >= 2) ||
+      (timeMode === "slot" && selectedSlotId)
+    )
+  );
   const isStep5Done = Boolean(paymentMethod);
   const isStep6Done = Boolean(order);
 
@@ -235,6 +254,25 @@ export const CheckoutView = ({
       return;
     }
 
+    let timeComment = "";
+    if (timeMode === "asap") {
+      timeComment = "[Время: Как можно скорее (60-90 мин)]";
+    } else if (timeMode === "custom" && customTime.trim()) {
+      timeComment = `[Время: ${customTime.trim()}]`;
+    }
+
+    const resolvedSlotId =
+      timeMode === "slot"
+        ? (selectedSlot?.id ?? null)
+        : (selectedSlot?.id ?? firstAvailableSlot?.id ?? timeSlots.items[0]?.id ?? null);
+
+    const notesParts = [
+      timeComment,
+      leaveAtDoor ? "Оставить заказ у двери" : "",
+      dontRingDoorbell ? "Не звонить в звонок" : "",
+    ].filter(Boolean);
+    const fullComment = notesParts.join(". ");
+
     const request: OrderCreateRequest = {
       delivery_type: deliveryType,
       payment_method: paymentMethod,
@@ -242,8 +280,8 @@ export const CheckoutView = ({
       customer_phone: normalizePhoneNumber(contact.phone),
       customer_email: contact.email || null,
       delivery_date: selectedDate,
-      delivery_time_slot_id: selectedSlot?.id ?? null,
-      comment: null,
+      delivery_time_slot_id: resolvedSlotId,
+      comment: fullComment || null,
       use_points: usePoints > 0 ? usePoints : 0,
       leave_at_door: leaveAtDoor,
       dont_ring_doorbell: dontRingDoorbell,
@@ -518,33 +556,41 @@ export const CheckoutView = ({
                         </p>
                         <p className="text-[11px] text-slate-500">
                           {isOutsideKizlyar 
-                            ? "Доставка осуществляется по г. Кизляр и пригородным поселкам" 
+                            ? "Курьерская доставка действует по г. Кизляр и пригородным поселкам" 
                             : `Тариф доставки: ${deliveryPrice === "0" ? "Бесплатно" : `${deliveryPrice} ₽`} (бесплатно от ${toPriceFormat(deliveryCalculation.free_delivery_from || 3000)})`}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="rounded-lg bg-emerald-100/80 px-2.5 py-1 text-xs font-black text-emerald-800">
-                        {isOutsideKizlyar ? "Недоступно" : deliveryPrice === "0" ? "0 ₽" : `${deliveryPrice} ₽`}
+                      <span className={cn(
+                        "rounded-lg px-2.5 py-1 text-xs font-black",
+                        isOutsideKizlyar ? "bg-rose-100 text-rose-800" : "bg-emerald-100/80 text-emerald-800"
+                      )}>
+                        {isOutsideKizlyar ? "Курьер недоступен" : deliveryPrice === "0" ? "0 ₽ (Бесплатно)" : `${deliveryPrice} ₽`}
                       </span>
                     </div>
                   </div>
 
                   {isOutsideKizlyar ? (
-                    <div className="mt-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-800 font-medium">
+                    <div className="mt-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3.5 text-xs text-rose-800 font-medium">
                       <div className="flex items-center gap-1.5 font-bold text-rose-900 mb-0.5">
                         <AlertCircle size={15} className="shrink-0 text-rose-600" />
-                        <span>Адрес за пределами зоны доставки</span>
+                        <span>Адрес за пределами зоны курьерской доставки</span>
                       </div>
                       <p className="leading-relaxed">
-                        К сожалению, по данному адресу курьерская доставка не осуществляется. Доступен только самовывоз из магазина в г. Кизляр.
+                        По данному адресу курьерская доставка не осуществляется. Вы можете забрать заказ самовывозом из супермаркета в г. Кизляр.
                       </p>
                       <button
                         type="button"
-                        onClick={() => setDeliveryType("pickup")}
-                        className="mt-2 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer"
+                        onClick={() => {
+                          setDeliveryType("pickup");
+                          if (!selectedPickupPointId && pickupPoints.items.length > 0) {
+                            if (pickupPoints.items[0]?.id) setSelectedPickupPointId(pickupPoints.items[0].id);
+                          }
+                        }}
+                        className="mt-2.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs"
                       >
-                        Переключить на самовывоз
+                        Перейти на самовывоз (Бесплатно)
                       </button>
                     </div>
                   ) : null}
@@ -559,13 +605,17 @@ export const CheckoutView = ({
               )}
             </CheckoutSection>
 
-            <CheckoutSection icon={<Calendar size={24} />} number={4} title="Дата и временной слот">
+            <CheckoutSection icon={<Calendar size={24} />} number={4} title="Дата и время получения">
               <DateAndSlotPicker
                 selectedDate={selectedDate}
                 selectedSlotId={selectedSlotId}
                 slots={timeSlots.items}
                 onDateChange={setSelectedDate}
                 onSlotChange={setSelectedSlotId}
+                timeMode={timeMode}
+                onTimeModeChange={setTimeMode}
+                customTime={customTime}
+                onCustomTimeChange={setCustomTime}
               />
             </CheckoutSection>
 
@@ -1057,6 +1107,10 @@ interface DateAndSlotPickerProps {
   slots: DeliveryTimeSlotResponse[];
   onDateChange: (date: string) => void;
   onSlotChange: (slotId: number) => void;
+  timeMode: "slot" | "asap" | "custom";
+  onTimeModeChange: (mode: "slot" | "asap" | "custom") => void;
+  customTime: string;
+  onCustomTimeChange: (time: string) => void;
 }
 
 const DateAndSlotPicker = ({
@@ -1065,6 +1119,10 @@ const DateAndSlotPicker = ({
   selectedDate,
   selectedSlotId,
   slots,
+  timeMode,
+  onTimeModeChange,
+  customTime,
+  onCustomTimeChange,
 }: DateAndSlotPickerProps) => {
   const dateOptions = getDateOptions();
   const todayStr = formatDateValue(new Date());
@@ -1086,63 +1144,193 @@ const DateAndSlotPicker = ({
     return { ...slot, available };
   });
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        {dateOptions.map((option) => {
-          const isSelected = selectedDate === option.value;
-          return (
-            <button
-              className={cn(
-                "flex h-14 min-w-32 flex-col items-center justify-center rounded-2xl border px-5 transition-all active:scale-98 cursor-pointer",
-                isSelected
-                  ? "border-emerald-500 bg-emerald-50/80 text-emerald-800 font-bold shadow-xs ring-2 ring-emerald-500/20"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              )}
-              type="button"
-              key={option.value}
-              onClick={() => onDateChange(option.value)}
-            >
-              <span className="text-sm font-bold">{option.label}</span>
-              <span className="text-xs text-slate-400">{option.subLabel}</span>
-            </button>
-          );
-        })}
-      </div>
+  const quickCustomTimes = [
+    "к 18:30",
+    "к 19:00",
+    "к 19:30",
+    "к 20:00",
+    "после 20:00",
+    "к 21:00",
+  ];
 
+  return (
+    <div className="space-y-5">
+      {/* 1. Выбор дня */}
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-2.5">
-          Выберите удобный интервал доставки:
+        <label className="block text-xs font-bold text-slate-700 mb-2">
+          1. Дата получения заказа:
         </label>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {processedSlots.map((slot) => {
-            const isSelected = selectedSlotId === slot.id;
+        <div className="flex flex-wrap items-center gap-2.5">
+          {dateOptions.map((option) => {
+            const isSelected = selectedDate === option.value;
             return (
               <button
                 className={cn(
-                  "flex h-12 items-center justify-center rounded-xl border px-3 text-xs font-bold transition-all active:scale-98",
-                  isSelected && slot.available
-                    ? "border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-700/20"
-                    : slot.available
-                      ? "border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30 cursor-pointer"
-                      : "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed line-through opacity-60"
+                  "flex h-13 min-w-28 flex-col items-center justify-center rounded-xl border px-4 transition-all active:scale-98 cursor-pointer",
+                  isSelected
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-800 font-bold shadow-xs ring-2 ring-emerald-600/20"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                 )}
                 type="button"
-                disabled={!slot.available}
-                key={slot.id}
-                onClick={() => onSlotChange(slot.id)}
+                key={option.value}
+                onClick={() => onDateChange(option.value)}
               >
-                {slot.label}
+                <span className="text-xs font-bold">{option.label}</span>
+                <span className="text-[11px] text-slate-400">{option.subLabel}</span>
               </button>
             );
           })}
         </div>
-        {isToday && processedSlots.every((s) => !s.available) ? (
-          <p className="mt-2.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/70 rounded-xl p-3">
-            🕒 Все интервалы доставки на сегодня уже завершены. Пожалуйста, выберите доставку на завтра.
-          </p>
-        ) : null}
       </div>
+
+      {/* 2. Формат времени доставки */}
+      <div>
+        <label className="block text-xs font-bold text-slate-700 mb-2">
+          2. Предпочтение по времени доставки:
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          {/* Режим: Как можно скорее */}
+          <button
+            type="button"
+            onClick={() => onTimeModeChange("asap")}
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98 cursor-pointer",
+              timeMode === "asap"
+                ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20 font-bold shadow-2xs"
+                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
+            )}
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white text-sm">
+              ⚡
+            </span>
+            <div>
+              <p className="text-xs font-bold">Как можно скорее</p>
+              <p className="text-[11px] text-slate-500">Обычно 60–90 мин</p>
+            </div>
+          </button>
+
+          {/* Режим: Интервал времени */}
+          <button
+            type="button"
+            onClick={() => onTimeModeChange("slot")}
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98 cursor-pointer",
+              timeMode === "slot"
+                ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20 font-bold shadow-2xs"
+                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
+            )}
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 text-sm">
+              🕒
+            </span>
+            <div>
+              <p className="text-xs font-bold">Интервал слотов</p>
+              <p className="text-[11px] text-slate-500">Выбрать из графика</p>
+            </div>
+          </button>
+
+          {/* Режим: Своё время */}
+          <button
+            type="button"
+            onClick={() => onTimeModeChange("custom")}
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98 cursor-pointer",
+              timeMode === "custom"
+                ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20 font-bold shadow-2xs"
+                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
+            )}
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 text-sm">
+              ✏️
+            </span>
+            <div>
+              <p className="text-xs font-bold">Своё точное время</p>
+              <p className="text-[11px] text-slate-500">Указать точный час</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Детали выбранного режима */}
+      {timeMode === "slot" && (
+        <div className="pt-1">
+          <label className="block text-xs font-bold text-slate-700 mb-2">
+            Выберите доступный интервал:
+          </label>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {processedSlots.map((slot) => {
+              const isSelected = selectedSlotId === slot.id;
+              return (
+                <button
+                  className={cn(
+                    "flex h-11 items-center justify-center rounded-xl border px-3 text-xs font-bold transition-all active:scale-98",
+                    isSelected && slot.available
+                      ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
+                      : slot.available
+                        ? "border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30 cursor-pointer"
+                        : "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed line-through opacity-60",
+                  )}
+                  type="button"
+                  disabled={!slot.available}
+                  key={slot.id}
+                  onClick={() => onSlotChange(slot.id)}
+                >
+                  {slot.label}
+                </button>
+              );
+            })}
+          </div>
+          {isToday && processedSlots.every((s) => !s.available) ? (
+            <p className="mt-2.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/70 rounded-xl p-3">
+              🕒 Все стандартные интервалы на сегодня завершены. Выберите режим <strong>«Как можно скорее»</strong>, укажите <strong>«Своё точное время»</strong> или доставку на завтра.
+            </p>
+          ) : null}
+        </div>
+      )}
+
+      {timeMode === "custom" && (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+          <label className="block text-xs font-bold text-slate-800">
+            В какое время вам удобно встретить курьера?
+          </label>
+          <input
+            type="text"
+            value={customTime}
+            onChange={(e) => onCustomTimeChange(e.target.value)}
+            placeholder="Например: к 19:30, после 20:00 или с 18:00 до 19:00"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          />
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 mr-2">Быстрый выбор:</span>
+            <div className="inline-flex flex-wrap gap-1.5 mt-1.5">
+              {quickCustomTimes.map((t) => (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => onCustomTimeChange(t)}
+                  className={cn(
+                    "rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer",
+                    customTime === t
+                      ? "border-emerald-600 bg-emerald-600 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {timeMode === "asap" && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs text-emerald-900 flex items-center gap-2.5">
+          <span className="text-base">🚀</span>
+          <p className="leading-relaxed">
+            Курьер доставит заказ <strong>в течение 60–90 минут</strong> после сборки. Наш оператор сразу передаст заказ на сборку в супермаркет.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
@@ -1512,6 +1700,7 @@ const ProductThumb = ({ item, size }: ProductThumbProps) => {
           alt={item.name}
           className="h-full w-full object-contain"
           height={size}
+          unoptimized
           src={item.preview_image_url}
           width={size}
         />
@@ -1541,17 +1730,24 @@ const formatQuantity = (value: number | string): string => {
 const getDateOptions = (): Array<{ label: string; subLabel: string; value: string }> => {
   const now = new Date();
 
-  return [0, 1].map((offset) => {
+  return [0, 1, 2, 3].map((offset) => {
     const d = new Date(now);
     d.setDate(now.getDate() + offset);
-    const label = offset === 0 ? "Сегодня" : "Завтра";
+    const label =
+      offset === 0
+        ? "Сегодня"
+        : offset === 1
+          ? "Завтра"
+          : offset === 2
+            ? "Послезавтра"
+            : new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(d);
     const subLabel = new Intl.DateTimeFormat("ru-RU", {
       day: "numeric",
       month: "short",
     }).format(d);
 
     return {
-      label,
+      label: label.charAt(0).toUpperCase() + label.slice(1),
       subLabel,
       value: formatDateValue(d),
     };

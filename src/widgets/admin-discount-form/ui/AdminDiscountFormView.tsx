@@ -12,7 +12,7 @@ import {
 } from "@/entities/admin-discount";
 import type { AdminProductListItemResponse } from "@/entities/admin-product";
 import { ROUTES } from "@/shared/config";
-import { AdminApiError } from "@/shared/api";
+import { getAdminErrorMessage } from "@/shared/api";
 
 interface AdminDiscountFormViewProps {
   categories: AdminCategoryListItemResponse[];
@@ -58,11 +58,7 @@ export const AdminDiscountFormView = ({
         router.refresh();
       })
       .catch((submitError: unknown) => {
-        if (submitError instanceof AdminApiError && submitError.detail) {
-          setError(submitError.detail);
-        } else {
-          setError("Не удалось сохранить скидку. Проверьте поля и права доступа.");
-        }
+        setError(getAdminErrorMessage(submitError, "Не удалось сохранить скидку. Проверьте поля и права доступа."));
       })
       .finally(() => {
         setIsPending(false);

@@ -9,6 +9,7 @@ import {
   type AdminDiscountListResponse,
 } from "@/entities/admin-discount";
 import { ROUTES } from "@/shared/config";
+import { getAdminErrorMessage } from "@/shared/api";
 
 export interface AdminDiscountFilters {
   is_active: string;
@@ -37,8 +38,8 @@ export const AdminDiscountsView = ({ discounts, filters }: AdminDiscountsViewPro
 
     try {
       await handler();
-    } catch {
-      setError("Операция не выполнена. Проверьте права доступа или войдите заново.");
+    } catch (err: unknown) {
+      setError(getAdminErrorMessage(err, "Операция не выполнена. Проверьте права доступа или войдите заново."));
     } finally {
       setPendingAction(null);
     }

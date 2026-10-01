@@ -6,6 +6,7 @@ import { Mail, Send } from "lucide-react";
 import { notificationApi } from "@/entities/notification";
 import { ROUTES } from "@/shared/config";
 import { Button, Container, getStoredAccessToken } from "@/shared/ui";
+import { extractErrorMessage } from "@/shared/api";
 
 type PendingChannel = "email" | "telegram";
 
@@ -25,8 +26,8 @@ export const ProfileNotificationTestView = () => {
     try {
       const message = await handler();
       setStatusMessage(message);
-    } catch {
-      setErrorMessage("Не удалось отправить тестовое уведомление.");
+    } catch (err: unknown) {
+      setErrorMessage(extractErrorMessage(err, "Не удалось отправить тестовое уведомление."));
     } finally {
       setPendingChannel(null);
     }

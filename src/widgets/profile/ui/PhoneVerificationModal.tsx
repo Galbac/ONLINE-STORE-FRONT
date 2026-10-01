@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { AlertCircle, Loader2, ShieldCheck, X } from "lucide-react";
 import { userApi } from "@/entities/user";
+import { extractErrorMessage } from "@/shared/api";
 
 interface PhoneVerificationModalProps {
   isOpen: boolean;
@@ -30,11 +31,11 @@ export const PhoneVerificationModal = ({
         await userApi.sendPhoneOtp();
         setCountdown(60);
         
-      } catch {
-        setError("Не удалось отправить SMS. Повторите попытку позже.");
+      } catch (err: unknown) {
+        setError(extractErrorMessage(err, "Не удалось отправить SMS. Повторите попытку позже."));
       }
     });
-  }, [phone]);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -66,8 +67,8 @@ export const PhoneVerificationModal = ({
         
         onSuccess();
         onClose();
-      } catch (err: any) {
-        setError(err?.message || "Неверный или истекший код подтверждения");
+      } catch (err: unknown) {
+        setError(extractErrorMessage(err, "Неверный или истекший код подтверждения"));
       }
     });
   };

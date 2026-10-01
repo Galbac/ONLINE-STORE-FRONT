@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Bell, Check, Loader2, X } from "lucide-react";
-import { apiClient } from "@/shared/api";
+import { apiClient, extractErrorMessage } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
 
 interface StockAlertButtonProps {
@@ -51,8 +51,8 @@ export const StockAlertButton = ({
           setIsSuccess(false);
           setContact("");
         }, 2200);
-      } catch {
-        setErrorMessage("Не удалось оформить подписку. Попробуйте позже.");
+      } catch (error: unknown) {
+        setErrorMessage(extractErrorMessage(error, "Не удалось оформить подписку. Попробуйте позже."));
       }
     });
   };

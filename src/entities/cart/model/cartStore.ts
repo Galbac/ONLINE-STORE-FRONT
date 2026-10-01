@@ -106,10 +106,10 @@ export const useCartStore = create<CartState>()(
           notifyCartChanged({ itemsCount: res.cart.items_count });
           
           return true;
-        } catch {
+        } catch (error: unknown) {
           set({
             pendingAction: null,
-            errorMessage: "Не удалось добавить товар в корзину",
+            errorMessage: extractErrorMessage(error, "Не удалось добавить товар в корзину"),
           });
           
           return false;
@@ -172,14 +172,13 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
           });
           notifyCartChanged({ itemsCount: nextSummary.items_count });
-        } catch {
+        } catch (error: unknown) {
           set({
             cart: prevCart,
             summary: prevSummary,
             pendingAction: null,
-            errorMessage: "Не удалось обновить количество",
+            errorMessage: extractErrorMessage(error, "Не удалось обновить количество"),
           });
-          
         }
       },
 
@@ -221,15 +220,13 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
           });
           notifyCartChanged({ itemsCount: nextSummary.items_count });
-          
-        } catch {
+        } catch (error: unknown) {
           set({
             cart: prevCart,
             summary: prevSummary,
             pendingAction: null,
-            errorMessage: "Не удалось удалить товар",
+            errorMessage: extractErrorMessage(error, "Не удалось удалить товар"),
           });
-          
         }
       },
 
@@ -244,13 +241,11 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
           });
           notifyCartChanged({ itemsCount: 0 });
-          
-        } catch {
+        } catch (error: unknown) {
           set({
             pendingAction: null,
-            errorMessage: "Не удалось очистить корзину",
+            errorMessage: extractErrorMessage(error, "Не удалось очистить корзину"),
           });
-          
         }
       },
 

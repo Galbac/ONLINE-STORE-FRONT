@@ -8,6 +8,7 @@ import type { FavoriteProductResponse } from "../types";
 import { notifyFavoritesChanged } from "@/shared/lib/favorite-events";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { useIsHydrated } from "@/shared/lib/hooks";
+import { extractErrorMessage } from "@/shared/api";
 
 export interface FavoriteState {
   items: FavoriteProductResponse[];
@@ -114,8 +115,8 @@ export const useFavoritesStore = create<FavoriteState>()(
           await favoriteApi.remove(productId, token);
           set({ pendingProductId: null });
           return true;
-        } catch {
-          set({ items: prevItems, pendingProductId: null, errorMessage: "Не удалось удалить из избранного" });
+        } catch (error: unknown) {
+          set({ items: prevItems, pendingProductId: null, errorMessage: extractErrorMessage(error, "Не удалось удалить из избранного") });
           return false;
         }
       },

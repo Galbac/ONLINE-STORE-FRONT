@@ -18,7 +18,7 @@ import {
   type AdminOneCSyncResponse,
   type HealthOneCResponse,
 } from "@/entities/admin-integration";
-import { getStoredAdminAccessToken } from "@/shared/api";
+import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 
 interface AdminOneCIntegrationViewProps {
   health: HealthOneCResponse | null;
@@ -83,9 +83,9 @@ export const AdminOneCIntegrationView = ({
         setError(null);
         await refreshState();
         setMessage("Статус 1С обновлён.");
-      } catch {
+      } catch (err: unknown) {
         setMessage(null);
-        setError("Не удалось обновить статус 1С.");
+        setError(getAdminErrorMessage(err, "Не удалось обновить статус 1С."));
       } finally {
         setPendingAction(null);
       }
@@ -107,9 +107,9 @@ export const AdminOneCIntegrationView = ({
         setSyncResult({ kind, response });
         setMessage(response.message ?? `Задача #${response.job_id} запущена.`);
         await refreshState();
-      } catch {
+      } catch (err: unknown) {
         setSyncResult(null);
-        setError("Не удалось запустить синхронизацию. Проверьте доступность 1С или права.");
+        setError(getAdminErrorMessage(err, "Не удалось запустить синхронизацию. Проверьте доступность 1С или права."));
       } finally {
         setPendingAction(null);
       }
@@ -143,9 +143,9 @@ export const AdminOneCIntegrationView = ({
           `Заказы обработаны: ${response.processed}. Синхронизировано: ${response.synced}.`,
         );
         await refreshState();
-      } catch {
+      } catch (err: unknown) {
         setSyncResult(null);
-        setError("Не удалось синхронизировать заказы. Проверьте доступность 1С или права.");
+        setError(getAdminErrorMessage(err, "Не удалось синхронизировать заказы. Проверьте доступность 1С или права."));
       } finally {
         setPendingAction(null);
       }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { cn, ROUTES } from "@/shared/config";
+import { extractErrorMessage } from "@/shared/api";
 
 interface ChangePasswordFormValues {
   currentPassword: string;
@@ -75,8 +76,8 @@ export const ChangePasswordForm = () => {
 
         setValues(initialValues);
         setIsSuccess(true);
-      } catch {
-        setErrorMessage("Не удалось изменить пароль. Проверьте старый пароль и попробуйте снова.");
+      } catch (error: unknown) {
+        setErrorMessage(extractErrorMessage(error, "Не удалось изменить пароль. Проверьте старый пароль и попробуйте снова."));
         setIsSuccess(false);
       }
     });

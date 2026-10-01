@@ -15,7 +15,7 @@ import {
   type AdminUploadEntityType,
   type AdminUploadFileResponse,
 } from "@/entities/admin-upload";
-import { getStoredAdminAccessToken } from "@/shared/api";
+import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 
 const entityTypeOptions: Array<{ label: string; value: AdminUploadEntityType }> = [
   { label: "Товар", value: "product" },
@@ -85,9 +85,9 @@ export const AdminUploadsView = () => {
         setCurrentFile(response);
         setFileId(String(response.id));
         setStatusMessage("Изображение загружено.");
-      } catch {
+      } catch (err: unknown) {
         setStatusMessage(null);
-        setErrorMessage("Не удалось загрузить изображение. Проверьте файл или войдите заново.");
+        setErrorMessage(getAdminErrorMessage(err, "Не удалось загрузить изображение. Проверьте файл или войдите заново."));
       } finally {
         setPendingAction(null);
       }
@@ -112,9 +112,9 @@ export const AdminUploadsView = () => {
         setCurrentFile(response);
         setSelectedFile(null);
         setStatusMessage("Информация о файле обновлена.");
-      } catch {
+      } catch (err: unknown) {
         setStatusMessage(null);
-        setErrorMessage("Не удалось получить информацию о файле.");
+        setErrorMessage(getAdminErrorMessage(err, "Не удалось получить информацию о файле."));
       } finally {
         setPendingAction(null);
       }
@@ -138,9 +138,9 @@ export const AdminUploadsView = () => {
         setCurrentFile(null);
         setSelectedFile(null);
         setStatusMessage(response.message || "Файл удалён.");
-      } catch {
+      } catch (err: unknown) {
         setStatusMessage(null);
-        setErrorMessage("Не удалось удалить файл. Проверьте права или войдите заново.");
+        setErrorMessage(getAdminErrorMessage(err, "Не удалось удалить файл. Проверьте права или войдите заново."));
       } finally {
         setPendingAction(null);
       }

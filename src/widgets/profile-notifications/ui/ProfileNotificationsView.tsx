@@ -27,6 +27,7 @@ import {
 import { cn, ROUTES } from "@/shared/config";
 import { Button, Container, getStoredAccessToken } from "@/shared/ui";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { extractErrorMessage } from "@/shared/api";
 
 type NotificationFilter = "all" | "unread" | "order" | "payment" | "delivery";
 
@@ -102,11 +103,11 @@ export const ProfileNotificationsView = () => {
           setNotifications(response.items);
           setUnreadCount(response.unread_count);
         }
-      } catch {
+      } catch (err: unknown) {
         if (active) {
           setNotifications(emptyNotifications.items);
           setUnreadCount(emptyNotifications.unread_count);
-          setErrorMessage("Не удалось загрузить уведомления.");
+          setErrorMessage(extractErrorMessage(err, "Не удалось загрузить уведомления."));
         }
       } finally {
         if (active) {

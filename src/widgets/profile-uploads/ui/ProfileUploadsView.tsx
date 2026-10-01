@@ -7,6 +7,7 @@ import { FileImage, Info, Search, Trash2, Upload } from "lucide-react";
 import { uploadApi, type UploadEntityType, type UploadFileResponse } from "@/entities/upload";
 import { ROUTES } from "@/shared/config";
 import { Button, Container, getStoredAccessToken } from "@/shared/ui";
+import { extractErrorMessage } from "@/shared/api";
 
 const entityTypeOptions: Array<{ label: string; value: UploadEntityType }> = [
   { label: "Другое", value: "other" },
@@ -63,9 +64,9 @@ export const ProfileUploadsView = () => {
         setCurrentFile(response);
         setFileId(String(response.id));
         setStatusMessage("Изображение загружено.");
-      } catch {
+      } catch (err: unknown) {
         setStatusMessage(null);
-        setErrorMessage("Не удалось загрузить изображение.");
+        setErrorMessage(extractErrorMessage(err, "Не удалось загрузить изображение."));
       } finally {
         setPendingAction(null);
       }
@@ -92,9 +93,9 @@ export const ProfileUploadsView = () => {
 
         setCurrentFile(response);
         setStatusMessage("Информация о файле обновлена.");
-      } catch {
+      } catch (err: unknown) {
         setStatusMessage(null);
-        setErrorMessage("Не удалось получить информацию о файле.");
+        setErrorMessage(extractErrorMessage(err, "Не удалось получить информацию о файле."));
       } finally {
         setPendingAction(null);
       }
@@ -117,9 +118,9 @@ export const ProfileUploadsView = () => {
         setCurrentFile(null);
         setSelectedFile(null);
         setStatusMessage(response.message || "Файл удалён.");
-      } catch {
+      } catch (err: unknown) {
         setStatusMessage(null);
-        setErrorMessage("Не удалось удалить файл.");
+        setErrorMessage(extractErrorMessage(err, "Не удалось удалить файл."));
       } finally {
         setPendingAction(null);
       }

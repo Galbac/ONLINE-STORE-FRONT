@@ -6,6 +6,7 @@ import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { adminPromoCodeApi, type AdminPromoCodeDetailResponse } from "@/entities/admin-promo-code";
 import { ROUTES } from "@/shared/config";
+import { getAdminErrorMessage } from "@/shared/api";
 import { formatDiscountType } from "@/shared/lib/format";
 
 interface AdminPromoCodeDetailsViewProps {
@@ -34,8 +35,8 @@ export const AdminPromoCodeDetailsView = ({ promoCode }: AdminPromoCodeDetailsVi
         router.push(ROUTES.ADMIN_PROMO_CODES);
         router.refresh();
       })
-      .catch(() => {
-        setError("Не удалось удалить промокод. Проверьте права доступа или войдите заново.");
+      .catch((err: unknown) => {
+        setError(getAdminErrorMessage(err, "Не удалось удалить промокод. Проверьте права доступа или войдите заново."));
       })
       .finally(() => {
         setIsDeleting(false);

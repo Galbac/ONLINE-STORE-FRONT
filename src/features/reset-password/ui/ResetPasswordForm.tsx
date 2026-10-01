@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Check, CheckCircle2, Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { ROUTES } from "@/shared/config";
+import { extractErrorMessage } from "@/shared/api";
 
 interface ResetPasswordFormProps {
   token: string;
@@ -62,8 +63,8 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         });
         setIsSuccess(true);
         setValues(initialValues);
-      } catch {
-        setErrorMessage("Не удалось сбросить пароль. Ссылка могла устареть.");
+      } catch (error: unknown) {
+        setErrorMessage(extractErrorMessage(error, "Не удалось сбросить пароль. Ссылка могла устареть."));
       }
     });
   };

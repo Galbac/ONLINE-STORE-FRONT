@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { adminDiscountApi, type AdminDiscountDetailResponse } from "@/entities/admin-discount";
 import { ROUTES } from "@/shared/config";
+import { getAdminErrorMessage } from "@/shared/api";
 import { formatDiscountType } from "@/shared/lib/format";
 
 interface AdminDiscountDetailsViewProps {
@@ -29,8 +30,8 @@ export const AdminDiscountDetailsView = ({ discount }: AdminDiscountDetailsViewP
     try {
       await handler();
       router.refresh();
-    } catch {
-      setError("Операция не выполнена. Проверьте права доступа или войдите заново.");
+    } catch (err: unknown) {
+      setError(getAdminErrorMessage(err, "Операция не выполнена. Проверьте права доступа или войдите заново."));
     } finally {
       setPendingAction(null);
     }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, Trash2, X } from "lucide-react";
 import { userApi } from "@/entities/user";
 import { clearStoredAuth } from "@/shared/ui";
+import { extractErrorMessage } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 
 interface DeleteAccountModalProps {
@@ -41,8 +42,8 @@ export const DeleteAccountModal = ({ isOpen, onClose }: DeleteAccountModalProps)
         onClose();
         router.push(ROUTES.HOME);
         router.refresh();
-      } catch (err: any) {
-        setError(err?.message || "Не удалось удалить аккаунт. Проверьте пароль или завершите активные заказы.");
+      } catch (err: unknown) {
+        setError(extractErrorMessage(err, "Не удалось удалить аккаунт. Проверьте пароль или завершите активные заказы."));
       }
     });
   };

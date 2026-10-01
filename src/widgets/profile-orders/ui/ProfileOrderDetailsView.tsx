@@ -22,6 +22,7 @@ import {
   type OrderStatusResponse,
 } from "@/entities/order";
 import { paymentApi, type PaymentDetailResponse } from "@/entities/payment";
+import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Button, Container } from "@/shared/ui";
@@ -66,9 +67,9 @@ export const ProfileOrderDetailsView = ({
             : "";
 
         setMessage(`${response.message}${warningText}`);
-      } catch {
+      } catch (err: unknown) {
         setMessage(null);
-        setErrorMessage("Не удалось повторить заказ. Возможно, товары недоступны.");
+        setErrorMessage(extractErrorMessage(err, "Не удалось повторить заказ. Возможно, товары недоступны."));
       } finally {
         setPendingAction(null);
       }
@@ -103,9 +104,9 @@ export const ProfileOrderDetailsView = ({
           updated_at: response.order.cancelled_at ?? currentStatus.updated_at,
         }));
         setMessage(response.message);
-      } catch {
+      } catch (err: unknown) {
         setMessage(null);
-        setErrorMessage("Не удалось отменить заказ. Возможно, статус уже изменился.");
+        setErrorMessage(extractErrorMessage(err, "Не удалось отменить заказ. Возможно, статус уже изменился."));
       } finally {
         setPendingAction(null);
       }
@@ -141,9 +142,9 @@ export const ProfileOrderDetailsView = ({
             : currentPayment,
         );
         setMessage(response.message);
-      } catch {
+      } catch (err: unknown) {
         setMessage(null);
-        setErrorMessage("Не удалось отменить платеж. Проверьте статус оплаты позже.");
+        setErrorMessage(extractErrorMessage(err, "Не удалось отменить платеж. Проверьте статус оплаты позже."));
       } finally {
         setPendingAction(null);
       }

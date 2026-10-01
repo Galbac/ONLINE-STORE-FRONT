@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mail } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { ROUTES } from "@/shared/config";
+import { extractErrorMessage } from "@/shared/api";
 
 interface ForgotPasswordFormValues {
   login: string;
@@ -33,8 +34,8 @@ export const ForgotPasswordForm = () => {
         setErrorMessage(null);
         await authApi.forgotPassword({ login: cleanLogin });
         setIsSent(true);
-      } catch {
-        setErrorMessage("Не удалось отправить инструкцию. Проверьте введенные данные.");
+      } catch (error: unknown) {
+        setErrorMessage(extractErrorMessage(error, "Не удалось отправить инструкцию. Проверьте введенные данные."));
       }
     });
   };

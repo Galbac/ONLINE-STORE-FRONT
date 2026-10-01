@@ -21,6 +21,7 @@ import { orderApi, type OrderShortResponse } from "@/entities/order";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
+import { extractErrorMessage } from "@/shared/api";
 import { Container } from "@/shared/ui";
 
 interface ProfileOrdersViewProps {
@@ -70,9 +71,9 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
         if (isMounted) {
           setOrders(response.items);
         }
-      } catch {
+      } catch (err: unknown) {
         if (isMounted) {
-          setErrorMessage("Не удалось загрузить заказы.");
+          setErrorMessage(extractErrorMessage(err, "Не удалось загрузить заказы."));
         }
       }
     };
@@ -137,9 +138,9 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
 
         notifyCartChanged({ itemsCount: response.cart.items.length });
         setStatusMessage(`${response.message}${warningText} Товары добавлены в корзину.`);
-      } catch {
+      } catch (err: unknown) {
         setStatusMessage(null);
-        setErrorMessage("Не удалось повторить заказ. Возможно, товары недоступны.");
+        setErrorMessage(extractErrorMessage(err, "Не удалось повторить заказ. Возможно, товары недоступны."));
       } finally {
         setPendingOrderId(null);
       }

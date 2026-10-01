@@ -6,7 +6,7 @@ import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiClient } from "@/shared/api";
+import { apiClient, extractErrorMessage } from "@/shared/api";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import {
@@ -304,7 +304,7 @@ export const CheckoutView = ({
           setIsVerifyModalOpen(true);
           setErrorMessage("Необходимо подтвердить номер телефона по SMS перед созданием заказа.");
         } else {
-          setErrorMessage("Не удалось создать заказ. Проверьте данные и попробуйте еще раз.");
+          setErrorMessage(extractErrorMessage(err, "Не удалось создать заказ. Проверьте данные и попробуйте еще раз."));
         }
       }
     });

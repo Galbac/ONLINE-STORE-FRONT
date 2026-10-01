@@ -115,8 +115,8 @@ export const AdminProductEditForm = ({ categories, product }: AdminProductEditFo
         await adminProductApi.deleteById(product.id, getStoredAdminAccessToken());
         router.replace(ROUTES.ADMIN_PRODUCTS);
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось удалить товар.");
+      } catch (error: unknown) {
+        setErrorMessage(getAdminErrorMessage(error, "Не удалось удалить товар."));
       }
     });
   };
@@ -134,8 +134,8 @@ export const AdminProductEditForm = ({ categories, product }: AdminProductEditFo
 
         setImages((currentImages) => normalizeImageSort(currentImages.filter((item) => item.id !== image.id)));
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось удалить изображение.");
+      } catch (error: unknown) {
+        setErrorMessage(getAdminErrorMessage(error, "Не удалось удалить изображение."));
       }
     });
   };
@@ -177,8 +177,8 @@ export const AdminProductEditForm = ({ categories, product }: AdminProductEditFo
 
         setImages(sortImages(response.items));
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось отсортировать изображения.");
+      } catch (error: unknown) {
+        setErrorMessage(getAdminErrorMessage(error, "Не удалось отсортировать изображения."));
       }
     });
   };

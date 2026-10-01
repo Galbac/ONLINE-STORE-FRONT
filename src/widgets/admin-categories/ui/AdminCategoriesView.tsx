@@ -58,8 +58,8 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
         setEditingCategory(category);
         setSelectedImage(null);
         setErrorMessage(null);
-      } catch {
-        setErrorMessage("Не удалось загрузить категорию.");
+      } catch (err: unknown) {
+        setErrorMessage(getAdminErrorMessage(err, "Не удалось загрузить категорию."));
       }
     });
   };
@@ -126,8 +126,8 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
         setEditingCategory(null);
         setSuccessMessage("Категория удалена.");
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось удалить категорию.");
+      } catch (err: unknown) {
+        setErrorMessage(getAdminErrorMessage(err, "Не удалось удалить категорию."));
       }
     });
   };
@@ -151,8 +151,8 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
           upsertListCategory(currentCategories, updatedCategory),
         );
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось удалить изображение.");
+      } catch (err: unknown) {
+        setErrorMessage(getAdminErrorMessage(err, "Не удалось удалить изображение."));
       }
     });
   };
@@ -226,8 +226,8 @@ export const AdminCategoriesView = ({ initialCategories }: AdminCategoriesViewPr
         );
         setSuccessMessage("Порядок категорий обновлен.");
         router.refresh();
-      } catch {
-        setErrorMessage("Не удалось сохранить порядок категорий.");
+      } catch (err: unknown) {
+        setErrorMessage(getAdminErrorMessage(err, "Не удалось сохранить порядок категорий."));
       }
     });
   };

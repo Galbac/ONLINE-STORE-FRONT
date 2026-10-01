@@ -6,6 +6,7 @@ import {
   adminNotificationApi,
   type AdminNotificationSettingsResponse,
 } from "@/entities/admin-notification";
+import { getAdminErrorMessage } from "@/shared/api";
 
 interface AdminNotificationSettingsViewProps {
   settings: AdminNotificationSettingsResponse;
@@ -50,8 +51,8 @@ export const AdminNotificationSettingsView = ({
         setSettings(response);
         setMessage("Настройки уведомлений сохранены.");
       })
-      .catch(() => {
-        setError("Не удалось сохранить настройки. Проверьте данные или войдите заново.");
+      .catch((err: unknown) => {
+        setError(getAdminErrorMessage(err, "Не удалось сохранить настройки. Проверьте данные или войдите заново."));
       })
       .finally(() => {
         setIsSaving(false);
@@ -74,8 +75,8 @@ export const AdminNotificationSettingsView = ({
       .then((response) => {
         setMessage(response.message);
       })
-      .catch(() => {
-        setError("Не удалось отправить тестовый email. Проверьте адрес и настройки SMTP.");
+      .catch((err: unknown) => {
+        setError(getAdminErrorMessage(err, "Не удалось отправить тестовый email. Проверьте адрес и настройки SMTP."));
       })
       .finally(() => {
         setIsSendingEmail(false);
@@ -97,8 +98,8 @@ export const AdminNotificationSettingsView = ({
       .then((response) => {
         setMessage(response.message);
       })
-      .catch(() => {
-        setError("Не удалось отправить тест в Telegram. Проверьте chat id и настройки бота.");
+      .catch((err: unknown) => {
+        setError(getAdminErrorMessage(err, "Не удалось отправить тест в Telegram. Проверьте chat id и настройки бота."));
       })
       .finally(() => {
         setIsSendingTelegram(false);

@@ -465,6 +465,13 @@ export const CheckoutView = ({
         if (err?.message?.includes("PHONE_VERIFICATION_REQUIRED") || err?.status === 403) {
           setIsVerifyModalOpen(true);
           setErrorMessage("Необходимо подтвердить номер телефона по SMS перед созданием заказа.");
+        } else if (err?.data?.items && Array.isArray(err.data.items)) {
+          const itemErrors = err.data.items
+            .map((i: { name?: string; reason?: string; available_quantity?: number | string }) => 
+              `${i.name || "Товар"}: ${i.reason || "недоступен"}${i.available_quantity !== undefined ? ` (осталось: ${i.available_quantity})` : ""}`
+            )
+            .join(", ");
+          setErrorMessage(`Некоторые позиции не могут быть заказаны: ${itemErrors}`);
         } else {
           setErrorMessage(extractErrorMessage(err, "Не удалось создать заказ. Проверьте данные и попробуйте еще раз."));
         }

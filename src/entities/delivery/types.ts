@@ -46,6 +46,7 @@ export interface PickupPointResponse {
   working_hours?: string | null;
   phone?: string | null;
   is_active: boolean;
+  is_warehouse?: boolean;
   latitude?: string | null;
   longitude?: string | null;
 }

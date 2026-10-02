@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
+import { safeJsonStorage } from "@/shared/lib/safe-storage";
 import { settingsApi } from "../api/settingsApi";
 import type { PublicStoreSettingsResponse } from "../types";
 
@@ -54,15 +55,7 @@ export const useStoreSettings = create<StoreSettingsState>()(
     }),
     {
       name: "grocery_store_public_settings",
-      storage: createJSONStorage(() =>
-        typeof window !== "undefined"
-          ? localStorage
-          : {
-              getItem: () => null,
-              setItem: () => {},
-              removeItem: () => {},
-            },
-      ),
+      storage: safeJsonStorage(),
     },
   ),
 );

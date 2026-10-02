@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
+import { safeJsonStorage } from "@/shared/lib/safe-storage";
 import { favoriteApi } from "../api/favoriteApi";
 import { cartApi } from "@/entities/cart";
 import type { FavoriteProductResponse } from "../types";
@@ -202,7 +203,7 @@ export const useFavoritesStore = create<FavoriteState>()(
     }),
     {
       name: "pobeda_favorites_store",
-      storage: createJSONStorage(() => localStorage),
+      storage: safeJsonStorage(),
       partialize: (state) => ({
         items: state.items,
       }),

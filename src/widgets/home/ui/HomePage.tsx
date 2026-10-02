@@ -101,7 +101,7 @@ export const HomePage = async () => {
           <QuickRepeatOrderBanner />
         </Container>
 
-        {banners?.items && banners.items.length > 0 ? (
+        {(banners?.items?.length ?? 0) > 0 ? (
           <Container>
             <PromoBanners banners={banners.items} />
           </Container>
@@ -111,13 +111,13 @@ export const HomePage = async () => {
           <CategorySection categories={visibleCategories.slice(0, 8)} />
         </Container>
 
-        {discounts.items.length > 0 ? (
+        {(discounts?.items?.length ?? 0) > 0 ? (
           <Container>
             <PromoStrip discounts={discounts.items} />
           </Container>
         ) : null}
 
-        {popularProducts.items.length > 0 ? (
+        {(popularProducts?.items?.length ?? 0) > 0 ? (
           <Container>
             <ProductSection
               cartProductIds={cartProductIds}
@@ -130,7 +130,7 @@ export const HomePage = async () => {
           </Container>
         ) : null}
 
-        {discountedProducts.items.length > 0 ? (
+        {(discountedProducts?.items?.length ?? 0) > 0 ? (
           <Container>
             <ProductSection
               cartProductIds={cartProductIds}
@@ -156,7 +156,7 @@ export const HomePage = async () => {
           />
         </Container>
 
-        {newProducts.items.length > 0 ? (
+        {(newProducts?.items?.length ?? 0) > 0 ? (
           <Container>
             <ProductSection
               cartProductIds={cartProductIds}

@@ -1,5 +1,8 @@
 "use client";
 
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/shared/api";
+
 
 import { useState, useTransition } from "react";
 import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
@@ -84,8 +87,10 @@ export const ProductPurchaseActions = ({
           quantity: formatQuantityValue(quantity),
         });
         notifyCartChanged({ itemsCount: response.cart.items_count });
-      } catch {
-        // silent
+        toast.success(`«${productName}» добавлен в корзину`);
+      } catch (error) {
+        const msg = extractErrorMessage(error, "Не удалось добавить товар в корзину");
+        toast.error(msg);
       }
     });
   };

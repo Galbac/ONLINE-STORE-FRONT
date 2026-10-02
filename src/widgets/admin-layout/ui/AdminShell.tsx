@@ -31,7 +31,7 @@ const getActiveAdminNavigationItem = (
 
   // 2. Longest matching prefix for subroutes (e.g., /admin/orders/assembly vs /admin/orders)
   const matches = items.filter(
-    (item) => item.href !== ROUTES.ADMIN_DASHBOARD && pathname.startsWith(`${item.href}/`),
+    (item) => item.href !== ROUTES.ADMIN_DASHBOARD && (pathname || "").startsWith(`${item.href}/`),
   );
 
   if (matches.length === 0) return null;
@@ -40,7 +40,8 @@ const getActiveAdminNavigationItem = (
 };
 
 export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) => {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || "";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const roleLabel = getAdminRoleLabel(currentUser, roles);
   const permissions = getEffectiveAdminPermissions(currentUser, roles);

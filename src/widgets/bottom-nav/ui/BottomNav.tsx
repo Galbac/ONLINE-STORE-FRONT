@@ -15,7 +15,8 @@ import { FAVORITES_CHANGED_EVENT, type FavoritesChangedDetail } from "@/shared/l
 import { getStoredAccessToken } from "@/shared/ui";
 
 export const BottomNav = () => {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || "";
   const [cartCount, setCartCount] = useState<number>(0);
   const [isAuth, setIsAuth] = useState<boolean>(false);
   const [favoritesCount, setFavoritesCount] = useState<number>(0);

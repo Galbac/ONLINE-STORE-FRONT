@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 export const ScrollRestorationKeeper = () => {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || "";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -19,7 +20,7 @@ export const ScrollRestorationKeeper = () => {
       timer = setTimeout(() => {
         timer = null;
         if (typeof window !== "undefined") {
-          sessionStorage.setItem("scroll_pos_" + window.location.pathname, String(window.scrollY));
+          try { sessionStorage.setItem("scroll_pos_" + window.location.pathname, String(window.scrollY)); } catch (_){}
         }
       }, 100);
     };
@@ -27,7 +28,8 @@ export const ScrollRestorationKeeper = () => {
     window.addEventListener("scroll", saveScroll, { passive: true });
     window.addEventListener("beforeunload", saveScroll);
 
-    const saved = sessionStorage.getItem("scroll_pos_" + pathname);
+    let saved: string | null = null;
+try { saved = sessionStorage.getItem("scroll_pos_" + pathname); } catch (_){}
     if (saved) {
       const top = Number(saved);
       if (Number.isFinite(top) && top > 0) {

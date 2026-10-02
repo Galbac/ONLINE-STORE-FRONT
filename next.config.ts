@@ -82,12 +82,11 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   webpack: (config, { dev }) => {
     if (dev) {
-      // In-memory cache prevents stale vendor-chunks errors
-      // that occur when .next/server cache gets out of sync
       config.cache = { type: "memory" };
     }
     return config;
   },
+
   images: {
     unoptimized: true,
     remotePatterns,

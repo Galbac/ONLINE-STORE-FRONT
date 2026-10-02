@@ -1,5 +1,8 @@
 "use client";
 
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/shared/api";
+
 import { useState, useTransition } from "react";
 import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { cartApi } from "@/entities/cart";
@@ -68,8 +71,10 @@ export const CatalogCartButton = ({
           setQuantity(finalQuantity);
         }
         notifyCartChanged({ itemsCount: response.cart.items_count });
-      } catch {
+      } catch (error) {
         setQuantity(0);
+        const msg = extractErrorMessage(error, "Не удалось добавить товар в корзину");
+        toast.error(msg);
       }
     });
   };
@@ -98,8 +103,10 @@ export const CatalogCartButton = ({
           if (matched) setCartItemId(matched.id);
           notifyCartChanged({ itemsCount: response.cart.items_count });
         }
-      } catch {
+      } catch (error) {
         setQuantity(prevQty); // Rollback on error
+        const msg = extractErrorMessage(error, "Не удалось увеличить количество");
+        toast.error(msg);
       }
     });
   };
@@ -126,8 +133,10 @@ export const CatalogCartButton = ({
             notifyCartChanged({ itemsCount: response.cart.items_count });
           }
         }
-      } catch {
+      } catch (error) {
         setQuantity(prevQty); // Rollback on error
+        const msg = extractErrorMessage(error, "Не удалось изменить количество");
+        toast.error(msg);
       }
     });
   };

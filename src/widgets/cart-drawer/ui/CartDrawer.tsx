@@ -1,5 +1,8 @@
 "use client";
 
+import { toast } from "sonner";
+import { extractErrorMessage } from "@/shared/api";
+
 import { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -90,11 +93,15 @@ export const CartDrawer = () => {
           setCart(res.cart);
           notifyCartChanged({ itemsCount: res.cart.items_count });
         } else {
-          const res = await cartApi.updateItem(itemId, { quantity: newQty });
+          const normalized = Math.round(newQty * 1000) / 1000;
+          const res = await cartApi.updateItem(itemId, { quantity: normalized });
           setCart(res.cart);
           notifyCartChanged({ itemsCount: res.cart.items_count });
         }
-      } catch {}
+      } catch (error) {
+        const msg = extractErrorMessage(error, "Не удалось изменить количество");
+        toast.error(msg);
+      }
     });
   };
 
@@ -104,7 +111,10 @@ export const CartDrawer = () => {
         const res = await cartApi.deleteItem(itemId);
         setCart(res.cart);
         notifyCartChanged({ itemsCount: res.cart.items_count });
-      } catch {}
+      } catch (error) {
+        const msg = extractErrorMessage(error, "Не удалось удалить товар из корзины");
+        toast.error(msg);
+      }
     });
   };
 
@@ -117,7 +127,10 @@ export const CartDrawer = () => {
         const res = await cartApi.addItem({ product_id: productId, quantity: 1 });
         setCart(res.cart);
         notifyCartChanged({ itemsCount: res.cart.items_count });
-      } catch {}
+      } catch (error) {
+        const msg = extractErrorMessage(error, "Не удалось добавить товар в корзину");
+        toast.error(msg);
+      }
     });
   };
 
@@ -256,23 +269,39 @@ export const CartDrawer = () => {
                       {toPriceFormat(item.total_price)}
                     </p>
 
+                  {item.stock_warning && (
+                    <p className="mt-1 text-[11px] font-semibold text-amber-600 leading-tight">
+                      {item.stock_warning}
+                    </p>
+                  )}
+
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex h-7 items-center rounded-lg bg-slate-100 px-1 select-none">
                       <button
                         type="button"
                         disabled={isPending}
-                        onClick={() => handleUpdateQty(item.id, Number(item.quantity) - 1)}
+                        onClick={() => {
+                          const step = item.quantity_step ? Number(item.quantity_step) : 1;
+                          const current = Number(item.quantity) || 1;
+                          const next = Math.max(0, Math.round((current - step) * 1000) / 1000);
+                          handleUpdateQty(item.id, next);
+                        }}
                         className="flex size-5 items-center justify-center rounded text-slate-600 hover:bg-white hover:text-slate-900 transition"
                       >
                         <Minus size={12} />
                       </button>
-                      <span className="text-xs font-bold px-2 text-slate-800">
-                        {item.quantity}
+                      <span className="text-xs font-bold px-1.5 text-slate-800 whitespace-nowrap">
+                        {item.quantity}{item.unit ? ` ${item.unit}` : ""}
                       </span>
                       <button
                         type="button"
                         disabled={isPending}
-                        onClick={() => handleUpdateQty(item.id, Number(item.quantity) + 1)}
+                        onClick={() => {
+                          const step = item.quantity_step ? Number(item.quantity_step) : 1;
+                          const current = Number(item.quantity) || 1;
+                          const next = Math.round((current + step) * 1000) / 1000;
+                          handleUpdateQty(item.id, next);
+                        }}
                         className="flex size-5 items-center justify-center rounded text-slate-600 hover:bg-white hover:text-slate-900 transition"
                       >
                         <Plus size={12} />

@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
+import { safeJsonStorage } from "@/shared/lib/safe-storage";
 import type { PickupPointResponse } from "../types";
 
 interface StoreBranchState {
@@ -29,7 +30,7 @@ export const useStoreBranch = create<StoreBranchState>()(
     }),
     {
       name: "grocery_selected_store_branch",
-      storage: createJSONStorage(() => localStorage),
+      storage: safeJsonStorage(),
     },
   ),
 );

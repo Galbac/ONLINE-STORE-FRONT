@@ -1,3 +1,4 @@
+import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { STORE_INFO } from "@/shared/config";
@@ -5,7 +6,6 @@ import { StoreSettingsProvider } from "@/entities/settings/model/StoreSettingsPr
 import { CookieBanner } from "@/shared/ui/cookie-banner";
 import { PwaInstallPrompt, PwaInstallModal } from "@/shared/ui/pwa-install";
 import { ScrollRestorationKeeper } from "@/shared/ui/scroll-keeper";
-import { SettingsSyncKeeper } from "@/shared/ui/settings-sync/SettingsSyncKeeper";
 import { OfflineIndicator } from "@/shared/ui/offline-indicator";
 import { PullToRefresh } from "@/shared/ui/pull-to-refresh";
 import { BottomNav } from "@/widgets/bottom-nav";
@@ -67,7 +67,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         className={`${inter.className} mobile-bottom-padding bg-slate-50/70 text-slate-900 antialiased selection:bg-emerald-500 selection:text-white`}
       >
         <StoreSettingsProvider>
-          <SettingsSyncKeeper />
+          <Toaster richColors position="top-center" closeButton />
           <PullToRefresh>{children}</PullToRefresh>
           <BottomNav />
           <ScrollRestorationKeeper />

@@ -437,9 +437,9 @@ const CartItemCard = ({
             <span
               aria-live="polite"
               role="status"
-              className="min-w-[44px] px-1 text-center font-black text-slate-900 text-sm"
+              className="min-w-[44px] px-1 text-center font-black text-slate-900 text-sm whitespace-nowrap"
             >
-              {formatQty(quantity)}
+              {formatQty(quantity)}{item.unit ? ` ${item.unit}` : ""}
             </span>
 
             <button
@@ -779,7 +779,7 @@ const roundQty = (val: number): number => {
 };
 
 const formatQty = (val: number): string => {
-  return Number.isInteger(val) ? String(val) : val.toFixed(1);
+  return Number.isInteger(val) ? String(val) : String(Number(val.toFixed(2)));
 };
 
 const pluralizeProducts = (count: number): string => {

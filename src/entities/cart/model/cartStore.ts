@@ -1,7 +1,10 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
+import { safeJsonStorage } from "@/shared/lib/safe-storage";
 import { cartApi } from "../api/cartApi";
 import { favoriteApi } from "@/entities/favorite";
 import type {
@@ -107,11 +110,12 @@ export const useCartStore = create<CartState>()(
           
           return true;
         } catch (error: unknown) {
+          const msg = extractErrorMessage(error, "Не удалось добавить товар в корзину");
           set({
             pendingAction: null,
-            errorMessage: extractErrorMessage(error, "Не удалось добавить товар в корзину"),
+            errorMessage: msg,
           });
-          
+          toast.error(msg);
           return false;
         }
       },
@@ -173,12 +177,14 @@ export const useCartStore = create<CartState>()(
           });
           notifyCartChanged({ itemsCount: nextSummary.items_count });
         } catch (error: unknown) {
+          const msg = extractErrorMessage(error, "Не удалось обновить количество");
           set({
             cart: prevCart,
             summary: prevSummary,
             pendingAction: null,
-            errorMessage: extractErrorMessage(error, "Не удалось обновить количество"),
+            errorMessage: msg,
           });
+          toast.error(msg);
         }
       },
 
@@ -221,12 +227,14 @@ export const useCartStore = create<CartState>()(
           });
           notifyCartChanged({ itemsCount: nextSummary.items_count });
         } catch (error: unknown) {
+          const msg = extractErrorMessage(error, "Не удалось удалить товар");
           set({
             cart: prevCart,
             summary: prevSummary,
             pendingAction: null,
-            errorMessage: extractErrorMessage(error, "Не удалось удалить товар"),
+            errorMessage: msg,
           });
+          toast.error(msg);
         }
       },
 
@@ -242,10 +250,12 @@ export const useCartStore = create<CartState>()(
           });
           notifyCartChanged({ itemsCount: 0 });
         } catch (error: unknown) {
+          const msg = extractErrorMessage(error, "Не удалось очистить корзину");
           set({
             pendingAction: null,
-            errorMessage: extractErrorMessage(error, "Не удалось очистить корзину"),
+            errorMessage: msg,
           });
+          toast.error(msg);
         }
       },
 
@@ -267,7 +277,7 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
             errorMessage: message,
           });
-          
+          toast.error(message);
           return { success: false, message };
         }
       },
@@ -310,7 +320,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "pobeda_cart_store",
-      storage: createJSONStorage(() => localStorage),
+      storage: safeJsonStorage(),
       partialize: (state) => ({
         cart: state.cart,
         summary: state.summary,

@@ -299,15 +299,13 @@ const FavoriteItemCard = ({
         )}
       </Link>
 
-      {/* Категория и статус наличия */}
-      <div className="mb-1.5 flex items-center justify-between gap-1 text-xs">
-        <span className="truncate text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">
-          {product.category?.name ?? "Каталог"}
-        </span>
-        <span className="text-[11px] font-medium text-slate-500">
-          {isAvailable ? "В наличии" : "Под заказ"}
-        </span>
-      </div>
+      {!isAvailable ? (
+        <div className="mb-1.5 flex items-center gap-1 text-xs">
+          <span className="text-[11px] font-medium text-rose-600">
+            Под заказ
+          </span>
+        </div>
+      ) : null}
 
       {/* Название */}
       <Link

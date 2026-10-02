@@ -1,3 +1,4 @@
+import { localizeErrorMessage } from "../lib/format/localize-error";
 import { API_BASE_URL, API_ENDPOINTS } from "./endpoints";
 
 interface AdminApiClientConfig {
@@ -320,8 +321,11 @@ class AdminApiClient {
       const data: unknown = await response.json();
 
       if (isRecord(data)) {
+        if (typeof data.message === "string") {
+          return localizeErrorMessage(data.message);
+        }
         if (typeof data.detail === "string") {
-          return data.detail;
+          return localizeErrorMessage(data.detail);
         }
         if (Array.isArray(data.detail) && data.detail.length > 0) {
           const first = data.detail[0];
@@ -329,7 +333,7 @@ class AdminApiClient {
             const loc = Array.isArray(first.loc)
               ? first.loc.filter((item) => item !== "body").join(" -> ")
               : "";
-            const msg = typeof first.msg === "string" ? first.msg : "Неверные данные";
+            const msg = typeof first.msg === "string" ? localizeErrorMessage(first.msg) : "Неверные данные";
             return loc ? `${loc}: ${msg}` : msg;
           }
         }

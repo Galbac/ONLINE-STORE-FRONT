@@ -10,6 +10,7 @@ import {
   type DayScheduleItem,
 } from "@/entities/admin-settings";
 import { AdminApiError } from "@/shared/api";
+import { localizeErrorMessage } from "@/shared/lib/format";
 import { WeeklyScheduleEditor } from "./WeeklyScheduleEditor";
 
 interface AdminSettingsViewProps {
@@ -405,7 +406,7 @@ const addChangedField = (
 
 const getSettingsErrorMessage = (error: unknown): string => {
   if (error instanceof AdminApiError && error.detail) {
-    return error.detail;
+    return localizeErrorMessage(error.detail);
   }
 
   return "Не удалось сохранить настройки. Проверьте данные или войдите заново.";

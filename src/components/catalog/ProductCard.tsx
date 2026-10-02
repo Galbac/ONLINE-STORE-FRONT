@@ -151,21 +151,17 @@ export const ProductCard = ({
           >
             {cleanName}
           </Link>
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-1.5 font-semibold">
-              <span
-                className={`size-2 rounded-full ${
-                  product.is_available ? (isLowStock ? "bg-amber-500" : "bg-emerald-500") : "bg-rose-400"
-                }`}
-              />
-              <span className={product.is_available ? (isLowStock ? "text-amber-700 font-bold" : "text-emerald-700") : "text-rose-600"}>
-                {product.is_available ? (product.stock_display || "В наличии") : "Нет в наличии"}
-              </span>
-            </span>
-            <span className="rounded-lg bg-emerald-50/80 px-2 py-0.5 font-semibold text-emerald-800">
-              {cleanCategoryName}
-            </span>
-          </div>
+          {!product.is_available ? (
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-rose-600">
+              <span className="size-2 rounded-full bg-rose-400" />
+              <span>Нет в наличии</span>
+            </div>
+          ) : isLowStock ? (
+            <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-amber-700">
+              <span className="size-2 rounded-full bg-amber-500" />
+              <span>{product.stock_display}</span>
+            </div>
+          ) : null}
         </div>
 
         {/* Цены и кнопка */}
@@ -262,28 +258,8 @@ export const ProductCard = ({
 
       </div>
 
-      {/* 2. Категория и индикатор статуса («В наличии») */}
-      <div className="mt-3 flex h-5 items-center justify-between gap-1.5 text-xs">
-        <span
-          className="truncate max-w-[130px] sm:max-w-[160px] font-medium text-slate-400 text-[11px]"
-          title={cleanCategoryName}
-        >
-          {cleanCategoryName}
-        </span>
-        <span className="inline-flex shrink-0 items-center gap-1 font-medium text-slate-500">
-          <span
-            className={`size-1.5 rounded-full shrink-0 ${
-              product.is_available ? (isLowStock ? "bg-amber-500" : "bg-emerald-500") : "bg-rose-400"
-            }`}
-          />
-          <span className={isLowStock ? "text-amber-700 font-bold text-[11px]" : "text-[11px] text-slate-600"}>
-            {product.is_available ? (product.stock_display || "В наличии") : "Нет в наличии"}
-          </span>
-        </span>
-      </div>
-
-      {/* 3. Название товара (ограничение в 2 строки: line-clamp-2 h-10 min-h-[2.5rem]) */}
-      <div className="mt-1.5 h-10 min-h-[2.5rem]">
+      {/* 2. Название товара (ограничение в 2 строки: line-clamp-2 h-10 min-h-[2.5rem]) */}
+      <div className="mt-2.5 h-10 min-h-[2.5rem]">
         <Link
           className="line-clamp-2 text-xs sm:text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700 leading-snug"
           href={ROUTES.PRODUCT(product.slug)}
@@ -338,11 +314,7 @@ export const ProductCardSkeleton = () => {
   return (
     <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-3 shadow-sm animate-pulse">
       <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-200/70" />
-      <div className="mt-3 flex h-5 items-center justify-between gap-2">
-        <div className="h-4 w-20 rounded bg-slate-200/70" />
-        <div className="h-4 w-12 rounded bg-slate-200/70" />
-      </div>
-      <div className="mt-1.5 h-10 space-y-1.5">
+      <div className="mt-2.5 h-10 space-y-1.5">
         <div className="h-4 w-full rounded bg-slate-200/70" />
         <div className="h-4 w-3/4 rounded bg-slate-200/70" />
       </div>

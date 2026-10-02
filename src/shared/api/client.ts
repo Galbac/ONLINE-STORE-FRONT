@@ -1,3 +1,4 @@
+import { localizeErrorMessage } from "../lib/format/localize-error";
 import { API_BASE_URL, API_ENDPOINTS } from "./endpoints";
 
 interface ApiClientConfig {
@@ -126,25 +127,22 @@ export class ApiError extends Error {
 }
 
 export const extractErrorMessage = (error: unknown, fallback: string = "Произошла ошибка"): string => {
+  let raw: string = fallback;
   if (error instanceof ApiError) {
     if (typeof error.data?.detail === "string") {
-      return error.data.detail;
-    }
-    if (Array.isArray(error.data?.detail) && error.data.detail.length > 0) {
+      raw = error.data.detail;
+    } else if (Array.isArray(error.data?.detail) && error.data.detail.length > 0) {
       const first = error.data.detail[0];
-      return first?.msg || first?.message || fallback;
+      raw = first?.msg || first?.message || fallback;
+    } else if (error.message && !error.message.startsWith("Ошибка запроса (")) {
+      raw = error.message;
     }
-    if (error.message && !error.message.startsWith("Ошибка запроса (")) {
-      return error.message;
-    }
+  } else if (typeof (error as any)?.response?.data?.detail === "string") {
+    raw = (error as any).response.data.detail;
+  } else if (typeof (error as any)?.message === "string") {
+    raw = (error as any).message;
   }
-  if (typeof (error as any)?.response?.data?.detail === "string") {
-    return (error as any).response.data.detail;
-  }
-  if (typeof (error as any)?.message === "string") {
-    return (error as any).message;
-  }
-  return fallback;
+  return localizeErrorMessage(raw);
 };
 
 export const isApiErrorStatus = (error: unknown, status: number): boolean => {

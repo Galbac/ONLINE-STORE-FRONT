@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
@@ -294,7 +295,7 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                     href={STORE_INFO.phoneHref}
                     className="text-slate-700 font-semibold hover:text-emerald-700"
                   >
-                    {STORE_INFO.phone}
+                    {formatPhoneMask(STORE_INFO.phone)}
                   </a>
                 </div>
               </div>
@@ -317,7 +318,7 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                   </div>
                 </div>
                 <div className="mt-3 text-[11px] text-gray-500">
-                  Редакция от {document.effectiveDate} • Сайт: eda-pobeda.ru • Служба заботы: {document.operatorInfo.phone}
+                  Редакция от {document.effectiveDate} • Сайт: eda-pobeda.ru • Служба заботы: {formatPhoneMask(document.operatorInfo.phone)}
                 </div>
               </div>
 
@@ -529,7 +530,7 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                       <p className="flex items-center gap-1.5">
                         <Phone size={12} className="text-slate-400" />
                         <a href={STORE_INFO.phoneHref} className="font-semibold text-slate-800 hover:text-emerald-700">
-                          {STORE_INFO.phone}
+                          {formatPhoneMask(STORE_INFO.phone)}
                         </a>
                       </p>
                       <p className="flex items-center gap-1.5">

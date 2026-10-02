@@ -44,6 +44,10 @@ export const formatPhoneMask = (input: string | null | undefined): string => {
     return "";
   }
 
+  if (typeof input === "string" && input.includes("*")) {
+    return input;
+  }
+
   const digits = input.replace(/\D/g, "");
   if (!digits) {
     return "";

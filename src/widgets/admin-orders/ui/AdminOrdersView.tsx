@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Download, Eye, Search } from "lucide-react";
 import type { AdminOrderListItemResponse, AdminOrderListResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus,
   formatDeliveryType,
   formatPaymentMethod, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, SYNC_STATUS_LABELS, DELIVERY_TYPE_LABELS } from "@/shared/lib/format";
@@ -254,7 +255,7 @@ const OrderRow = ({ order }: { order: AdminOrderListItemResponse }) => {
       </TableCell>
       <TableCell>
         <p className="text-text-primary max-w-[220px] truncate font-bold">{order.customer_name}</p>
-        <p className="text-text-muted mt-1 text-xs">{order.customer_phone}</p>
+        <p className="text-text-muted mt-1 text-xs">{formatPhoneMask(order.customer_phone)}</p>
       </TableCell>
       <TableCell>{toPriceFormat(order.final_price)}</TableCell>
       <TableCell>

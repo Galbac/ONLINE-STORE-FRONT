@@ -6,6 +6,7 @@ import { CheckCircle2, Play, Printer } from "lucide-react";
 import { apiClient, getStoredAdminAccessToken } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { Button } from "@/shared/ui";
 
 interface AssemblyOrderItem {
@@ -98,6 +99,7 @@ export default function AdminAssemblyPage() {
                 </div>
                 <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                   <span>Клиент: {o.customer_name}</span>
+                  {o.customer_phone ? <span>Тел: {formatPhoneMask(o.customer_phone)}</span> : null}
                   <span>Сумма: {toPriceFormat(o.final_price)}</span>
                 </div>
               </div>

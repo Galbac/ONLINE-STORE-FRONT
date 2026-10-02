@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useRef } from "react";
 import type { PublicStoreSettingsResponse } from "../types";
 import { STORE_INFO } from "@/shared/config/store";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { useStoreSettings } from "./settingsStore";
 
 const StoreSettingsContext = createContext<PublicStoreSettingsResponse | null>(null);
@@ -43,8 +44,9 @@ export const useDynamicStoreInfo = () => {
   const settings = contextSettings || storeSettings;
 
   const name = (settings?.shop_name || STORE_INFO.name).trim();
-  const phone = (settings?.phone || STORE_INFO.phone).trim();
-  const phoneHref = `tel:${phone.replace(/[^\d+]/g, "")}`;
+  const rawPhone = (settings?.phone || STORE_INFO.phone).trim();
+  const phone = formatPhoneMask(rawPhone);
+  const phoneHref = `tel:${rawPhone.replace(/[^\d+]/g, "")}`;
   const email = (settings?.email || STORE_INFO.email).trim();
   const address = (settings?.address || STORE_INFO.address).trim();
   const city = (settings?.default_city || STORE_INFO.city).trim();
@@ -75,3 +77,5 @@ export const useDynamicStoreInfo = () => {
     schedule,
   };
 };
+
+export default StoreSettingsProvider;

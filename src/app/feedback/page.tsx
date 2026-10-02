@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
-import { handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
+import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { Button, Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
@@ -367,7 +367,7 @@ export default function FeedbackPage() {
                     <p className="text-xs text-blue-800/90 leading-relaxed">
                       Оператор ответит вам на email <span className="font-bold">{submittedTicket.email}</span>
                       {submittedTicket.phone ? (
-                        <> или свяжется по телефону <span className="font-bold">{submittedTicket.phone}</span></>
+                        <> или свяжется по телефону <span className="font-bold">{formatPhoneMask(submittedTicket.phone)}</span></>
                       ) : null}{" "}
                       в регламентные сроки (служба заботы работает ежедневно с 08:00 до 22:00).
                     </p>
@@ -769,7 +769,7 @@ export default function FeedbackPage() {
                       href={STORE_INFO.phoneHref}
                       className="font-bold text-slate-800 hover:text-emerald-700 transition"
                     >
-                      {STORE_INFO.phone}
+                      {formatPhoneMask(STORE_INFO.phone)}
                     </a>
                   </div>
                   <div className="flex items-center gap-2.5">

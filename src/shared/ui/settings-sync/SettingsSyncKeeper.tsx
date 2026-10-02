@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import {
   SETTINGS_UPDATED_EVENT,
-  useDynamicStoreInfo,
   useStoreSettings,
-} from "@/entities/settings";
+} from "@/entities/settings/model/settingsStore";
+import { useDynamicStoreInfo } from "@/entities/settings/model/StoreSettingsProvider";
 
 export const SettingsSyncKeeper = () => {
   const fetchSettings = useStoreSettings((s) => s.fetchSettings);

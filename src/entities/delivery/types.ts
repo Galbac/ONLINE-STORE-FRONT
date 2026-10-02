@@ -21,11 +21,15 @@ export interface DeliveryZoneShortResponse {
 }
 
 export interface DeliveryCalculateRequest {
-  delivery_type: "delivery" | "pickup";
+  delivery_type?: "delivery" | "pickup";
+  order_amount?: string | number | null;
   cart_total?: string | number | null;
   address_id?: number | null;
   pickup_point_id?: number | null;
   city?: string | null;
+  street?: string | null;
+  house?: string | null;
+  apartment?: string | null;
 }
 
 export interface DeliveryCalculateResponse {

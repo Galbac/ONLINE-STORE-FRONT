@@ -3,7 +3,7 @@
 import { useStoreBranch } from "@/entities/delivery";
 import { AlertCircle, Loader2 } from "lucide-react";
 
-import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,12 +25,13 @@ import {
   X,
 } from "lucide-react";
 import type { CartItemResponse, CartResponse, CartSummaryResponse } from "@/entities/cart";
-import type {
-  DeliveryCalculateResponse,
-  DeliveryOptionsResponse,
-  DeliveryTimeSlotResponse,
-  DeliveryTimeSlotsResponse,
-  PickupPointListResponse,
+import {
+  deliveryApi,
+  type DeliveryCalculateResponse,
+  type DeliveryOptionsResponse,
+  type DeliveryTimeSlotResponse,
+  type DeliveryTimeSlotsResponse,
+  type PickupPointListResponse,
 } from "@/entities/delivery";
 import { orderApi, type OrderCreateRequest, type OrderCreateResponse } from "@/entities/order";
 import { paymentApi, type PaymentCreateResponse } from "@/entities/payment";
@@ -89,7 +90,14 @@ export const CheckoutView = ({
   const defaultPickupPoint =
     (selectedStore && pickupPoints.items.find((point) => point.id === selectedStore.id)) ??
     pickupPoints.items[0];
-  const firstAvailableSlot = timeSlots.items.find((slot) => slot.available) ?? timeSlots.items[0];
+
+  const [slotsData, setSlotsData] = useState<DeliveryTimeSlotsResponse>(timeSlots);
+  const [isLoadingSlots, setIsLoadingSlots] = useState<boolean>(false);
+  const isInitialSlotsMount = useRef(true);
+
+  const firstAvailableSlot = useMemo(() => {
+    return slotsData.items.find((slot) => slot.available) ?? slotsData.items[0] ?? null;
+  }, [slotsData.items]);
 
   // Автозаполнение известных данных пользователя
   const [contact, setContact] = useState<ContactState>({
@@ -130,6 +138,13 @@ export const CheckoutView = ({
   const [dontRingDoorbell, setDontRingDoorbell] = useState(false);
   const [substitutionPolicy, setSubstitutionPolicy] = useState<"call" | "replace" | "remove">("call");
   const [selectedAddressId, setSelectedAddressId] = useState(defaultAddress?.id ?? null);
+  const [activeCalculation, setActiveCalculation] = useState<DeliveryCalculateResponse>(deliveryCalculation);
+
+  useEffect(() => {
+    setActiveCalculation(deliveryCalculation);
+  }, [deliveryCalculation]);
+
+
   const [selectedPickupPointId, setSelectedPickupPointId] = useState(
     defaultPickupPoint?.id ?? null,
   );
@@ -157,6 +172,27 @@ export const CheckoutView = ({
     return addresses.items.find((address) => address.id === selectedAddressId) ?? defaultAddress;
   }, [addresses.items, defaultAddress, selectedAddressId]);
 
+  useEffect(() => {
+    if (deliveryType === "delivery" && selectedAddress) {
+      const cartAmount = summary.final_price || summary.subtotal || 0;
+      deliveryApi
+        .calculate({
+          delivery_type: "delivery",
+          order_amount: cartAmount,
+          cart_total: cartAmount,
+          address_id: selectedAddress.id,
+          city: selectedAddress.city,
+        })
+        .then((calc) => {
+          if (calc) {
+            setActiveCalculation(calc);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedAddress, deliveryType, summary.final_price, summary.subtotal]);
+
+
   const selectedPickupPoint = useMemo(() => {
     return (
       pickupPoints.items.find((point) => point.id === selectedPickupPointId) ?? defaultPickupPoint
@@ -164,8 +200,65 @@ export const CheckoutView = ({
   }, [defaultPickupPoint, pickupPoints.items, selectedPickupPointId]);
 
   const selectedSlot = useMemo(() => {
-    return timeSlots.items.find((slot) => slot.id === selectedSlotId) ?? firstAvailableSlot;
-  }, [firstAvailableSlot, selectedSlotId, timeSlots.items]);
+    return slotsData.items.find((slot) => slot.id === selectedSlotId) ?? firstAvailableSlot;
+  }, [firstAvailableSlot, selectedSlotId, slotsData.items]);
+
+  // Динамическая подгрузка слотов при смене типа доставки, даты или точки получения
+  useEffect(() => {
+    if (isInitialSlotsMount.current) {
+      isInitialSlotsMount.current = false;
+      if (deliveryType === "delivery" && selectedDate === timeSlots.date) {
+        return;
+      }
+    }
+
+    let isActive = true;
+    setIsLoadingSlots(true);
+
+    const loadSlots = async () => {
+      try {
+        const res = await deliveryApi.getTimeSlots({
+          date: selectedDate,
+          delivery_type: deliveryType,
+          pickup_point_id: deliveryType === "pickup" ? (selectedPickupPointId ?? null) : null,
+          address_id: deliveryType === "delivery" ? (selectedAddressId ?? null) : null,
+          city:
+            deliveryType === "delivery"
+              ? (selectedAddress?.city ?? null)
+              : (selectedPickupPoint?.city ?? null),
+        });
+
+        if (isActive && res) {
+          setSlotsData(res);
+          const firstAvail = res.items.find((s) => s.available) ?? res.items[0];
+          setSelectedSlotId((prevId) => {
+            const isPrevValid = res.items.some((s) => s.id === prevId && s.available);
+            return isPrevValid ? prevId : (firstAvail?.id ?? null);
+          });
+        }
+      } catch (err) {
+        console.error("Не удалось обновить временные интервалы:", err);
+      } finally {
+        if (isActive) {
+          setIsLoadingSlots(false);
+        }
+      }
+    };
+
+    void loadSlots();
+
+    return () => {
+      isActive = false;
+    };
+  }, [
+    deliveryType,
+    selectedDate,
+    selectedPickupPointId,
+    selectedAddressId,
+    selectedAddress?.city,
+    selectedPickupPoint?.city,
+    timeSlots.date,
+  ]);
 
   const isOutsideKizlyar = useMemo(() => {
     if (deliveryType !== "delivery" || !selectedAddress) return false;
@@ -186,17 +279,17 @@ export const CheckoutView = ({
 
   const itemsCount = cart.items.length;
   const itemsTotal = Number(summary.final_price || summary.subtotal || 0);
-  const freeFrom = Number(deliveryCalculation?.free_delivery_from ?? deliveryOptions?.delivery?.free_from_amount ?? 3000);
+  const freeFrom = Number(activeCalculation?.free_delivery_from ?? deliveryOptions?.delivery?.free_from_amount ?? 3000);
   const isFreeDelivery = freeFrom > 0 && itemsTotal >= freeFrom;
 
   const deliveryPrice = deliveryType === "pickup" ? "0" : (
     isFreeDelivery ? "0" : (
-      (deliveryCalculation.delivery_price && deliveryCalculation.delivery_price !== "0")
-        ? deliveryCalculation.delivery_price
+      (activeCalculation.delivery_price && activeCalculation.delivery_price !== "0")
+        ? activeCalculation.delivery_price
         : (deliveryOptions.delivery.base_price ?? "199.00")
     )
   );
-  const minOrderAmount = Number(deliveryCalculation.min_order_amount || deliveryOptions.delivery.min_order_amount || 1000);
+  const minOrderAmount = Number(activeCalculation.min_order_amount || deliveryOptions.delivery.min_order_amount || 1000);
   const isMinOrderMet = itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
   const isStep1Done = Boolean(contact.name.trim().length >= 2 && normalizePhoneNumber(contact.phone).length >= 11);
@@ -206,7 +299,7 @@ export const CheckoutView = ({
     selectedDate && (
       timeMode === "asap" ||
       (timeMode === "custom" && customTime.trim().length >= 2) ||
-      (timeMode === "slot" && selectedSlotId)
+      (timeMode === "slot" && selectedSlotId && selectedSlot?.available)
     )
   );
   const isStep5Done = Boolean(paymentMethod);
@@ -267,8 +360,15 @@ export const CheckoutView = ({
 
     const resolvedSlotId =
       timeMode === "slot"
-        ? (selectedSlot?.id ?? null)
-        : (selectedSlot?.id ?? firstAvailableSlot?.id ?? timeSlots.items[0]?.id ?? null);
+        ? (selectedSlot?.available ? selectedSlot.id : (firstAvailableSlot?.available ? firstAvailableSlot.id : null))
+        : null;
+
+    if (timeMode === "slot" && !resolvedSlotId) {
+      setErrorMessage(
+        "Выбранный интервал времени недоступен. Пожалуйста, выберите свободный интервал или переключитесь на режим «Как можно скорее» / «Своё время»."
+      );
+      return;
+    }
 
     const notesParts = [
       timeComment,
@@ -296,8 +396,8 @@ export const CheckoutView = ({
       intercom: intercom.trim() || null,
     };
 
-    const minAmount = deliveryCalculation.min_order_amount 
-      ? Number(deliveryCalculation.min_order_amount) 
+    const minAmount = activeCalculation.min_order_amount 
+      ? Number(activeCalculation.min_order_amount) 
       : (deliveryOptions.delivery.min_order_amount ? Number(deliveryOptions.delivery.min_order_amount) : 0);
 
     if (minAmount > 0 && Number(summary.final_price) < minAmount) {
@@ -572,12 +672,12 @@ export const CheckoutView = ({
                       </span>
                       <div>
                         <p className="text-xs font-bold text-slate-800">
-                          Зона доставки: {isOutsideKizlyar ? "Вне зоны курьерской доставки" : (deliveryCalculation.zone?.name || "Кизляр — Центральный")}
+                          Зона доставки: {isOutsideKizlyar ? "Вне зоны курьерской доставки" : (activeCalculation.zone?.name || "Кизляр — Центральный")}
                         </p>
                         <p className="text-[11px] text-slate-500">
                           {isOutsideKizlyar 
                             ? "Курьерская доставка действует по г. Кизляр и пригородным поселкам" 
-                            : `Тариф доставки: ${deliveryPrice === "0" ? "Бесплатно" : `${deliveryPrice} ₽`} (бесплатно от ${toPriceFormat(deliveryCalculation.free_delivery_from || 3000)})`}
+                            : `Тариф доставки: ${deliveryPrice === "0" ? "Бесплатно" : `${deliveryPrice} ₽`} (бесплатно от ${toPriceFormat(activeCalculation.free_delivery_from || 3000)})`}
                         </p>
                       </div>
                     </div>
@@ -629,7 +729,9 @@ export const CheckoutView = ({
               <DateAndSlotPicker
                 selectedDate={selectedDate}
                 selectedSlotId={selectedSlotId}
-                slots={timeSlots.items}
+                slots={slotsData.items}
+                isLoading={isLoadingSlots}
+                deliveryType={deliveryType}
                 onDateChange={setSelectedDate}
                 onSlotChange={setSelectedSlotId}
                 timeMode={timeMode}
@@ -1132,6 +1234,8 @@ interface DateAndSlotPickerProps {
   selectedDate: string;
   selectedSlotId: number | null;
   slots: DeliveryTimeSlotResponse[];
+  isLoading?: boolean;
+  deliveryType: DeliveryType;
   onDateChange: (date: string) => void;
   onSlotChange: (slotId: number) => void;
   timeMode: "slot" | "asap" | "custom";
@@ -1146,6 +1250,8 @@ const DateAndSlotPicker = ({
   selectedDate,
   selectedSlotId,
   slots,
+  isLoading = false,
+  deliveryType,
   timeMode,
   onTimeModeChange,
   customTime,
@@ -1284,32 +1390,46 @@ const DateAndSlotPicker = ({
           <label className="block text-xs font-bold text-slate-700 mb-2">
             Выберите доступный интервал:
           </label>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {processedSlots.map((slot) => {
-              const isSelected = selectedSlotId === slot.id;
-              return (
-                <button
-                  className={cn(
-                    "flex h-11 items-center justify-center rounded-xl border px-3 text-xs font-bold transition-all active:scale-98",
-                    isSelected && slot.available
-                      ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
-                      : slot.available
-                        ? "border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30 cursor-pointer"
-                        : "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed line-through opacity-60",
-                  )}
-                  type="button"
-                  disabled={!slot.available}
-                  key={slot.id}
-                  onClick={() => onSlotChange(slot.id)}
-                >
-                  {slot.label}
-                </button>
-              );
-            })}
-          </div>
-          {isToday && processedSlots.every((s) => !s.available) ? (
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-11 animate-pulse rounded-xl bg-slate-100 border border-slate-200/60" />
+              ))}
+            </div>
+          ) : processedSlots.length === 0 ? (
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-4 text-xs font-medium text-slate-600">
+              {deliveryType === "pickup"
+                ? "Для выбранного пункта самовывоза нет фиксированных интервалов. Вы можете выбрать режим «Как можно скорее» или указать удобное время."
+                : "На выбранную дату нет доступных интервалов доставки. Пожалуйста, выберите другую дату или режим «Как можно скорее»."}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {processedSlots.map((slot) => {
+                const isSelected = selectedSlotId === slot.id;
+                return (
+                  <button
+                    className={cn(
+                      "flex h-11 items-center justify-center rounded-xl border px-3 text-xs font-bold transition-all active:scale-98",
+                      isSelected && slot.available
+                        ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
+                        : slot.available
+                          ? "border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30 cursor-pointer"
+                          : "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed line-through opacity-60",
+                    )}
+                    type="button"
+                    disabled={!slot.available}
+                    key={slot.id}
+                    onClick={() => onSlotChange(slot.id)}
+                  >
+                    {slot.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {!isLoading && isToday && processedSlots.length > 0 && processedSlots.every((s) => !s.available) ? (
             <p className="mt-2.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/70 rounded-xl p-3">
-              🕒 Все стандартные интервалы на сегодня завершены. Выберите режим <strong>«Как можно скорее»</strong>, укажите <strong>«Своё точное время»</strong> или доставку на завтра.
+              🕒 Все стандартные интервалы на сегодня завершены. Выберите режим <strong>«Как можно скорее»</strong>, укажите <strong>«Своё точное время»</strong> или получение на завтра.
             </p>
           ) : null}
         </div>
@@ -1318,7 +1438,9 @@ const DateAndSlotPicker = ({
       {timeMode === "custom" && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
           <label className="block text-xs font-bold text-slate-800">
-            В какое время вам удобно встретить курьера?
+            {deliveryType === "pickup"
+              ? "В какое время вам удобно забрать заказ из пункта выдачи?"
+              : "В какое время вам удобно встретить курьера?"}
           </label>
           <input
             type="text"
@@ -1371,10 +1493,10 @@ const ReviewList = ({ items }: ReviewListProps) => {
     <div className="space-y-3">
       {items.map((item) => (
         <div
-          className="grid grid-cols-[52px_minmax(0,1fr)_80px_60px_90px] items-center gap-3"
+          className="grid grid-cols-[56px_minmax(0,1fr)_80px_60px_90px] items-center gap-3"
           key={item.id}
         >
-          <ProductThumb item={item} size={48} />
+          <ProductThumb item={item} size={56} />
           <div className="min-w-0">
             <p className="truncate font-bold">{item.name}</p>
             <p className="text-text-secondary text-sm">
@@ -1693,28 +1815,31 @@ const Benefit = ({ icon, text, title }: BenefitProps) => {
 
 interface ProductThumbProps {
   item: CartItemResponse;
-  size: number;
+  size?: number;
 }
 
-const ProductThumb = ({ item, size }: ProductThumbProps) => {
+const ProductThumb = ({ item, size = 56 }: ProductThumbProps) => {
+  const [hasError, setHasError] = useState(false);
+
   return (
-    <span
-      className="grid place-items-center rounded-lg bg-white"
-      style={{ height: size, width: size }}
+    <div
+      className="relative shrink-0 overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 flex items-center justify-center shadow-2xs"
+      style={{ height: `${size}px`, width: `${size}px`, minWidth: `${size}px`, minHeight: `${size}px` }}
     >
-      {item.preview_image_url ? (
+      {item.preview_image_url && !hasError ? (
         <Image
           alt={item.name}
-          className="h-full w-full object-contain"
+          className="h-full w-full object-cover transition-transform duration-200 hover:scale-105"
           height={size}
           unoptimized
           src={item.preview_image_url}
           width={size}
+          onError={() => setHasError(true)}
         />
       ) : (
-        <ShoppingBag className="text-accent-primary" size={Math.round(size / 2)} />
+        <ShoppingBag className="text-emerald-600/70" size={Math.round(size / 2.3)} />
       )}
-    </span>
+    </div>
   );
 };
 

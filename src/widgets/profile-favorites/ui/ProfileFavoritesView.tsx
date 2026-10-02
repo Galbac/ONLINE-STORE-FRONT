@@ -282,7 +282,7 @@ const FavoriteItemCard = ({
       {/* Превью товара */}
       <Link
         href={ROUTES.PRODUCT(product.slug)}
-        className="mb-3 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/70 to-slate-100/40 p-3"
+        className="mb-3 flex h-40 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 shadow-2xs"
       >
         {product.preview_image_url ? (
           <Image
@@ -290,7 +290,7 @@ const FavoriteItemCard = ({
             alt={product.name}
             width={200}
             height={160}
-            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <span className="grid size-20 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
@@ -472,7 +472,7 @@ const RecommendedSection = ({
 
               <Link
                 href={ROUTES.PRODUCT(product.slug)}
-                className="mb-3 flex h-36 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/70 to-slate-100/40 p-2"
+                className="mb-3 flex h-36 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 shadow-2xs"
               >
                 {product.preview_image_url ? (
                   <Image
@@ -480,10 +480,10 @@ const RecommendedSection = ({
                     alt={product.name}
                     width={160}
                     height={140}
-                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
-                  <ShoppingBag size={28} className="text-slate-300" />
+                  <ShoppingBag size={28} className="text-emerald-600/70" />
                 )}
               </Link>
 

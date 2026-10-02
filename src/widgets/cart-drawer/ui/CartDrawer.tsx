@@ -226,7 +226,7 @@ export const CartDrawer = () => {
                   <Link
                     href={productHref}
                     onClick={() => setIsOpen(false)}
-                    className="relative flex size-14 shrink-0 items-center justify-center rounded-lg bg-slate-50 overflow-hidden hover:opacity-90 transition cursor-pointer"
+                    className="relative flex size-14 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50 overflow-hidden hover:opacity-90 transition cursor-pointer shadow-2xs"
                     title={item.name}
                   >
                     {item.preview_image_url ? (
@@ -236,10 +236,10 @@ export const CartDrawer = () => {
                         width={56}
                         height={56}
                         unoptimized
-                        className="object-contain transition-transform group-hover/card:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-200 group-hover/card:scale-105"
                       />
                     ) : (
-                      <ShoppingBag size={20} className="text-slate-300" />
+                      <ShoppingBag size={20} className="text-emerald-600/70" />
                     )}
                   </Link>
 
@@ -313,20 +313,20 @@ export const CartDrawer = () => {
                   <Link
                     href={suggestionHref}
                     onClick={() => setIsOpen(false)}
-                    className="relative flex h-14 w-full items-center justify-center rounded-lg bg-slate-50 overflow-hidden mb-1.5 hover:opacity-90 transition cursor-pointer"
+                    className="relative flex h-16 w-full items-center justify-center rounded-lg border border-slate-100 bg-slate-50 overflow-hidden mb-1.5 hover:opacity-90 transition cursor-pointer"
                     title={product.name}
                   >
                     {product.preview_image_url ? (
                       <Image
                         src={product.preview_image_url}
                         alt={product.name}
-                        width={48}
-                        height={48}
+                        width={64}
+                        height={64}
                         unoptimized
-                        className="object-contain transition-transform group-hover/sugg:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-200 group-hover/sugg:scale-105"
                       />
                     ) : (
-                      <ShoppingBag size={18} className="text-slate-300" />
+                      <ShoppingBag size={18} className="text-emerald-600/70" />
                     )}
                   </Link>
                   <Link

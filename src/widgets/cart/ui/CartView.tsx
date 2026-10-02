@@ -377,7 +377,7 @@ const CartItemCard = ({
         {/* Изображение товара */}
         <Link
           href={item.slug ? ROUTES.PRODUCT(item.slug) : ROUTES.CATALOG}
-          className="relative flex size-24 sm:size-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/60 p-2 mx-auto sm:mx-0"
+          className="relative flex size-24 sm:size-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 mx-auto sm:mx-0 shadow-2xs"
         >
           {item.preview_image_url ? (
             <Image
@@ -386,10 +386,10 @@ const CartItemCard = ({
               fill
               unoptimized
               sizes="112px"
-              className="object-contain p-1 transition-transform group-hover:scale-105"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
-            <ShoppingBag className="text-emerald-600 size-10" />
+            <ShoppingBag className="text-emerald-600/70 size-10" />
           )}
         </Link>
 

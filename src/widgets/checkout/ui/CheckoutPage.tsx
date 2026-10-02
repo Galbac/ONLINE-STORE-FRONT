@@ -79,9 +79,11 @@ export const CheckoutPage = () => {
         let deliveryCalculation = createDeliveryCalculationFallback(summary, deliveryOptions);
         if (defaultAddress) {
           try {
+            const cartAmount = summary.final_price || summary.subtotal || 0;
             const calculated = await deliveryApi.calculate({
               delivery_type: "delivery",
-              cart_total: summary.final_price || summary.subtotal || 0,
+              order_amount: cartAmount,
+              cart_total: cartAmount,
               address_id: defaultAddress.id,
               city: defaultAddress.city,
             });

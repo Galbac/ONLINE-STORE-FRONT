@@ -327,17 +327,17 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
                     className="group flex items-center justify-between gap-3 rounded-xl p-2.5 transition hover:bg-slate-50"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 overflow-hidden">
+                      <div className="relative flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 overflow-hidden shadow-2xs">
                         {p.preview_image_url ? (
                           <Image
                             alt={p.name}
-                            className="object-contain"
+                            className="h-full w-full object-cover"
                             height={40}
                             src={p.preview_image_url}
                             width={40}
                           />
                         ) : (
-                          <ShoppingBag size={18} className="text-slate-400" />
+                          <ShoppingBag size={18} className="text-emerald-600/70" />
                         )}
                       </div>
                       <div className="flex flex-col min-w-0">

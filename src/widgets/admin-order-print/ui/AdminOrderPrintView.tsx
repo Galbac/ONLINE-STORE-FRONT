@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
 import type { AdminOrderDetailResponse, AdminOrderPrintResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { toPriceFormat, formatPaymentStatus, formatOrderStatus, formatDeliveryType } from "@/shared/lib/format";
 
 interface AdminOrderPrintViewProps {
@@ -77,7 +78,7 @@ const PrintableOrder = ({ order }: { order: AdminOrderDetailResponse }) => {
           <h2 className="text-lg font-bold">Клиент</h2>
           <div className="mt-3 space-y-2 text-sm">
             <PrintRow label="Имя" value={order.customer.name} />
-            <PrintRow label="Телефон" value={order.customer.phone} />
+            <PrintRow label="Телефон" value={formatPhoneMask(order.customer.phone)} />
             <PrintRow label="Email" value={order.customer.email ?? "-"} />
           </div>
         </div>

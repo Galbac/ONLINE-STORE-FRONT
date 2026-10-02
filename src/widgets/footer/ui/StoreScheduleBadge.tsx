@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Clock, X, CheckCircle2, AlertCircle, MapPin, Phone } from "lucide-react";
-import { STORE_INFO } from "@/shared/config";
 import type { DayScheduleItem } from "@/entities/admin-settings";
-import type { PublicStoreSettingsResponse } from "@/entities/settings";
+import { useDynamicStoreInfo } from "@/entities/settings";
 
 const DEFAULT_SCHEDULE: DayScheduleItem[] = [
   { day: 1, day_name: "Понедельник", is_day_off: false, open_time: "08:00", close_time: "22:00" },
@@ -18,24 +17,7 @@ const DEFAULT_SCHEDULE: DayScheduleItem[] = [
 
 export const StoreScheduleBadge = () => {
   const [isOpenModal, setIsOpenModal] = useState(false);
-  const [data, setData] = useState<PublicStoreSettingsResponse | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    fetch("/api/settings")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json: PublicStoreSettingsResponse | null) => {
-        if (isMounted && json) {
-          setData(json);
-        }
-      })
-      .catch(() => {
-        // Fallback to static info if network error
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { schedule: dynamicSchedule, isOpenNow, statusText: dynamicStatusText, address, phone, phoneHref, workingHours } = useDynamicStoreInfo();
 
   // Current day of week (1: Monday .. 7: Sunday)
   const todayWeekday = (() => {
@@ -43,9 +25,8 @@ export const StoreScheduleBadge = () => {
     return day === 0 ? 7 : day;
   })();
 
-  const schedule = data?.schedule && data.schedule.length === 7 ? data.schedule : DEFAULT_SCHEDULE;
-  const isOpenNow = data?.is_open_now ?? true;
-  const statusText = data?.current_status_text || (isOpenNow ? "Открыто сегодня" : "Сейчас закрыто");
+  const schedule = dynamicSchedule && dynamicSchedule.length === 7 ? dynamicSchedule : DEFAULT_SCHEDULE;
+  const statusText = dynamicStatusText || (isOpenNow ? "Открыто сегодня" : "Сейчас закрыто");
 
   const todayItem: DayScheduleItem = schedule.find((d) => d.day === todayWeekday) ?? schedule[0] ?? DEFAULT_SCHEDULE[0]!;
 
@@ -85,15 +66,9 @@ export const StoreScheduleBadge = () => {
           </div>
         </div>
 
-        {data?.working_hours ? (
-          <p className="text-[11px] text-slate-400 leading-tight">
-            {data.working_hours}
-          </p>
-        ) : (
-          <p className="text-[11px] text-slate-400 leading-tight">
-            Доставка ежедневно 08:00–22:00 • Заказы онлайн 24/7
-          </p>
-        )}
+        <p className="text-[11px] text-slate-400 leading-tight">
+          {workingHours || "Доставка ежедневно 08:00–22:00 • Заказы онлайн 24/7"}
+        </p>
       </div>
 
       {/* Модальное окно с подробным графиком по дням недели */}
@@ -189,12 +164,12 @@ export const StoreScheduleBadge = () => {
             <div className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
               <div className="flex items-center gap-2">
                 <MapPin size={13} className="text-emerald-600 shrink-0" />
-                <span>{STORE_INFO.address}</span>
+                <span>{address}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone size={13} className="text-emerald-600 shrink-0" />
-                <a href={STORE_INFO.phoneHref} className="font-medium text-slate-700 hover:text-emerald-700">
-                  {STORE_INFO.phone}
+                <a href={phoneHref} className="font-medium text-slate-700 hover:text-emerald-700">
+                  {phone}
                 </a>
               </div>
             </div>

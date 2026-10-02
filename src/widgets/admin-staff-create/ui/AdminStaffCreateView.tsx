@@ -7,6 +7,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { adminStaffApi, type AdminRoleResponse } from "@/entities/admin-staff";
 import { ROUTES } from "@/shared/config";
 import { getAdminErrorMessage } from "@/shared/api";
+import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 
 interface AdminStaffCreateViewProps {
   roles: AdminRoleResponse[];
@@ -36,7 +37,7 @@ export const AdminStaffCreateView = ({ roles }: AdminStaffCreateViewProps) => {
         is_active: formData.get("is_active") === "true",
         name: getRequiredFormValue(formData, "name"),
         password: getRequiredFormValue(formData, "password"),
-        phone: getRequiredFormValue(formData, "phone"),
+        phone: normalizePhoneNumber(getRequiredFormValue(formData, "phone")),
         role: getRequiredFormValue(formData, "role"),
       })
       .then((staff) => {
@@ -178,15 +179,38 @@ const Input = ({
   required?: boolean;
   type?: string;
 }) => {
+  const isPhone = type === "tel" || name === "phone";
+  const [val, setVal] = useState(() => (defaultValue && isPhone ? formatPhoneMask(defaultValue) : defaultValue ?? ""));
+
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-bold">{label}</span>
       <input
         className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm transition outline-none"
-        defaultValue={defaultValue}
         name={name}
         required={required}
-        type={type}
+        type={isPhone ? "tel" : type}
+        placeholder={isPhone ? "+7 (___) ___-__-__" : undefined}
+        maxLength={isPhone ? 18 : undefined}
+        autoComplete={isPhone ? "tel" : undefined}
+        value={val}
+        onChange={(e) => {
+          if (isPhone) {
+            setVal(handlePhoneInputChange(e.target.value, val));
+          } else {
+            setVal(e.target.value);
+          }
+        }}
+        onFocus={() => {
+          if (isPhone && !val) {
+            setVal("+7 (");
+          }
+        }}
+        onBlur={() => {
+          if (isPhone && (val === "+7 (" || val === "+7")) {
+            setVal("");
+          }
+        }}
       />
     </label>
   );

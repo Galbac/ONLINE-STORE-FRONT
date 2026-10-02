@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Clock, MapPin, Store, Truck } from "lucide-react";
-import { ROUTES, STORE_INFO } from "@/shared/config";
+import { ROUTES } from "@/shared/config";
+import { useDynamicStoreInfo } from "@/entities/settings";
 import { toPriceFormat } from "@/shared/lib/format";
 
 export interface DeliveryWidgetsProps {
@@ -22,6 +25,7 @@ export const DeliveryWidgets = ({
   pickupDescription = "Соберем ваш заказ заранее. Забирайте без очередей в удобное время.",
   currentCartAmount = 300,
 }: DeliveryWidgetsProps) => {
+  const { address } = useDynamicStoreInfo();
   const targetFreeAmount = freeFromAmount ? parseFloat(freeFromAmount) || 1500 : 1500;
   const currentTotal = currentCartAmount || 0;
   const amountToFree = Math.max(0, targetFreeAmount - currentTotal);
@@ -105,7 +109,7 @@ export const DeliveryWidgets = ({
           <div className="mt-5 space-y-2.5 text-xs">
             <div className="flex items-center gap-2.5 rounded-xl bg-white p-3 font-semibold text-slate-800 shadow-2xs border border-slate-100">
               <MapPin size={16} className="text-emerald-600 shrink-0" />
-              <span>{STORE_INFO.address}</span>
+              <span>{address}</span>
             </div>
             <div className="flex items-center gap-2.5 rounded-xl bg-white p-3 font-semibold text-slate-800 shadow-2xs border border-slate-100">
               <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />

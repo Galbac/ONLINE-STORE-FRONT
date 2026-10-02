@@ -3,6 +3,12 @@ import type { PublicStoreSettingsResponse } from "../types";
 
 export const settingsApi = {
   getPublicSettings: async (): Promise<PublicStoreSettingsResponse> => {
-    return apiClient.get<PublicStoreSettingsResponse>("/api/settings");
+    return apiClient.get<PublicStoreSettingsResponse>(
+      `/api/settings?_t=${Date.now()}`,
+      undefined,
+      {
+        cache: "no-store",
+      },
+    );
   },
 };

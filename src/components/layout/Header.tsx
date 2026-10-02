@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Clock, LayoutGrid, MapPin, Phone } from "lucide-react";
 import { HeaderSearch } from "./HeaderSearch";
-import { ROUTES, STORE_INFO } from "@/shared/config";
+import { ROUTES } from "@/shared/config";
+import { useDynamicStoreInfo } from "@/entities/settings";
 import { Container, Logo, PwaInstallButton } from "@/shared/ui";
 import { HeaderCartLink } from "@/widgets/header/ui/HeaderCartLink";
 import { HeaderFavoritesLink } from "@/widgets/header/ui/HeaderFavoritesLink";
@@ -14,6 +15,7 @@ import { HeaderUserLink } from "@/widgets/header/ui/HeaderUserLink";
 
 export const Header = () => {
   const [isScrolledCompact, setIsScrolledCompact] = useState(false);
+  const { city, phone, phoneHref } = useDynamicStoreInfo();
 
   useEffect(() => {
     let ticking = false;
@@ -52,7 +54,7 @@ export const Header = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700">
               <MapPin size={13} className="text-emerald-600 shrink-0" />
-              <span>{STORE_INFO.city}</span>
+              <span>{city}</span>
             </span>
             <StoreBranchSelector />
 
@@ -72,10 +74,10 @@ export const Header = () => {
             </div>
             <a
               className="inline-flex items-center gap-1.5 font-bold text-slate-700 transition hover:text-emerald-700 text-xs shrink-0"
-              href={STORE_INFO.phoneHref}
+              href={phoneHref}
             >
               <Phone size={13} className="text-emerald-600 shrink-0" />
-              <span>{STORE_INFO.phone}</span>
+              <span>{phone}</span>
             </a>
           </div>
         </Container>

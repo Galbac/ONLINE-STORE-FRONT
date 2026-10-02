@@ -13,6 +13,7 @@ import {
 } from "@/entities/admin-user";
 import { ROUTES } from "@/shared/config";
 import { getAdminErrorMessage } from "@/shared/api";
+import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatDeliveryType } from "@/shared/lib/format";
 
 interface AdminUserDetailsViewProps {
@@ -54,7 +55,7 @@ export const AdminUserDetailsView = ({ initialOrders, initialUser }: AdminUserDe
         email: getNullableFormValue(formData, "email"),
         is_active: formData.get("is_active") === "true",
         name: getRequiredFormValue(formData, "name"),
-        phone: getRequiredFormValue(formData, "phone"),
+        phone: normalizePhoneNumber(getRequiredFormValue(formData, "phone")),
       });
 
       setUser((currentUser) => ({
@@ -138,7 +139,7 @@ export const AdminUserDetailsView = ({ initialOrders, initialUser }: AdminUserDe
           <Card title="Данные пользователя">
             <div className="grid gap-4 md:grid-cols-2">
               <DetailRow label="Имя" value={user.name} />
-              <DetailRow label="Телефон" value={user.phone} />
+              <DetailRow label="Телефон" value={formatPhoneMask(user.phone)} />
               <DetailRow label="Email" value={user.email ?? "-"} />
               <DetailRow label="Активность" value={user.is_active ? "Активен" : "Неактивен"} />
               <DetailRow
@@ -361,15 +362,38 @@ const Input = ({
   name: string;
   required?: boolean;
 }) => {
+  const isPhone = name === "phone";
+  const [val, setVal] = useState(() => (defaultValue && isPhone ? formatPhoneMask(defaultValue) : defaultValue ?? ""));
+
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-bold">{label}</span>
       <input
         className="border-border focus:border-accent-primary placeholder:text-text-muted h-11 w-full rounded-lg border bg-transparent px-3 text-sm transition outline-none"
-        defaultValue={defaultValue}
         name={name}
         required={required}
-        type="text"
+        type={isPhone ? "tel" : "text"}
+        placeholder={isPhone ? "+7 (___) ___-__-__" : undefined}
+        maxLength={isPhone ? 18 : undefined}
+        autoComplete={isPhone ? "tel" : undefined}
+        value={val}
+        onChange={(e) => {
+          if (isPhone) {
+            setVal(handlePhoneInputChange(e.target.value, val));
+          } else {
+            setVal(e.target.value);
+          }
+        }}
+        onFocus={() => {
+          if (isPhone && !val) {
+            setVal("+7 (");
+          }
+        }}
+        onBlur={() => {
+          if (isPhone && (val === "+7 (" || val === "+7")) {
+            setVal("");
+          }
+        }}
       />
     </label>
   );

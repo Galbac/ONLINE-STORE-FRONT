@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Mail } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { ROUTES } from "@/shared/config";
+import { handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { extractErrorMessage } from "@/shared/api";
 
 interface ForgotPasswordFormValues {
@@ -23,7 +24,11 @@ export const ForgotPasswordForm = () => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    const cleanLogin = values.login.trim();
+    const rawLogin = values.login.trim();
+    const cleanLogin = rawLogin.includes("@")
+      ? rawLogin.toLowerCase()
+      : normalizePhoneNumber(rawLogin);
+
     if (cleanLogin.length < 3) {
       setErrorMessage("Введите корректный email или номер телефона.");
       return;
@@ -84,11 +89,18 @@ export const ForgotPasswordForm = () => {
             className="h-12 w-full bg-transparent text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none"
             autoComplete="username"
             name="login"
-            placeholder="user@example.com или +7 999 000-00-00"
+            placeholder="user@example.com или +7 (___) ___-__-__"
             type="text"
             required
             value={values.login}
-            onChange={(e) => setValues({ login: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (!val.includes("@") && (/^\+?\d/.test(val) || val.startsWith("+"))) {
+                setValues({ login: handlePhoneInputChange(val, values.login) });
+              } else {
+                setValues({ login: val });
+              }
+            }}
           />
         </div>
       </div>

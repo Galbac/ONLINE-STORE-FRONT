@@ -7,6 +7,7 @@ import type {
   AdminStaffListResponse,
 } from "@/entities/admin-staff";
 import { ROUTES } from "@/shared/config";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 
 export interface AdminStaffFilters {
   is_active: string;
@@ -171,7 +172,7 @@ const StaffRow = ({
         <p className="text-text-muted mt-1 text-xs">ID: {staffItem.id}</p>
       </TableCell>
       <TableCell>
-        <p className="text-text-primary font-bold">{staffItem.phone}</p>
+        <p className="text-text-primary font-bold">{formatPhoneMask(staffItem.phone)}</p>
         <p className="text-text-muted mt-1 text-xs">{staffItem.email ?? "-"}</p>
       </TableCell>
       <TableCell>{getRoleName(roles, staffItem.role)}</TableCell>

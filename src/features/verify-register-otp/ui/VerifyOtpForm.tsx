@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle, KeyRound, Loader2, RefreshCw, Send, ShieldCheck } from "lucide-react";
 import { authApi } from "@/entities/auth";
+import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { storeAuthTokens } from "@/shared/ui";
@@ -93,7 +94,7 @@ export const VerifyOtpForm = () => {
       setIsResending(true);
       const res = await authApi.sendRegisterOtp({
         email: draft.email,
-        phone: draft.phone || null,
+        phone: draft.phone ? normalizePhoneNumber(draft.phone) : null,
       });
       setOtpCooldown(res.cooldown_seconds || 60);
       setSuccessMessage("Новый код отправлен на ваш email");
@@ -124,7 +125,7 @@ export const VerifyOtpForm = () => {
       const response = await authApi.register({
         email: draft.email,
         name: draft.name,
-        phone: draft.phone,
+        phone: draft.phone ? normalizePhoneNumber(draft.phone) : "",
         password: draft.password,
         otp_code: fullCode,
         agreed_to_privacy: draft.agreement,

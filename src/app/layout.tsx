@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { STORE_INFO } from "@/shared/config";
-import { CookieBanner, PwaInstallPrompt, PwaInstallModal, ScrollRestorationKeeper } from "@/shared/ui";
+import { StoreSettingsProvider } from "@/entities/settings/model/StoreSettingsProvider";
+import { CookieBanner } from "@/shared/ui/cookie-banner";
+import { PwaInstallPrompt, PwaInstallModal } from "@/shared/ui/pwa-install";
+import { ScrollRestorationKeeper } from "@/shared/ui/scroll-keeper";
+import { SettingsSyncKeeper } from "@/shared/ui/settings-sync/SettingsSyncKeeper";
 import { OfflineIndicator } from "@/shared/ui/offline-indicator";
 import { PullToRefresh } from "@/shared/ui/pull-to-refresh";
 import { BottomNav } from "@/widgets/bottom-nav";
@@ -62,14 +66,17 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body
         className={`${inter.className} mobile-bottom-padding bg-slate-50/70 text-slate-900 antialiased selection:bg-emerald-500 selection:text-white`}
       >
-        <PullToRefresh>{children}</PullToRefresh>
-        <BottomNav />
-        <ScrollRestorationKeeper />
-        <CartDrawer />
-        <CookieBanner />
-        <PwaInstallPrompt />
-        <PwaInstallModal />
-        <OfflineIndicator />
+        <StoreSettingsProvider>
+          <SettingsSyncKeeper />
+          <PullToRefresh>{children}</PullToRefresh>
+          <BottomNav />
+          <ScrollRestorationKeeper />
+          <CartDrawer />
+          <CookieBanner />
+          <PwaInstallPrompt />
+          <PwaInstallModal />
+          <OfflineIndicator />
+        </StoreSettingsProvider>
       </body>
     </html>
   );

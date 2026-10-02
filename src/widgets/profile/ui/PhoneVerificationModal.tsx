@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { AlertCircle, Loader2, ShieldCheck, X } from "lucide-react";
 import { userApi } from "@/entities/user";
 import { extractErrorMessage } from "@/shared/api";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 
 interface PhoneVerificationModalProps {
   isOpen: boolean;
@@ -92,7 +93,7 @@ export const PhoneVerificationModal = ({
 
         <h3 className="text-lg font-bold text-slate-900">Подтверждение номера телефона</h3>
         <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-          Мы отправили 4-значный SMS-код на ваш номер <span className="font-bold text-slate-800">{phone}</span>.
+          Мы отправили 4-значный SMS-код на ваш номер <span className="font-bold text-slate-800">{formatPhoneMask(phone)}</span>.
         </p>
 
         {error ? (

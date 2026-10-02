@@ -6,43 +6,10 @@ import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { extractErrorMessage } from "@/shared/api";
-import { normalizePhoneNumber } from "@/shared/lib/format/phone";
+import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { cn, ROUTES } from "@/shared/config";
 
-const formatPhoneMask = (input: string): string => {
-  const digits = input.replace(/\D/g, "");
-  if (!digits) return "";
 
-  let localDigits = digits;
-  if (digits.startsWith("7") || digits.startsWith("8")) {
-    localDigits = digits.slice(1);
-  }
-  localDigits = localDigits.slice(0, 10);
-
-  let formatted = "+7";
-  if (localDigits.length > 0) {
-    formatted += " (" + localDigits.slice(0, 3);
-  }
-  if (localDigits.length >= 3) {
-    formatted += ") ";
-  }
-  if (localDigits.length > 3) {
-    formatted += localDigits.slice(3, 6);
-  }
-  if (localDigits.length >= 6) {
-    formatted += "-";
-  }
-  if (localDigits.length > 6) {
-    formatted += localDigits.slice(6, 8);
-  }
-  if (localDigits.length >= 8) {
-    formatted += "-";
-  }
-  if (localDigits.length > 8) {
-    formatted += localDigits.slice(8, 10);
-  }
-  return formatted;
-};
 
 export interface RegisterDraftData {
   name: string;
@@ -103,13 +70,7 @@ export const RegisterForm = () => {
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const raw = e.target.value;
-    const digits = raw.replace(/\D/g, "");
-    if (!digits || digits === "7" || digits === "8") {
-      handleChange("phone", "");
-      return;
-    }
-    const masked = formatPhoneMask(raw);
+    const masked = handlePhoneInputChange(e.target.value, values.phone);
     handleChange("phone", masked);
   };
 
@@ -119,11 +80,11 @@ export const RegisterForm = () => {
   const showPasswordMismatch = hasConfirmPassword && !passwordsMatch;
 
   // Check if all fields are valid for button activation
-  const phoneDigits = values.phone.replace(/\D/g, "");
+  const isPhoneComplete = normalizePhoneNumber(values.phone).length >= 11;
   const isEmailValid = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email.trim());
   const isFormComplete =
     values.name.trim().length >= 2 &&
-    phoneDigits.length === 11 &&
+    isPhoneComplete &&
     isEmailValid &&
     values.password.length >= 8 &&
     values.confirmPassword.length >= 8 &&

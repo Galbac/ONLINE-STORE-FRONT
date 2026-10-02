@@ -9,6 +9,7 @@ import { paymentApi, type PaymentDetailResponse } from "@/entities/payment";
 import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus, formatDeliveryType } from "@/shared/lib/format";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 
 interface AdminOrderDetailsViewProps {
   initialOrder: AdminOrderDetailResponse;
@@ -253,7 +254,7 @@ export const AdminOrderDetailsView = ({
           <Card title="Клиент и контакты">
             <div className="grid gap-4 md:grid-cols-2">
               <DetailRow label="Имя" value={order.customer.name} />
-              <DetailRow label="Телефон" value={order.customer.phone} />
+              <DetailRow label="Телефон" value={formatPhoneMask(order.customer.phone)} />
               <DetailRow label="Email" value={order.customer.email ?? "-"} />
               <DetailRow label="ID клиента" value={String(order.customer.id)} />
             </div>

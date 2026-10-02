@@ -12,6 +12,7 @@ export interface PublicStoreSettingsResponse {
   schedule?: DayScheduleItem[] | null;
   is_open_now?: boolean;
   current_status_text?: string | null;
+  default_city?: string | null;
   online_payment_enabled: boolean;
   pay_on_delivery_enabled: boolean;
   maintenance_mode: boolean;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Eye, Search } from "lucide-react";
 import type { AdminUserListItemResponse, AdminUserListResponse } from "@/entities/admin-user";
 import { ROUTES } from "@/shared/config";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { toPriceFormat } from "@/shared/lib/format";
 
 export interface AdminUserFilters {
@@ -175,7 +176,7 @@ const UserRow = ({ user }: { user: AdminUserListItemResponse }) => {
         <p className="text-text-muted mt-1 text-xs">ID: {user.id}</p>
       </TableCell>
       <TableCell>
-        <p className="text-text-primary font-bold">{user.phone}</p>
+        <p className="text-text-primary font-bold">{formatPhoneMask(user.phone)}</p>
         <p className="text-text-muted mt-1 text-xs">{user.email ?? "-"}</p>
       </TableCell>
       <TableCell>

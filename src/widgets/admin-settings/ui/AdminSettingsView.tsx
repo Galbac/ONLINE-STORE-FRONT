@@ -11,7 +11,9 @@ import {
 } from "@/entities/admin-settings";
 import { AdminApiError } from "@/shared/api";
 import { localizeErrorMessage } from "@/shared/lib/format";
+import { notifySettingsUpdated } from "@/entities/settings";
 import { WeeklyScheduleEditor } from "./WeeklyScheduleEditor";
+import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 
 interface AdminSettingsViewProps {
   settings: AdminSettingsResponse;
@@ -47,6 +49,7 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
         if (response.schedule) setSchedule(response.schedule);
         if (response.working_hours) setWorkingHours(response.working_hours);
         setMessage("Общие настройки сохранены.");
+        notifySettingsUpdated();
       })
       .catch((updateError: unknown) => {
         setError(getSettingsErrorMessage(updateError));
@@ -243,20 +246,45 @@ const Input = ({
   required?: boolean;
   step?: string | undefined;
   type?: string;
-}) => (
-  <label className="block">
-    <span className="mb-2 block text-sm font-bold">{label}</span>
-    <input
-      className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm transition outline-none"
-      defaultValue={defaultValue}
-      min={min}
-      name={name}
-      required={required}
-      step={step}
-      type={type}
-    />
-  </label>
-);
+}) => {
+  const isPhone = name === "phone" || type === "tel";
+  const [val, setVal] = useState(() => (defaultValue && isPhone ? formatPhoneMask(defaultValue) : defaultValue ?? ""));
+
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-bold">{label}</span>
+      <input
+        className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm transition outline-none"
+        name={name}
+        required={required}
+        min={min}
+        step={step}
+        type={isPhone ? "tel" : type}
+        placeholder={isPhone ? "+7 (___) ___-__-__" : undefined}
+        maxLength={isPhone ? 18 : undefined}
+        autoComplete={isPhone ? "tel" : undefined}
+        value={val}
+        onChange={(e) => {
+          if (isPhone) {
+            setVal(handlePhoneInputChange(e.target.value, val));
+          } else {
+            setVal(e.target.value);
+          }
+        }}
+        onFocus={() => {
+          if (isPhone && !val) {
+            setVal("+7 (");
+          }
+        }}
+        onBlur={() => {
+          if (isPhone && (val === "+7 (" || val === "+7")) {
+            setVal("");
+          }
+        }}
+      />
+    </label>
+  );
+};
 
 const Textarea = ({
   defaultValue,
@@ -325,7 +353,7 @@ const getSettingsPayload = (
     min_order_amount: getRequiredFormValue(formData, "min_order_amount"),
     online_payment_enabled: getBooleanFormValue(formData, "online_payment_enabled"),
     pay_on_delivery_enabled: getBooleanFormValue(formData, "pay_on_delivery_enabled"),
-    phone: getNullableFormValue(formData, "phone"),
+    phone: formData.get("phone") ? normalizePhoneNumber(getRequiredFormValue(formData, "phone")) || null : null,
     pickup_enabled: getBooleanFormValue(formData, "pickup_enabled"),
     shop_name: getRequiredFormValue(formData, "shop_name"),
     working_hours: getNullableFormValue(formData, "working_hours"),

@@ -9,6 +9,7 @@ import {
 } from "@/entities/admin-delivery";
 import { ROUTES } from "@/shared/config";
 import { getAdminErrorMessage } from "@/shared/api";
+import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { DeliveryTabs } from "@/widgets/admin-delivery-settings";
 import { Filters, Pagination, type AdminDeliveryFilters } from "@/widgets/admin-delivery-zones";
 
@@ -202,7 +203,7 @@ const PickupPointRow = ({
         <p className="text-text-muted mt-1 text-xs">{point.address}</p>
       </TableCell>
       <TableCell>{point.working_hours ?? "-"}</TableCell>
-      <TableCell>{point.phone ?? "-"}</TableCell>
+      <TableCell>{point.phone ? formatPhoneMask(point.phone) : "-"}</TableCell>
       <TableCell>
         {point.latitude && point.longitude ? `${point.latitude}, ${point.longitude}` : "-"}
       </TableCell>
@@ -297,20 +298,45 @@ const Input = ({
   required?: boolean;
   step?: string | undefined;
   type?: string;
-}) => (
-  <label className="block">
-    <span className="mb-2 block text-sm font-bold">{label}</span>
-    <input
-      className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm transition outline-none"
-      defaultValue={defaultValue}
-      min={min}
-      name={name}
-      required={required}
-      step={step}
-      type={type}
-    />
-  </label>
-);
+}) => {
+  const isPhone = name === "phone" || type === "tel";
+  const [val, setVal] = useState(() => (defaultValue && isPhone ? formatPhoneMask(defaultValue) : defaultValue ?? ""));
+
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-bold">{label}</span>
+      <input
+        className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm transition outline-none"
+        name={name}
+        required={required}
+        min={min}
+        step={step}
+        type={isPhone ? "tel" : type}
+        placeholder={isPhone ? "+7 (___) ___-__-__" : undefined}
+        maxLength={isPhone ? 18 : undefined}
+        autoComplete={isPhone ? "tel" : undefined}
+        value={val}
+        onChange={(e) => {
+          if (isPhone) {
+            setVal(handlePhoneInputChange(e.target.value, val));
+          } else {
+            setVal(e.target.value);
+          }
+        }}
+        onFocus={() => {
+          if (isPhone && !val) {
+            setVal("+7 (");
+          }
+        }}
+        onBlur={() => {
+          if (isPhone && (val === "+7 (" || val === "+7")) {
+            setVal("");
+          }
+        }}
+      />
+    </label>
+  );
+};
 
 const SelectBoolean = ({
   defaultValue,
@@ -408,7 +434,7 @@ const getPickupPointPayload = (formData: FormData) => ({
   latitude: getNullableFormValue(formData, "latitude"),
   longitude: getNullableFormValue(formData, "longitude"),
   name: getRequiredFormValue(formData, "name"),
-  phone: getNullableFormValue(formData, "phone"),
+  phone: formData.get("phone") ? normalizePhoneNumber(getRequiredFormValue(formData, "phone")) || null : null,
   sort_order: getNumberFormValue(formData, "sort_order"),
   working_hours: getNullableFormValue(formData, "working_hours"),
 });

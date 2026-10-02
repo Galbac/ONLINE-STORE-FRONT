@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { CheckCircle2, Mail, MessageSquare, Phone, Send } from "lucide-react";
 import { apiClient, getStoredAdminAccessToken } from "@/shared/api";
 import { Button } from "@/shared/ui";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 
 interface FeedbackItem {
   id: number;
@@ -77,7 +78,7 @@ export default function AdminFeedbackPage() {
                   <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
                     <span>{f.name}</span>
                     {f.email ? <span className="flex items-center gap-1"><Mail size={12} /> {f.email}</span> : null}
-                    {f.phone ? <span className="flex items-center gap-1"><Phone size={12} /> {f.phone}</span> : null}
+                    {f.phone ? <span className="flex items-center gap-1"><Phone size={12} /> {formatPhoneMask(f.phone)}</span> : null}
                     {f.order_id ? <span className="rounded bg-slate-100 px-1.5 py-0.5 font-bold">Заказ #{f.order_id}</span> : null}
                   </div>
                 </div>

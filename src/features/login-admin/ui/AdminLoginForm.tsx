@@ -5,6 +5,7 @@ import { AlertCircle, Eye, EyeOff, Loader2, LockKeyhole, ShieldCheck, UserRound 
 import { adminAuthApi } from "@/entities/admin-auth";
 import { AdminApiError, storeAdminAuthTokens } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
+import { handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 
 interface AdminLoginFormValues {
   login: string;
@@ -51,8 +52,13 @@ export const AdminLoginForm = () => {
       try {
         setErrorMessage(null);
   
+        const trimmedLogin = values.login.trim();
+        const loginToSubmit = trimmedLogin.includes("@")
+          ? trimmedLogin.toLowerCase()
+          : normalizePhoneNumber(trimmedLogin);
+
         const response = await adminAuthApi.login({
-          login: values.login.trim(),
+          login: loginToSubmit,
           password: values.password,
         });
 
@@ -96,10 +102,17 @@ export const AdminLoginForm = () => {
               className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
               autoComplete="username"
               name="login"
-              placeholder="Введите email или телефон"
+              placeholder="user@example.com или +7 (___) ___-__-__"
               type="text"
               value={values.login}
-              onChange={(event) => handleChange("login", event.target.value)}
+              onChange={(event) => {
+                const val = event.target.value;
+                if (!val.includes("@") && (/^\+?\d/.test(val) || val.startsWith("+"))) {
+                  handleChange("login", handlePhoneInputChange(val, values.login));
+                } else {
+                  handleChange("login", val);
+                }
+              }}
             />
             <UserRound className="text-slate-400 transition-colors group-focus-within:text-emerald-600 shrink-0" size={18} />
           </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Check, ChevronDown, Clock, MapPin, Phone, Search, Store, X } from "lucide-react";
 import { deliveryApi, useStoreBranch, type PickupPointResponse } from "@/entities/delivery";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 
 export const StoreBranchSelector = () => {
   const { selectedStore, setSelectedStore } = useStoreBranch();
@@ -170,7 +171,7 @@ export const StoreBranchSelector = () => {
                           {store.phone && (
                             <div className="flex items-center gap-1.5 text-xs text-slate-500">
                               <Phone size={12} className="text-slate-400 shrink-0" />
-                              <span>{store.phone}</span>
+                              <span>{formatPhoneMask(store.phone)}</span>
                             </div>
                           )}
                         </div>

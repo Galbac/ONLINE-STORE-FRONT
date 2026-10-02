@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { Check, Phone, Truck } from "lucide-react";
 import { apiClient, getStoredAdminAccessToken } from "@/shared/api";
 import { toPriceFormat } from "@/shared/lib/format";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { Button } from "@/shared/ui";
 
 interface CourierOrderItem {
@@ -97,7 +98,7 @@ export default function AdminCourierPage() {
                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1">
                   <span>{o.customer_name}</span>
                   <a href={`tel:${o.customer_phone}`} className="flex items-center gap-1 font-bold text-slate-700 hover:text-emerald-700">
-                    <Phone size={12} /> {o.customer_phone}
+                    <Phone size={12} /> {formatPhoneMask(o.customer_phone)}
                   </a>
                   <span>К оплате / сумма: {toPriceFormat(o.final_price)}</span>
                 </div>

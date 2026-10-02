@@ -9,7 +9,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiClient, extractErrorMessage } from "@/shared/api";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
-import { normalizePhoneNumber } from "@/shared/lib/format/phone";
 import {
   Calendar,
   Check,
@@ -37,7 +36,8 @@ import { orderApi, type OrderCreateRequest, type OrderCreateResponse } from "@/e
 import { paymentApi, type PaymentCreateResponse } from "@/entities/payment";
 import type { AddressListResponse, AddressResponse } from "@/entities/profile";
 import { userApi, type UserMeResponse } from "@/entities/user";
-import { formatPhoneMask } from "@/shared/lib/format/phone";
+import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
+import { useDynamicStoreInfo } from "@/entities/settings";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Button, Container } from "@/shared/ui";
@@ -82,6 +82,7 @@ export const CheckoutView = ({
   timeSlots,
   currentUser,
 }: CheckoutViewProps) => {
+  const { isMaintenance, statusText } = useDynamicStoreInfo();
   const defaultAddress =
     addresses.items.find((address) => address.is_default) ?? addresses.items[0];
   const { selectedStore } = useStoreBranch();
@@ -198,7 +199,7 @@ export const CheckoutView = ({
   const minOrderAmount = Number(deliveryCalculation.min_order_amount || deliveryOptions.delivery.min_order_amount || 1000);
   const isMinOrderMet = itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
-  const isStep1Done = Boolean(contact.name.trim().length >= 2 && contact.phone.trim().length >= 10);
+  const isStep1Done = Boolean(contact.name.trim().length >= 2 && normalizePhoneNumber(contact.phone).length >= 11);
   const isStep2Done = Boolean(deliveryType === "delivery" || deliveryType === "pickup");
   const isStep3Done = deliveryType === "pickup" ? Boolean(selectedPickupPointId) : Boolean(selectedAddressId);
   const isStep4Done = Boolean(
@@ -238,9 +239,13 @@ export const CheckoutView = ({
   };
 
   const handleContactChange = (field: keyof ContactState, value: string): void => {
+    let nextValue = value;
+    if (field === "phone") {
+      nextValue = handlePhoneInputChange(value, contact.phone);
+    }
     setContact((current) => ({
       ...current,
-      [field]: value,
+      [field]: nextValue,
     }));
   };
 
@@ -384,6 +389,13 @@ export const CheckoutView = ({
 
         <h1 className="text-text-primary mb-7 text-4xl font-bold md:text-5xl">Оформление заказа</h1>
 
+        {isMaintenance ? (
+          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 font-semibold text-amber-900 text-sm flex items-center gap-3">
+            <AlertCircle className="text-amber-600 shrink-0" size={20} />
+            <span>{statusText || "Магазин закрыт на техническое обслуживание"}. Оформление заказов временно приостановлено.</span>
+          </div>
+        ) : null}
+
         <CheckoutSteps currentStep={currentStep} completedSteps={completedSteps} onStepClick={handleScrollToStep} />
 
         {errorMessage ? (
@@ -408,6 +420,19 @@ export const CheckoutView = ({
                   label="Телефон"
                   value={contact.phone}
                   onChange={(value) => handleContactChange("phone", value)}
+                  type="tel"
+                  placeholder="+7 (___) ___-__-__"
+                  maxLength={18}
+                  onFocus={() => {
+                    if (!contact.phone) {
+                      handleContactChange("phone", "+7 (");
+                    }
+                  }}
+                  onBlur={() => {
+                    if (contact.phone === "+7 (" || contact.phone === "+7") {
+                      handleContactChange("phone", "");
+                    }
+                  }}
                 />
                 <Field
                   label="Email"
@@ -830,10 +855,14 @@ interface FieldProps {
   label: string;
   value: string;
   type?: string;
+  placeholder?: string;
+  maxLength?: number;
+  onFocus?: () => void;
+  onBlur?: () => void;
   onChange: (value: string) => void;
 }
 
-const Field = ({ label, onChange, type = "text", value }: FieldProps) => {
+const Field = ({ label, onChange, onFocus, onBlur, placeholder, maxLength, type = "text", value }: FieldProps) => {
   return (
     <label className="block">
       <span className="text-text-secondary mb-2 block text-sm">{label}</span>
@@ -841,6 +870,10 @@ const Field = ({ label, onChange, type = "text", value }: FieldProps) => {
         className="border-border focus:border-accent-primary h-12 w-full rounded-lg border px-4 text-sm transition outline-none"
         required={label !== "Email"}
         type={type}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        onFocus={onFocus}
+        onBlur={onBlur}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -1390,6 +1423,7 @@ const OrderSummary = ({
   marketingConsent,
   onMarketingConsentChange,
 }: OrderSummaryProps) => {
+  const { isMaintenance } = useDynamicStoreInfo();
   const finalWithDelivery = Number(summary.final_price) + Number(deliveryPrice);
   const freeFrom = Number(deliveryCalculation.free_delivery_from || 3000);
   const amountLeft = Math.max(0, freeFrom - itemsTotal);
@@ -1484,6 +1518,7 @@ const OrderSummary = ({
         type="submit"
         disabled={
           isPending || 
+          isMaintenance ||
           itemsCount === 0 || 
           !isMinOrderMet ||
           Boolean(order)

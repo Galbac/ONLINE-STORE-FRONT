@@ -7,6 +7,7 @@ import { Eye, EyeOff, Loader2, LockKeyhole, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
+import { handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { storeAuthTokens } from "@/shared/ui";
 
 interface LoginFormValues {
@@ -56,8 +57,13 @@ export const LoginForm = () => {
     setStatus("submitting");
 
     try {
+      const trimmedLogin = values.login.trim();
+      const loginToSubmit = trimmedLogin.includes("@")
+        ? trimmedLogin.toLowerCase()
+        : normalizePhoneNumber(trimmedLogin);
+
       const response = await authApi.login({
-        login: values.login.trim(),
+        login: loginToSubmit,
         password: values.password,
       });
 
@@ -110,10 +116,17 @@ export const LoginForm = () => {
               autoComplete="username"
               name="login"
               disabled={isLoading}
-              placeholder="user@example.com или +7 999 000-00-00"
+              placeholder="user@example.com или +7 (___) ___-__-__"
               type="text"
               value={values.login}
-              onChange={(event) => handleChange("login", event.target.value)}
+              onChange={(event) => {
+                const val = event.target.value;
+                if (!val.includes("@") && (/^\+?\d/.test(val) || val.startsWith("+"))) {
+                  handleChange("login", handlePhoneInputChange(val, values.login));
+                } else {
+                  handleChange("login", val);
+                }
+              }}
             />
           </div>
         </div>

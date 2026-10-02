@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
-import { formatPhoneMask } from "@/shared/lib/format/phone";
+import { handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { Button, Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
@@ -108,7 +108,7 @@ export default function FeedbackPage() {
   }, [photos]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const masked = formatPhoneMask(e.target.value);
+    const masked = handlePhoneInputChange(e.target.value, phone);
     setPhone(masked);
     if (formErrors.phone) {
       setFormErrors((prev) => ({ ...prev, phone: "" }));
@@ -247,7 +247,7 @@ export default function FeedbackPage() {
           {
             name: name.trim(),
             email: email.trim() || null,
-            phone: phone.trim() || null,
+            phone: phone.trim() ? normalizePhoneNumber(phone) : null,
             subject: subject,
             message: finalMessage,
             order_id: orderId ? Number(orderId) : null,
@@ -482,14 +482,25 @@ export default function FeedbackPage() {
                       <input
                         id="feedback-phone"
                         type="tel"
+                        maxLength={18}
                         className={cn(
                           "w-full rounded-xl border bg-slate-50/50 p-3 text-xs outline-none transition focus:bg-white",
                           formErrors.phone
                             ? "border-rose-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-400"
                             : "border-slate-200 focus:border-emerald-500",
                         )}
-                        placeholder="+7 (999) 000-00-00"
+                        placeholder="+7 (___) ___-__-__"
                         value={phone}
+                        onFocus={() => {
+                          if (!phone) {
+                            setPhone("+7 (");
+                          }
+                        }}
+                        onBlur={() => {
+                          if (phone === "+7 (" || phone === "+7") {
+                            setPhone("");
+                          }
+                        }}
                         onChange={handlePhoneChange}
                         autoComplete="tel"
                       />

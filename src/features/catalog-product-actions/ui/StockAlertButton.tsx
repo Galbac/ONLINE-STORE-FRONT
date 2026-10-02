@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Bell, Check, Loader2, X } from "lucide-react";
 import { apiClient, extractErrorMessage } from "@/shared/api";
+import { handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { Button } from "@/shared/ui/button";
 
 interface StockAlertButtonProps {
@@ -43,7 +44,7 @@ export const StockAlertButton = ({
         const isEmail = trimmed.includes("@");
         await apiClient.post(`/api/products/${productId}/subscribe-stock`, {
           email: isEmail ? trimmed : null,
-          phone: isEmail ? null : trimmed,
+          phone: isEmail ? null : normalizePhoneNumber(trimmed),
         });
         setIsSuccess(true);
         setTimeout(() => {
@@ -105,9 +106,16 @@ export const StockAlertButton = ({
                   <input
                     type="text"
                     required
-                    placeholder="ivan@mail.ru или +7 (999) 000-00-00"
+                    placeholder="ivan@mail.ru или +7 (___) ___-__-__"
                     value={contact}
-                    onChange={(e) => setContact(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val.includes("@") && (/^\+?\d/.test(val) || val.startsWith("+"))) {
+                        setContact(handlePhoneInputChange(val, contact));
+                      } else {
+                        setContact(val);
+                      }
+                    }}
                     className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                   />
                   {errorMessage && (

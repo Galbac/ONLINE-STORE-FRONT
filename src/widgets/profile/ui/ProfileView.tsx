@@ -31,7 +31,9 @@ import {
 import type { ProfileSummaryResponse } from "@/entities/profile";
 import type { UserMeResponse } from "@/entities/user";
 import { userApi } from "@/entities/user";
-import { ROUTES, STORE_INFO } from "@/shared/config";
+import { ROUTES } from "@/shared/config";
+import { useDynamicStoreInfo } from "@/entities/settings";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container } from "@/shared/ui";
 import { ProfileLogoutButton } from "./ProfileLogoutButton";
@@ -66,6 +68,7 @@ const serviceBenefits = [
 ] as const;
 
 export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) => {
+  const { name, legalName, inn, ogrn, city, phone } = useDynamicStoreInfo();
   const [currentUser, setCurrentUser] = useState<UserMeResponse>(initialUser);
   const recentOrdersTotal = profile.recent_orders.reduce((total, order) => {
     return total + Number(order.final_price);
@@ -260,9 +263,9 @@ export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) =>
           </div>
 
           <div className="mt-6 text-center text-[11px] text-slate-400 space-y-1 pb-4">
-            <p className="font-semibold text-slate-500">© 2026 {STORE_INFO.name}. Все права защищены.</p>
-            <p>{STORE_INFO.legalName} · ИНН {STORE_INFO.inn} · ОГРНИП {STORE_INFO.ogrn}</p>
-            <p>г. {STORE_INFO.city} · {STORE_INFO.phone}</p>
+            <p className="font-semibold text-slate-500">© 2026 {name}. Все права защищены.</p>
+            <p>{legalName} · ИНН {inn} · ОГРНИП {ogrn}</p>
+            <p>г. {city} · {formatPhoneMask(phone)}</p>
           </div>
         </section>
       </Container>
@@ -314,7 +317,7 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
             <span className="text-text-secondary">Телефон:</span>
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-text-primary font-bold font-mono text-xs sm:text-sm">
-                {showPhone ? user.phone : maskPhone(user.phone)}
+                {showPhone ? formatPhoneMask(user.phone) : maskPhone(user.phone)}
               </span>
               <button
                 type="button"

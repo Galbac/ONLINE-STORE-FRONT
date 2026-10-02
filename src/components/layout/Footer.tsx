@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Mail, MapPin, Phone, QrCode, Sparkles } from "lucide-react";
 import { ROUTES, STORE_INFO } from "@/shared/config";
+import { useDynamicStoreInfo } from "@/entities/settings";
 import { Container, PwaInstallButton } from "@/shared/ui";
 import { StoreScheduleBadge } from "@/widgets/footer/ui/StoreScheduleBadge";
 
@@ -32,6 +35,7 @@ export interface FooterProps {
 }
 
 export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) => {
+  const { name, phone, phoneHref, email, city, legalName, inn, ogrn } = useDynamicStoreInfo();
   return (
     <footer className="hidden lg:block mt-16 border-t border-slate-200 bg-white text-slate-600">
       <Container className="py-12">
@@ -44,7 +48,7 @@ export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) =>
                 <Sparkles size={18} />
               </span>
               <span className="text-xl font-black text-slate-900 tracking-tight">
-                {STORE_INFO.name}
+                {name}
               </span>
             </Link>
             {/* Исправлена типографика: нет опечатки "день!." */}
@@ -87,11 +91,11 @@ export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) =>
 
         {/* Нижняя часть футера: реквизиты, контакты, платежные системы */}
         <div className="mt-12 flex flex-col gap-6 border-t border-slate-100 pt-8 text-xs text-slate-500 lg:flex-row lg:items-center lg:justify-between">
-          {/* Копирайт и реквизиты: исправлен лишний пробел "© 2026 Победа." */}
+          {/* Копирайт и реквизиты: исправлен лишний пробел "© 2026 {name}." */}
           <div className="space-y-1">
-            <p className="font-semibold text-slate-700">© 2026 Победа. Все права защищены.</p>
+            <p className="font-semibold text-slate-700">© 2026 {name}. Все права защищены.</p>
             <p className="text-[11px] text-slate-400">
-              {STORE_INFO.legalName} · ИНН {STORE_INFO.inn} · ОГРНИП {STORE_INFO.ogrn}
+              {legalName} · ИНН {inn} · ОГРНИП {ogrn}
             </p>
           </div>
 
@@ -99,23 +103,23 @@ export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) =>
           <div className="flex flex-wrap items-center gap-4 text-xs font-medium">
             <a
               className="inline-flex items-center gap-1.5 text-slate-700 transition hover:text-emerald-700"
-              href={STORE_INFO.phoneHref}
+              href={phoneHref}
             >
               <Phone size={14} className="text-emerald-600 shrink-0" />
-              <span>{STORE_INFO.phone}</span>
+              <span>{phone}</span>
             </a>
             <span className="text-slate-300">•</span>
             <a
               className="inline-flex items-center gap-1.5 text-slate-700 transition hover:text-emerald-700"
-              href={`mailto:${STORE_INFO.email}`}
+              href={`mailto:${email}`}
             >
               <Mail size={14} className="text-emerald-600 shrink-0" />
-              <span>{STORE_INFO.email}</span>
+              <span>{email}</span>
             </a>
             <span className="text-slate-300">•</span>
             <span className="inline-flex items-center gap-1.5 text-slate-500">
               <MapPin size={14} className="text-emerald-600 shrink-0" />
-              <span>{STORE_INFO.city}</span>
+              <span>{city}</span>
             </span>
           </div>
 

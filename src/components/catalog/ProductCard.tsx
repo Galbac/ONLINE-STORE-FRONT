@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import type { ProductShortResponse } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton, StockAlertButton } from "@/features/catalog-product-actions";
-import { QuickViewButton } from "@/features/quick-view";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 
@@ -260,10 +259,7 @@ export const ProductCard = ({
           )}
         </Link>
 
-        {/* Кнопка «Быстрый просмотр» по центру внизу фото (плавно только по ховеру десктопа) */}
-        <div className="absolute inset-x-2 bottom-2 z-10 hidden sm:flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
-          <QuickViewButton product={product} initialInCart={initialInCart} />
-        </div>
+
       </div>
 
       {/* 2. Категория и индикатор статуса («В наличии») */}

@@ -1,3 +1,4 @@
+export { useStoreBranch } from "./model/storeBranchStore";
 export { deliveryApi } from "./api/deliveryApi";
 export type {
   DeliveryCalculateRequest,

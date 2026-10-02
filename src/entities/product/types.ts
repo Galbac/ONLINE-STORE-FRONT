@@ -1,3 +1,11 @@
+export interface StoreStockResponse {
+  store_id: number;
+  store_name: string;
+  address: string;
+  stock_quantity: string | number;
+  is_available: boolean;
+}
+
 export interface ProductCategoryShortResponse {
   id: number;
   name: string;
@@ -143,4 +151,5 @@ export interface ProductDetailResponse {
   breadcrumbs?: ProductBreadcrumbResponse[] | null;
   similar?: ProductShortResponse[] | null;
   seo?: ProductSeoResponse | null;
+  stores_stock?: StoreStockResponse[];
 }

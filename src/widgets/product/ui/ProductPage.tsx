@@ -1,3 +1,4 @@
+import { ProductStoresStock } from "./ProductStoresStock";
 import { ProductReviews } from "@/widgets/product-reviews";
 import { ProductGallery } from "./ProductGallery";
 import { ProductArticleCopy } from "./ProductArticleCopy";
@@ -167,6 +168,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               </div>
 
               <ProductUnitInfo product={product} />
+              <ProductStoresStock storesStock={product.stores_stock} unit={unitLabel(product.unit)} />
 
               {/* Halal Certified Badge for Meat */}
               {!isPork && (product.is_halal === true || (product.category?.slug === "myaso-i-ptitsa" && (nameLower.includes("кури") || nameLower.includes("говяд") || nameLower.includes("индейк") || nameLower.includes("баран") || nameLower.includes("цыплен")))) ? (

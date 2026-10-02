@@ -21,6 +21,24 @@ interface AdminShellProps {
   roles: AdminRoleResponse[];
 }
 
+const getActiveAdminNavigationItem = (
+  items: typeof adminNavigationItems,
+  pathname: string,
+) => {
+  // 1. Exact match takes highest priority
+  const exact = items.find((item) => item.href === pathname);
+  if (exact) return exact;
+
+  // 2. Longest matching prefix for subroutes (e.g., /admin/orders/assembly vs /admin/orders)
+  const matches = items.filter(
+    (item) => item.href !== ROUTES.ADMIN_DASHBOARD && pathname.startsWith(`${item.href}/`),
+  );
+
+  if (matches.length === 0) return null;
+
+  return matches.sort((a, b) => b.href.length - a.href.length)[0];
+};
+
 export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) => {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -40,9 +58,8 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
     }))
     .filter((group) => group.items.length > 0);
 
-  const currentNavigationItem = adminNavigationItems.find((item) => {
-    return pathname === item.href || (item.href !== ROUTES.ADMIN_DASHBOARD && pathname.startsWith(`${item.href}/`));
-  });
+  const activeNavigationItem = getActiveAdminNavigationItem(adminNavigationItems, pathname);
+  const currentNavigationItem = activeNavigationItem;
   const canAccessCurrentRoute = currentNavigationItem
     ? canAccessAdminItem(currentNavigationItem, currentUser, permissions)
     : true;
@@ -153,12 +170,12 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
                 </div>
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== ROUTES.ADMIN_DASHBOARD && pathname.startsWith(`${item.href}/`));
+                  const isActive = activeNavigationItem?.href === item.href;
 
                   return (
                     <Link
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      prefetch={true}
                       className={cn(
                         "flex h-9 w-full items-center gap-2.5 rounded-xl px-3 text-xs font-bold transition-all",
                         isActive

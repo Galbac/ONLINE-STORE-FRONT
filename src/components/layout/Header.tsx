@@ -1,5 +1,6 @@
 "use client";
 
+import { StoreBranchSelector } from "@/widgets/header/ui/StoreBranchSelector";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Clock, LayoutGrid, MapPin, Phone } from "lucide-react";
@@ -42,7 +43,7 @@ export const Header = () => {
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md transition-all duration-300 shadow-xs">
       {/* 1. Верхний микро-бар (с интеллектуальным скрытием при скролле) */}
       <div
-        className={`border-b border-slate-100 bg-slate-50/70 text-xs text-slate-500 transition-all duration-300 overflow-hidden ${
+        className={`hidden sm:block border-b border-slate-100 bg-slate-50/70 text-xs text-slate-500 transition-all duration-300 overflow-hidden ${
           isScrolledCompact ? "max-h-0 py-0 opacity-0 border-transparent" : "max-h-12 py-1.5 opacity-100"
         }`}
       >
@@ -53,6 +54,7 @@ export const Header = () => {
               <MapPin size={13} className="text-emerald-600 shrink-0" />
               <span>{STORE_INFO.city}</span>
             </span>
+            <StoreBranchSelector />
 
             {/* Скрываем длинный текст на мобильных устройствах (< md) */}
             <span className="hidden md:inline-flex items-center gap-3">
@@ -85,8 +87,13 @@ export const Header = () => {
           isScrolledCompact ? "py-2 sm:h-16 flex flex-col justify-center" : "py-3 sm:py-3.5"
         }`}
       >
-        <div className="grid grid-cols-[auto_auto_minmax(200px,1fr)_auto] items-center gap-3 max-lg:grid-cols-[1fr_auto] lg:gap-5">
-          <Logo />
+        <div className="flex flex-col gap-2.5 lg:grid lg:grid-cols-[auto_auto_minmax(200px,1fr)_auto] lg:items-center lg:gap-5">
+          <div className="flex items-center justify-between gap-3">
+            <Logo />
+            <div className="flex items-center gap-2 sm:hidden">
+              <StoreBranchSelector />
+            </div>
+          </div>
 
           <Link
             className="hidden h-11 items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 transition-all duration-200 hover:scale-102 hover:bg-emerald-700 active:scale-95 lg:inline-flex shrink-0"
@@ -96,13 +103,13 @@ export const Header = () => {
             Каталог
           </Link>
 
-          {/* Строка поиска: на мобилках занимает полную ширину */}
-          <div className="max-lg:order-3 max-lg:col-span-2 w-full">
+          {/* Строка поиска */}
+          <div className="w-full">
             <HeaderSearch />
           </div>
 
-          {/* Панель пользователя: скрыта на мобилках (< md), т.к. всё есть в BottomNav */}
-          <div className="hidden md:flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Панель пользователя: скрыта на мобилках и планшетах (< lg), т.к. корзина и избранное есть в BottomNav */}
+          <div className="hidden lg:flex items-center gap-1 sm:gap-2 shrink-0">
             <HeaderUserLink />
             <HeaderFavoritesLink />
             <HeaderCartLink />

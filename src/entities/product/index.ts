@@ -16,4 +16,5 @@ export type {
   ProductSimilarParams,
   ProductSimilarResponse,
   ProductShortResponse,
+  StoreStockResponse,
 } from "./types";

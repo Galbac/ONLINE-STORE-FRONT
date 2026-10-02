@@ -1,5 +1,6 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
@@ -83,7 +84,10 @@ export const CheckoutView = ({
 }: CheckoutViewProps) => {
   const defaultAddress =
     addresses.items.find((address) => address.is_default) ?? addresses.items[0];
-  const defaultPickupPoint = pickupPoints.items[0];
+  const { selectedStore } = useStoreBranch();
+  const defaultPickupPoint =
+    (selectedStore && pickupPoints.items.find((point) => point.id === selectedStore.id)) ??
+    pickupPoints.items[0];
   const firstAvailableSlot = timeSlots.items.find((slot) => slot.available) ?? timeSlots.items[0];
 
   // Автозаполнение известных данных пользователя

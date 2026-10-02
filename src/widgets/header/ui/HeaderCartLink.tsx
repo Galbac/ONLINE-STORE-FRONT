@@ -69,7 +69,7 @@ export const HeaderCartLink = () => {
   return (
     <Link
       onClick={handleClick}
-      className={`group relative hidden md:inline-flex items-center gap-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] ${
+      className={`group relative hidden lg:inline-flex items-center gap-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] ${
         hasItems
           ? "border border-emerald-500/30 bg-emerald-50/80 px-3 py-2 text-emerald-900 hover:border-emerald-500 hover:bg-emerald-100/90 shadow-2xs"
           : "p-2 text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"

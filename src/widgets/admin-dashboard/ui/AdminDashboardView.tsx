@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -85,9 +85,18 @@ export const AdminDashboardView = ({
   const [customStartDate, setCustomStartDate] = useState(filters.dateFrom);
   const [customEndDate, setCustomEndDate] = useState(filters.dateTo);
 
+  const isFirstMount = useRef(true);
+
   // Fetch data on filter change
   useEffect(() => {
     let isCancelled = false;
+
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      if (initialAnalytics) {
+        return;
+      }
+    }
 
     const fetchFilteredData = async () => {
       setIsLoading(true);

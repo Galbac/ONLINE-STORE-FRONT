@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import { productApi, type ProductListParams, type ProductListResponse } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { cn } from "@/shared/config";
 import { ProductCard, type ProductViewMode } from "@/shared/ui";
-import { ProductCardSkeleton } from "@/shared/ui/product-card/ProductCard";
 
 interface CatalogProductFeedProps {
   initialProducts: ProductListResponse;
@@ -119,31 +119,9 @@ export const CatalogProductFeed = ({
           />
         ))}
       </div>
-      {loading ? (
-        <div className={gridClassName} aria-hidden="true">
-          {Array.from({ length: viewMode === "grid" ? 4 : 2 }, (_, index) =>
-            viewMode === "grid" ? (
-              <ProductCardSkeleton key={index} />
-            ) : (
-              <div
-                key={index}
-                className="grid animate-pulse gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 sm:grid-cols-[160px_minmax(0,1fr)]"
-              >
-                <div className="aspect-square rounded-xl bg-slate-200/70" />
-                <div className="space-y-4">
-                  <div className="h-5 w-3/4 rounded bg-slate-200/70" />
-                  <div className="h-4 w-1/2 rounded bg-slate-200/70" />
-                  <div className="h-6 w-20 rounded bg-slate-200/70" />
-                  <div className="h-10 w-32 rounded-xl bg-slate-200/70" />
-                </div>
-              </div>
-            ),
-          )}
-        </div>
-      ) : null}
       <div
         ref={sentinelRef}
-        className="mt-6 flex min-h-12 flex-col items-center justify-center gap-3"
+        className="mt-6 flex min-h-12 flex-col items-center justify-center gap-3 [overflow-anchor:none]"
         role="status"
         aria-live="polite"
       >
@@ -158,15 +136,19 @@ export const CatalogProductFeed = ({
               Повторить загрузку
             </button>
           </>
-        ) : loading ? (
-          <p className="text-sm text-slate-500">Загружаем товары…</p>
         ) : hasMore ? (
           <button
             type="button"
             onClick={() => void loadMore()}
-            className="rounded-xl px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+            disabled={loading}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-wait disabled:opacity-70"
           >
-            Показать ещё
+            {loading ? (
+              <>
+                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                Загружаем товары…
+              </>
+            ) : "Показать ещё"}
           </button>
         ) : null}
       </div>

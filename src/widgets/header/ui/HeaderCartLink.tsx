@@ -60,43 +60,24 @@ export const HeaderCartLink = () => {
   const isAuth = hasValidStoredAccessToken();
 
   const hasItems = itemsCount > 0;
-  const shouldHighlight = isActive;
-
   return (
     <Link
-      aria-current={shouldHighlight ? "page" : undefined}
-      className={`group relative hidden lg:inline-flex items-center gap-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] ${
-        shouldHighlight
-          ? "border border-emerald-500/30 bg-emerald-50/80 px-3 py-2 text-emerald-900 shadow-2xs"
-          : "p-2 text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
+      aria-current={isActive ? "page" : undefined}
+      className={`group relative hidden flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold transition active:scale-95 lg:flex ${
+        isActive ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
       }`}
       href={isAuth ? ROUTES.CART : `${ROUTES.LOGIN}?next=${encodeURIComponent(ROUTES.CART)}`}
       aria-label={hasItems ? `Корзина: ${itemsCount} товаров на ${toPriceFormat(cartTotal)}` : "Корзина"}
     >
-      <span className="relative flex shrink-0 items-center justify-center">
-        <ShoppingBag
-          size={20}
-          className="text-slate-700 transition-transform duration-200 group-hover:scale-110 group-hover:text-emerald-700"
-        />
+      <span className="relative mb-0.5 block">
+        <ShoppingBag size={20} className="transition-transform group-hover:scale-110" />
         {hasItems ? (
-          <span className="absolute -top-2 -right-2 flex size-4.5 min-w-4.5 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-black leading-none text-white shadow-sm ring-2 ring-white">
+          <span className="absolute -top-1.5 -right-2.5 flex size-4.5 min-w-4.5 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-extrabold leading-none text-white shadow-sm ring-2 ring-white">
             {formatCartCount(itemsCount)}
           </span>
         ) : null}
       </span>
-
-      {hasItems ? (
-        <div className="flex flex-col text-left leading-tight">
-          <span className="text-[11px] font-medium text-emerald-700">
-            {itemsCount} {formatItemsCount(itemsCount)}
-          </span>
-          <span className="text-xs font-black text-slate-900 tracking-tight">
-            {toPriceFormat(cartTotal)}
-          </span>
-        </div>
-      ) : (
-        <span className="text-xs font-semibold">Корзина</span>
-      )}
+      <span>Корзина</span>
     </Link>
   );
 };
@@ -109,13 +90,4 @@ const formatCartCount = (count: number): string => {
     return "99+";
   }
   return String(count);
-};
-
-const formatItemsCount = (count: number): string => {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod100 >= 11 && mod100 <= 19) return "товаров";
-  if (mod10 === 1) return "товар";
-  if (mod10 >= 2 && mod10 <= 4) return "товара";
-  return "товаров";
 };

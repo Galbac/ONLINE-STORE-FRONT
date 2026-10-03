@@ -31,6 +31,7 @@ import { QuickRepeatOrderBanner } from "./QuickRepeatOrderBanner";
 
 export const HomePage = async () => {
   const accessToken = await getAccessToken();
+  const storeId = await getSelectedStoreId();
   const defaultDeliveryOptions: DeliveryOptionsResponse = {
     delivery: {
       enabled: true,
@@ -64,9 +65,9 @@ export const HomePage = async () => {
   ] = await Promise.all([
     categoryApi.getTree().catch(() => ({ items: [] })),
     categoryApi.getList().catch(() => ({ items: [], total: 0, limit: 100, offset: 0 })),
-    productApi.getPopular().catch(() => ({ items: [] })),
-    discountApi.getProducts().catch(() => ({ items: [] })),
-    productApi.getNew().catch(() => ({ items: [] })),
+    productApi.getPopular(storeId).catch(() => ({ items: [] })),
+    discountApi.getProducts(storeId !== undefined ? { store_id: storeId } : {}).catch(() => ({ items: [] })),
+    productApi.getNew(storeId).catch(() => ({ items: [] })),
     discountApi.getActive().catch(() => ({ items: [] })),
     deliveryApi.getOptions().catch(() => defaultDeliveryOptions),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse).catch(() => emptyCartResponse),
@@ -172,6 +173,12 @@ export const HomePage = async () => {
       <Footer />
     </>
   );
+};
+
+const getSelectedStoreId = async (): Promise<number | undefined> => {
+  const cookieStore = await cookies();
+  const storeId = Number(cookieStore.get("current_store_id")?.value);
+  return Number.isInteger(storeId) && storeId > 0 ? storeId : undefined;
 };
 
 const Hero = ({ totalProducts }: { totalProducts: number }) => {

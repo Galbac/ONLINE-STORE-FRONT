@@ -22,4 +22,6 @@ export type {
   RepeatOrderWarningResponse,
   OrderTrackingResponse,
   OrderTrackingStep,
+  OrderReceiptItemResponse,
+  OrderReceiptResponse,
 } from "./types";

@@ -24,6 +24,10 @@ export interface CatalogSidebarProps {
   currentCategoryId?: number | undefined;
   currentParams: CatalogUrlParams;
   hasDiscount: boolean;
+  hasDiscountAvailable?: boolean | undefined;
+  hasHalalAvailable?: boolean | undefined;
+  discountCount?: number | undefined;
+  halalCount?: number | undefined;
   inStock?: boolean | undefined;
   isHalal?: boolean | undefined;
   minPrice?: string | undefined;
@@ -36,6 +40,10 @@ export const CatalogSidebar = ({
   currentCategoryId,
   currentParams,
   hasDiscount,
+  hasDiscountAvailable,
+  hasHalalAvailable,
+  discountCount,
+  halalCount,
   isHalal,
   maxPrice,
   minPrice,
@@ -43,7 +51,15 @@ export const CatalogSidebar = ({
 }: CatalogSidebarProps) => {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(true);
 
-  const halalActive = isHalal || currentParams.tag === "halal";
+  const halalActive = Boolean(isHalal || currentParams.tag === "halal");
+
+  // Показывать переключатель скидок только когда реально есть товары со скидкой (или фильтр уже активен)
+  const showDiscountToggle = hasDiscountAvailable !== undefined ? (hasDiscountAvailable || hasDiscount) : true;
+
+  // Показывать переключатель халяль только когда реально есть товары халяль в этой категории (или фильтр уже активен)
+  const showHalalToggle = hasHalalAvailable !== undefined ? (hasHalalAvailable || halalActive) : true;
+
+  const showParamsSection = showDiscountToggle || showHalalToggle;
 
   return (
     <aside className="w-full space-y-4">
@@ -128,60 +144,70 @@ export const CatalogSidebar = ({
         />
       </div>
 
-      {/* 3. Быстрые переключатели: «Товары со скидкой», «Халяль» (блок «в наличии» удален по задаче 6) */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs space-y-4">
-        <h3 className="text-sm font-bold text-slate-900">Параметры</h3>
+      {/* 3. Быстрые переключатели: «Товары со скидкой», «Халяль» — отображаются динамически, когда реально есть такие товары */}
+      {showParamsSection && (
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs space-y-4">
+          <h3 className="text-sm font-bold text-slate-900">Параметры</h3>
 
-        {/* Товары со скидкой */}
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <span className="block text-xs font-bold text-slate-800">🔥 Товары со скидкой</span>
-            <span className="text-[11px] text-slate-400">Только акции %</span>
-          </div>
-          <Link
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-              hasDiscount ? "bg-emerald-600" : "bg-slate-200"
-            }`}
-            href={buildCatalogHref({
-              ...currentParams,
-              has_discount: hasDiscount ? undefined : "true",
-              page: undefined,
-            })}
-            aria-label="Фильтр: товары со скидкой"
-          >
-            <span
-              className={`absolute top-0.5 grid size-5 place-items-center rounded-full bg-white shadow-xs transition-transform ${
-                hasDiscount ? "right-0.5" : "left-0.5"
-              }`}
-            />
-          </Link>
-        </div>
+          {/* Товары со скидкой */}
+          {showDiscountToggle && (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <span className="block text-xs font-bold text-slate-800">
+                  🔥 Товары со скидкой {discountCount !== undefined && discountCount > 0 ? `(${discountCount})` : ""}
+                </span>
+                <span className="text-[11px] text-slate-400">Только акции %</span>
+              </div>
+              <Link
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  hasDiscount ? "bg-emerald-600" : "bg-slate-200"
+                }`}
+                href={buildCatalogHref({
+                  ...currentParams,
+                  has_discount: hasDiscount ? undefined : "true",
+                  page: undefined,
+                })}
+                aria-label="Фильтр: товары со скидкой"
+              >
+                <span
+                  className={`absolute top-0.5 grid size-5 place-items-center rounded-full bg-white shadow-xs transition-transform ${
+                    hasDiscount ? "right-0.5" : "left-0.5"
+                  }`}
+                />
+              </Link>
+            </div>
+          )}
 
-        {/* Халяль */}
-        <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
-          <div>
-            <span className="block text-xs font-bold text-slate-800">🥩 Халяль</span>
-            <span className="text-[11px] text-slate-400">Сертифицированное мясо</span>
-          </div>
-          <Link
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-              halalActive ? "bg-emerald-600" : "bg-slate-200"
-            }`}
-            href={buildCatalogHref({
-              ...currentParams,
-              tag: halalActive ? undefined : "halal",
-              page: undefined,
-            })}
-            aria-label="Фильтр: халяль"
-          >
-            <span
-              className={`absolute top-0.5 grid size-5 place-items-center rounded-full bg-white shadow-xs transition-transform ${
-                halalActive ? "right-0.5" : "left-0.5"
-              }`}
-            />
-          </Link>
+          {/* Халяль */}
+          {showHalalToggle && (
+            <div className={`flex items-center justify-between gap-3 ${showDiscountToggle ? "pt-3 border-t border-slate-100" : ""}`}>
+              <div>
+                <span className="block text-xs font-bold text-slate-800">
+                  🥩 Халяль {halalCount !== undefined && halalCount > 0 ? `(${halalCount})` : ""}
+                </span>
+                <span className="text-[11px] text-slate-400">Сертифицированное мясо</span>
+              </div>
+              <Link
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  halalActive ? "bg-emerald-600" : "bg-slate-200"
+                }`}
+                href={buildCatalogHref({
+                  ...currentParams,
+                  tag: halalActive ? undefined : "halal",
+                  page: undefined,
+                })}
+                aria-label="Фильтр: халяль"
+              >
+                <span
+                  className={`absolute top-0.5 grid size-5 place-items-center rounded-full bg-white shadow-xs transition-transform ${
+                    halalActive ? "right-0.5" : "left-0.5"
+                  }`}
+                />
+              </Link>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Кнопка сброса всех фильтров */}
       <Link

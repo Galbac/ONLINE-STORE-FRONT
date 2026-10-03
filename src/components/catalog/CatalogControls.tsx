@@ -13,6 +13,10 @@ export interface CatalogControlsProps {
   currentParams: CatalogUrlParams;
   currentSort: string;
   hasDiscount: boolean;
+  hasDiscountAvailable?: boolean | undefined;
+  hasHalalAvailable?: boolean | undefined;
+  discountCount?: number | undefined;
+  halalCount?: number | undefined;
   inStock?: boolean | undefined;
   isHalal?: boolean | undefined;
   maxPrice?: string | undefined;
@@ -34,6 +38,10 @@ export const CatalogControls = ({
   currentParams,
   currentSort,
   hasDiscount,
+  hasDiscountAvailable,
+  hasHalalAvailable,
+  discountCount,
+  halalCount,
   isHalal,
   maxPrice,
   minPrice,
@@ -161,6 +169,10 @@ export const CatalogControls = ({
                 currentCategoryId={currentParams.category_id ? Number(currentParams.category_id) : undefined}
                 currentParams={currentParams}
                 hasDiscount={hasDiscount}
+                hasDiscountAvailable={hasDiscountAvailable}
+                hasHalalAvailable={hasHalalAvailable}
+                discountCount={discountCount}
+                halalCount={halalCount}
                 isHalal={isHalal}
                 maxPrice={maxPrice}
                 minPrice={minPrice}

@@ -22,6 +22,13 @@ export interface AdminSettingsResponse {
   privacy_policy_url?: string | null;
   user_agreement_url?: string | null;
   personal_data_consent_url?: string | null;
+  payment_provider?: "yookassa" | "robokassa" | string;
+  robokassa_merchant_login?: string | null;
+  robokassa_password_1?: string | null;
+  robokassa_password_2?: string | null;
+  robokassa_is_test?: boolean;
+  yookassa_shop_id?: string | null;
+  yookassa_secret_key?: string | null;
   updated_at?: string | null;
   working_hours?: string | null;
   schedule?: DayScheduleItem[] | null;

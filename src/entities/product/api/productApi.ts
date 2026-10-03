@@ -1,6 +1,7 @@
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import type {
   ProductDiscountedResponse,
+  ProductFacetsResponse,
   ProductDetailParams,
   ProductDetailResponse,
   ProductListParams,
@@ -14,9 +15,26 @@ import type {
   ProductSimilarResponse,
 } from "../types";
 
+const getCurrentStoreId = (): number | undefined => {
+  if (typeof document === "undefined") return undefined;
+  const value = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith("current_store_id="))
+    ?.split("=")[1];
+  const storeId = Number(value);
+  return Number.isInteger(storeId) && storeId > 0 ? storeId : undefined;
+};
+
 export const productApi = {
   getReviewSummary: async (productId: number): Promise<ProductReviewSummaryResponse> => {
     return apiClient.get<ProductReviewSummaryResponse>(API_ENDPOINTS.REVIEW.BY_PRODUCT(productId));
+  },
+
+  getFacets: async (params?: { category_id?: number | undefined; store_id?: number | undefined }): Promise<ProductFacetsResponse> => {
+    return apiClient.get<ProductFacetsResponse>(API_ENDPOINTS.PRODUCT.FACETS, {
+      category_id: params?.category_id,
+      store_id: params?.store_id ?? getCurrentStoreId(),
+    });
   },
 
   getList: async (params: ProductListParams = {}): Promise<ProductListResponse> => {
@@ -35,11 +53,12 @@ export const productApi = {
     });
   },
 
-  getPopular: async (): Promise<ProductPopularResponse> => {
+  getPopular: async (storeId?: number): Promise<ProductPopularResponse> => {
     return apiClient.get<ProductPopularResponse>(API_ENDPOINTS.PRODUCT.POPULAR, {
       limit: 8,
       period_days: 30,
       in_stock: true,
+      store_id: storeId ?? getCurrentStoreId(),
     });
   },
 
@@ -52,11 +71,12 @@ export const productApi = {
     });
   },
 
-  getNew: async (): Promise<ProductNewResponse> => {
+  getNew: async (storeId?: number): Promise<ProductNewResponse> => {
     return apiClient.get<ProductNewResponse>(API_ENDPOINTS.PRODUCT.NEW, {
       limit: 8,
       in_stock: true,
       days: 30,
+      store_id: storeId ?? getCurrentStoreId(),
     });
   },
 

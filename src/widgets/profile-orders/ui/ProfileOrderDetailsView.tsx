@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   CreditCard,
+  ExternalLink,
   Info,
   Receipt,
   RefreshCcw,
@@ -15,11 +16,13 @@ import {
   Tag,
   Trash2,
   Truck,
+  X,
 } from "lucide-react";
 import {
   orderApi,
   type OrderDetailResponse,
   type OrderItemResponse,
+  type OrderReceiptResponse,
   type OrderStatusResponse,
 } from "@/entities/order";
 import { paymentApi, type PaymentDetailResponse } from "@/entities/payment";
@@ -45,8 +48,9 @@ export const ProfileOrderDetailsView = ({
   const [payment, setPayment] = useState<PaymentDetailResponse | null>(initialPayment);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<OrderReceiptResponse | null>(null);
   const [pendingAction, setPendingAction] = useState<
-    "cancel-order" | "cancel-payment" | "create-payment" | "repeat" | null
+    "cancel-order" | "cancel-payment" | "create-payment" | "receipt" | "repeat" | null
   >(null);
   const [isPending, startTransition] = useTransition();
   const statusMeta = getStatusMeta(orderStatus.status || order.status);
@@ -94,6 +98,22 @@ export const ProfileOrderDetailsView = ({
       } catch (err: unknown) {
         setMessage(null);
         setErrorMessage(extractErrorMessage(err, "Не удалось повторить заказ. Возможно, товары недоступны."));
+      } finally {
+        setPendingAction(null);
+      }
+    });
+  };
+
+  const handleOpenReceipt = (): void => {
+    startTransition(async () => {
+      try {
+        setPendingAction("receipt");
+        setErrorMessage(null);
+        const response = await orderApi.getReceipt(order.id);
+        setReceipt(response);
+      } catch (err: unknown) {
+        setMessage(null);
+        setErrorMessage(extractErrorMessage(err, "Не удалось загрузить чек. Попробуйте ещё раз."));
       } finally {
         setPendingAction(null);
       }
@@ -202,15 +222,15 @@ export const ProfileOrderDetailsView = ({
             <p className="text-text-secondary mt-4">{formatDateTime(order.created_at)}</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
-            <a
-              href={`/api/orders/${order.id}/receipt`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button
+              type="button"
+              disabled={isPending}
+              onClick={handleOpenReceipt}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition active:scale-95"
             >
               <Receipt size={16} className="text-emerald-600" />
-              Чек 54-ФЗ
-            </a>
+              {pendingAction === "receipt" ? "Загружаем чек…" : "Чек 54-ФЗ"}
+            </Button>
             <Button
               className="gap-2"
               disabled={isPending}
@@ -410,6 +430,89 @@ export const ProfileOrderDetailsView = ({
             Связаться с поддержкой
           </Link>
         </section>
+
+        {receipt ? (
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-5"
+            onClick={() => setReceipt(null)}
+          >
+            <section
+              aria-labelledby="order-receipt-title"
+              aria-modal="true"
+              className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-7"
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 id="order-receipt-title" className="text-text-primary text-xl font-bold">
+                    {receipt.available ? "Фискальный чек 54-ФЗ" : "Фискальный чек недоступен"}
+                  </h2>
+                  <p className="text-text-secondary mt-1 text-sm">Заказ №{receipt.order_number}</p>
+                </div>
+                <button
+                  aria-label="Закрыть чек"
+                  className="text-text-secondary hover:bg-bg-secondary rounded-lg p-2"
+                  onClick={() => setReceipt(null)}
+                  type="button"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {!receipt.available ? (
+                <p className="text-text-secondary bg-bg-secondary mt-5 rounded-xl p-4 text-sm leading-6">
+                  {receipt.message}
+                </p>
+              ) : (
+                <>
+                  <div className="border-border mt-5 space-y-3 border-y py-4">
+                    {receipt.items.length > 0 ? (
+                      receipt.items.map((item, index) => (
+                        <div className="flex justify-between gap-4 text-sm" key={`${item.name}-${index}`}>
+                          <div className="min-w-0">
+                            <p className="text-text-primary font-medium">{item.name}</p>
+                            <p className="text-text-secondary mt-1">
+                              {formatQuantity(item.quantity)} × {toPriceFormat(item.price)}
+                            </p>
+                          </div>
+                          <p className="text-text-primary shrink-0 font-semibold">
+                            {toPriceFormat(item.total_amount)}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-text-secondary text-sm">Состав чека пока не передан.</p>
+                    )}
+                  </div>
+
+                  <div className="text-text-secondary mt-4 space-y-2 text-sm">
+                    {receipt.fiscal_number ? <p>Фискальный номер: {receipt.fiscal_number}</p> : null}
+                    {receipt.issued_at ? <p>Дата выдачи: {formatDateTime(receipt.issued_at)}</p> : null}
+                    {receipt.total_amount ? (
+                      <p className="text-text-primary flex justify-between pt-2 text-base font-bold">
+                        <span>Итого</span>
+                        <span>{toPriceFormat(receipt.total_amount)}</span>
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {receipt.receipt_url ? (
+                    <a
+                      className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-bold text-white transition hover:bg-emerald-800"
+                      href={receipt.receipt_url}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <ExternalLink size={16} />
+                      Открыть чек на сайте ОФД
+                    </a>
+                  ) : null}
+                </>
+              )}
+            </section>
+          </div>
+        ) : null}
 
 
       </Container>

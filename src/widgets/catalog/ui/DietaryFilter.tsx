@@ -4,10 +4,11 @@ import { cn } from "@/shared/config";
 interface DietaryFilterProps {
   currentTag?: string | undefined;
   buildHref: (tag?: string) => string;
+  hasHalal?: boolean | undefined;
 }
 
-export const DietaryFilter = ({ currentTag, buildHref }: DietaryFilterProps) => {
-  const options = [
+export const DietaryFilter = ({ currentTag, buildHref, hasHalal = true }: DietaryFilterProps) => {
+  const allOptions = [
     { value: undefined, label: "Все" },
     { value: "без сахара", label: "🍃 Без сахара" },
     { value: "без глютена", label: "🌾 Без глютена" },
@@ -15,6 +16,14 @@ export const DietaryFilter = ({ currentTag, buildHref }: DietaryFilterProps) => 
     { value: "фермерское", label: "🥛 Фермерское" },
     { value: "халяль", label: "🥩 Халяль" },
   ];
+
+  // Исключаем Халяль, если в данной категории нет сертифицированных халяль-товаров
+  const options = allOptions.filter((opt) => {
+    if (opt.value === "халяль" && !hasHalal && currentTag?.toLowerCase() !== "халяль") {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-1">

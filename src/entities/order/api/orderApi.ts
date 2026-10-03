@@ -9,6 +9,7 @@ import type {
   OrderMyListResponse,
   OrderStatusResponse,
   OrderTrackingResponse,
+  OrderReceiptResponse,
   ProfileOrderListParams,
   ProfileOrderListResponse,
   RepeatOrderRequest,
@@ -56,6 +57,10 @@ const toProfileOrderListQuery = (
 };
 
 export const orderApi = {
+  getReceipt: async (orderId: number): Promise<OrderReceiptResponse> => {
+    return apiClient.get<OrderReceiptResponse>(API_ENDPOINTS.ORDER.RECEIPT(orderId));
+  },
+
   create: async (data: OrderCreateRequest, idempotencyKey?: string | null): Promise<OrderCreateResponse> => {
     return apiClient.post<OrderCreateRequest, OrderCreateResponse>(
       API_ENDPOINTS.ORDER.CREATE,

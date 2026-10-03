@@ -18,6 +18,7 @@ export const discountApi = {
     return apiClient.get<DiscountProductsResponse>(API_ENDPOINTS.DISCOUNT.PRODUCTS, {
       category_id: params.category_id,
       in_stock: params.in_stock ?? true,
+      store_id: params.store_id,
       limit: params.limit ?? 8,
       page: params.page ?? 1,
       sort: params.sort ?? "discount_desc",

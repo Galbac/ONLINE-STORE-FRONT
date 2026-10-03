@@ -102,23 +102,20 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
     productParams.tag = tag;
   }
 
-  const [products, cart, favorites, priceBounds] = await Promise.all([
+  const [products, cart, favorites, facets] = await Promise.all([
     productApi.getList(productParams),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
       emptyFavoritesResponse,
     ),
-    productApi.getList({
+    productApi.getFacets({
       category_id: category.id,
-      limit: 1,
-      page: 1,
-      sort: "price_desc",
     }),
   ]);
 
-  const maxCategoryPrice = priceBounds.items[0] ? Number(priceBounds.items[0].price) : 5000;
-  const sliderMax = Math.ceil(Math.max(100, maxCategoryPrice) / 100) * 100;
+  const rawMaxPrice = Number(facets.max_price) || 5000;
+  const sliderMax = Math.ceil(Math.max(100, rawMaxPrice) / 100) * 100;
 
   const childCategories = category.children ?? [];
   const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
@@ -159,7 +156,9 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
             <CategoryFilters
               currentParams={urlParamsRecord}
               hasDiscount={hasDiscount}
-                maxPrice={maxPrice}
+              hasDiscountAvailable={facets.has_discounts}
+              hasHalalAvailable={facets.has_halal}
+              maxPrice={maxPrice}
               minPrice={minPrice}
               productType={productType}
               sliderMax={sliderMax}
@@ -267,6 +266,8 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
 interface CategoryFiltersProps {
   currentParams: Record<string, string | undefined>;
   hasDiscount: boolean;
+  hasDiscountAvailable?: boolean | undefined;
+  hasHalalAvailable?: boolean | undefined;
   maxPrice?: string | undefined;
   minPrice?: string | undefined;
   productType?: string | undefined;
@@ -278,6 +279,8 @@ interface CategoryFiltersProps {
 const CategoryFilters = ({
   currentParams,
   hasDiscount,
+  hasDiscountAvailable,
+  hasHalalAvailable,
   maxPrice,
   minPrice,
   productType,
@@ -285,6 +288,7 @@ const CategoryFilters = ({
   slug,
   subcategories,
 }: CategoryFiltersProps) => {
+  const showDiscountPanel = hasDiscountAvailable !== undefined ? (hasDiscountAvailable || hasDiscount) : true;
   return (
     <aside className="min-w-0 space-y-4">
       {subcategories.length > 0 && (
@@ -309,37 +313,40 @@ const CategoryFilters = ({
 
 
 
-      <FilterPanel>
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold">Акции и скидки</h2>
-            <p className="text-text-muted mt-1 text-xs leading-5">Товары со скидкой</p>
-          </div>
-          <Link
-            aria-label="Переключить фильтр акций"
-            className={cn(
-              "relative h-8 w-14 shrink-0 rounded-full transition",
-              hasDiscount ? "bg-accent-primary" : "bg-border",
-            )}
-            href={buildCategoryHref(slug, {
-              ...currentParams,
-              has_discount: hasDiscount ? undefined : "true",
-              page: undefined,
-            })}
-          >
-            <span
+      {showDiscountPanel && (
+        <FilterPanel>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold">Акции и скидки</h2>
+              <p className="text-text-muted mt-1 text-xs leading-5">Товары со скидкой</p>
+            </div>
+            <Link
+              aria-label="Переключить фильтр акций"
               className={cn(
-                "absolute top-1 grid size-6 place-items-center rounded-full bg-white transition",
-                hasDiscount ? "right-1" : "left-1",
+                "relative h-8 w-14 shrink-0 rounded-full transition",
+                hasDiscount ? "bg-accent-primary" : "bg-border",
               )}
-            />
-          </Link>
-        </div>
-      </FilterPanel>
+              href={buildCategoryHref(slug, {
+                ...currentParams,
+                has_discount: hasDiscount ? undefined : "true",
+                page: undefined,
+              })}
+            >
+              <span
+                className={cn(
+                  "absolute top-1 grid size-6 place-items-center rounded-full bg-white transition",
+                  hasDiscount ? "right-1" : "left-1",
+                )}
+              />
+            </Link>
+          </div>
+        </FilterPanel>
+      )}
 
       <FilterPanel title="Диета и состав">
         <DietaryFilter
           currentTag={currentParams.tag}
+          hasHalal={hasHalalAvailable}
           buildHref={(t) =>
             buildCategoryHref(slug, {
               ...currentParams,

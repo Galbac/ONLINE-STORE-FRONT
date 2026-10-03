@@ -56,6 +56,16 @@ export interface ProductShortResponse {
   created_at?: string | null;
 }
 
+export interface ProductFacetsResponse {
+  has_discounts: boolean;
+  discount_count: number;
+  has_halal: boolean;
+  halal_count: number;
+  min_price: string;
+  max_price: string;
+  total_count: number;
+}
+
 export interface ProductPopularResponse {
   items: ProductShortResponse[];
   total: number;

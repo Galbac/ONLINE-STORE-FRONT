@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Save } from "lucide-react";
+import { Save, CreditCard, ShieldCheck, Info } from "lucide-react";
 
 import {
   adminSettingsApi,
@@ -23,6 +23,8 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
   const [settings, setSettings] = useState(initialSettings);
   const [schedule, setSchedule] = useState<DayScheduleItem[] | null>(initialSettings.schedule ?? null);
   const [workingHours, setWorkingHours] = useState<string>(initialSettings.working_hours ?? "");
+  const [paymentProvider, setPaymentProvider] = useState<string>(initialSettings.payment_provider || "yookassa");
+  const [robokassaIsTest, setRobokassaIsTest] = useState<boolean>(Boolean(initialSettings.robokassa_is_test));
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -166,6 +168,137 @@ export const AdminSettingsView = ({ settings: initialSettings }: AdminSettingsVi
           <input type="hidden" name="working_hours" value={workingHours} />
         </div>
 
+        {/* Платёжный шлюз (Онлайн-оплата) */}
+        <div className="mt-6 border-t border-border pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                <CreditCard size={18} className="text-accent-primary" />
+                Платёжный шлюз (Приём онлайн-платежей)
+              </h3>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Выберите активный сервис эквайринга и настройте ключи интеграции
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-primary/10 text-accent-primary border border-accent-primary/20">
+              <ShieldCheck size={13} />
+              {paymentProvider === "robokassa" ? "Активна Robokassa" : "Активна ЮKassa"}
+            </span>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold">Основной платёжный сервис</span>
+                <select
+                  className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm font-medium transition outline-none"
+                  name="payment_provider"
+                  value={paymentProvider}
+                  onChange={(e) => setPaymentProvider(e.target.value)}
+                >
+                  <option value="yookassa">ЮKassa (YooKassa)</option>
+                  <option value="robokassa">Робокасса (Robokassa)</option>
+                </select>
+              </label>
+              <p className="mt-1 text-xs text-text-secondary">
+                Переключает шлюз, на который перенаправляется покупатель при онлайн-оплате.
+              </p>
+            </div>
+
+            {paymentProvider === "robokassa" && (
+              <div>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-bold">Тестовый режим Robokassa</span>
+                  <select
+                    className="border-border focus:border-accent-primary bg-bg-primary h-11 w-full rounded-lg border px-3 text-sm font-medium transition outline-none"
+                    name="robokassa_is_test"
+                    value={robokassaIsTest ? "true" : "false"}
+                    onChange={(e) => setRobokassaIsTest(e.target.value === "true")}
+                  >
+                    <option value="false">Боевой режим (Реальные списания)</option>
+                    <option value="true">Тестовый режим (Без списания средств)</option>
+                  </select>
+                </label>
+                <p className="mt-1 text-xs text-text-secondary">
+                  В тестовом режиме Robokassa проверяет оплату тестовыми картами.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Поля Robokassa */}
+          {paymentProvider === "robokassa" ? (
+            <div className="mt-4 rounded-xl border border-border bg-bg-secondary/40 p-4 space-y-4">
+              <div className="flex items-center gap-2 text-sm font-bold text-text-primary">
+                <span>Параметры подключения Robokassa</span>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Input
+                  defaultValue={settings.robokassa_merchant_login ?? undefined}
+                  label="Идентификатор магазина (Merchant Login)"
+                  name="robokassa_merchant_login"
+                  placeholder="shop_login"
+                />
+                <Input
+                  defaultValue={settings.robokassa_password_1 ?? undefined}
+                  label="Пароль #1 (Инициализация оплаты)"
+                  name="robokassa_password_1"
+                  type="password"
+                  placeholder="Пароль 1 из ЛК"
+                />
+                <Input
+                  defaultValue={settings.robokassa_password_2 ?? undefined}
+                  label="Пароль #2 (ResultURL / Оповещение)"
+                  name="robokassa_password_2"
+                  type="password"
+                  placeholder="Пароль 2 из ЛК"
+                />
+              </div>
+
+              <div className="rounded-lg bg-bg-primary p-3 border border-border/80 text-xs text-text-secondary space-y-1.5">
+                <div className="font-semibold text-text-primary flex items-center gap-1.5">
+                  <Info size={14} className="text-accent-primary" />
+                  Реквизиты для личного кабинета Robokassa:
+                </div>
+                <p>• <b>Result URL:</b> <code className="bg-bg-secondary px-1 py-0.5 rounded text-[11px]">https://ваш-домен.ru/api/payments/webhook</code> (Метод: POST)</p>
+                <p>• <b>Success URL:</b> <code className="bg-bg-secondary px-1 py-0.5 rounded text-[11px]">https://ваш-домен.ru/payment/success</code> (Метод: GET/POST)</p>
+                <p>• <b>Fail URL:</b> <code className="bg-bg-secondary px-1 py-0.5 rounded text-[11px]">https://ваш-домен.ru/payment/fail</code> (Метод: GET/POST)</p>
+              </div>
+            </div>
+          ) : (
+            /* Поля ЮKassa */
+            <div className="mt-4 rounded-xl border border-border bg-bg-secondary/40 p-4 space-y-4">
+              <div className="flex items-center gap-2 text-sm font-bold text-text-primary">
+                <span>Параметры подключения ЮKassa</span>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  defaultValue={settings.yookassa_shop_id ?? undefined}
+                  label="Идентификатор магазина (Shop ID)"
+                  name="yookassa_shop_id"
+                  placeholder="123456"
+                />
+                <Input
+                  defaultValue={settings.yookassa_secret_key ?? undefined}
+                  label="Секретный ключ (Secret Key)"
+                  name="yookassa_secret_key"
+                  type="password"
+                  placeholder="live_..."
+                />
+              </div>
+
+              <div className="rounded-lg bg-bg-primary p-3 border border-border/80 text-xs text-text-secondary space-y-1.5">
+                <div className="font-semibold text-text-primary flex items-center gap-1.5">
+                  <Info size={14} className="text-accent-primary" />
+                  Настройка Webhook в личном кабинете ЮKassa:
+                </div>
+                <p>• <b>URL для уведомлений:</b> <code className="bg-bg-secondary px-1 py-0.5 rounded text-[11px]">https://ваш-домен.ru/api/payments/webhook</code></p>
+                <p>• <b>События:</b> payment.succeeded, payment.canceled, refund.succeeded</p>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="mt-6 border-t border-border pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 className="text-sm font-bold text-text-primary">Юридические документы (152-ФЗ / Оферта)</h3>
@@ -235,6 +368,7 @@ const Input = ({
   label,
   min,
   name,
+  placeholder,
   required = false,
   step,
   type = "text",
@@ -243,6 +377,7 @@ const Input = ({
   label: string;
   min?: string | undefined;
   name: string;
+  placeholder?: string | undefined;
   required?: boolean;
   step?: string | undefined;
   type?: string;
@@ -260,7 +395,7 @@ const Input = ({
         min={min}
         step={step}
         type={isPhone ? "tel" : type}
-        placeholder={isPhone ? "+7 (___) ___-__-__" : undefined}
+        placeholder={isPhone ? "+7 (___) ___-__-__" : placeholder}
         maxLength={isPhone ? 18 : undefined}
         autoComplete={isPhone ? "tel" : undefined}
         value={val}
@@ -357,6 +492,13 @@ const getSettingsPayload = (
     pickup_enabled: getBooleanFormValue(formData, "pickup_enabled"),
     shop_name: getRequiredFormValue(formData, "shop_name"),
     working_hours: getNullableFormValue(formData, "working_hours"),
+    payment_provider: getRequiredFormValue(formData, "payment_provider"),
+    robokassa_merchant_login: getNullableFormValue(formData, "robokassa_merchant_login"),
+    robokassa_password_1: getNullableFormValue(formData, "robokassa_password_1"),
+    robokassa_password_2: getNullableFormValue(formData, "robokassa_password_2"),
+    robokassa_is_test: getBooleanFormValue(formData, "robokassa_is_test"),
+    yookassa_shop_id: getNullableFormValue(formData, "yookassa_shop_id"),
+    yookassa_secret_key: getNullableFormValue(formData, "yookassa_secret_key"),
   };
   const payload: AdminSettingsPayload = {};
 
@@ -413,6 +555,13 @@ const getSettingsPayload = (
     nextSettings.working_hours,
     currentSettings.working_hours ?? null,
   );
+  addChangedField(payload, "payment_provider", nextSettings.payment_provider, currentSettings.payment_provider ?? "yookassa");
+  addChangedField(payload, "robokassa_merchant_login", nextSettings.robokassa_merchant_login, currentSettings.robokassa_merchant_login ?? null);
+  addChangedField(payload, "robokassa_password_1", nextSettings.robokassa_password_1, currentSettings.robokassa_password_1 ?? null);
+  addChangedField(payload, "robokassa_password_2", nextSettings.robokassa_password_2, currentSettings.robokassa_password_2 ?? null);
+  addChangedField(payload, "robokassa_is_test", nextSettings.robokassa_is_test, Boolean(currentSettings.robokassa_is_test));
+  addChangedField(payload, "yookassa_shop_id", nextSettings.yookassa_shop_id, currentSettings.yookassa_shop_id ?? null);
+  addChangedField(payload, "yookassa_secret_key", nextSettings.yookassa_secret_key, currentSettings.yookassa_secret_key ?? null);
 
   if (schedule && JSON.stringify(schedule) !== JSON.stringify(currentSettings.schedule ?? null)) {
     payload.schedule = schedule;

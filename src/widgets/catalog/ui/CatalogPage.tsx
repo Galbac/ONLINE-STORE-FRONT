@@ -111,7 +111,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     priceBoundsParams.has_discount = true;
   }
 
-  const [categoryTree, categories, products, cart, favorites, priceBounds] = await Promise.all([
+  const [categoryTree, categories, products, cart, favorites, facets] = await Promise.all([
     categoryApi.getTree(),
     categoryApi.getList(),
     getCatalogProducts(productParams, page, pageSize),
@@ -120,7 +120,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
       emptyFavoritesResponse,
     ),
-    getCatalogProducts(priceBoundsParams, 1, 1),
+    productApi.getFacets({
+      category_id: categoryId,
+      store_id: storeId,
+    }),
   ]);
 
   const visibleCategories = categories.items.length > 0 ? categories.items : categoryTree.items;
@@ -129,8 +132,82 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const cartProductIds = cart.items.map((item) => item.product_id);
 
   const urlParams = toCatalogUrlParams(searchParams);
-  // Динамический расчет максимальной границы цен из базы данных (без хардкода 1000)
-  const sliderMax = getPriceSliderMax(priceBounds.items, minPrice, maxPrice);
+  const rawMaxPrice = Number(facets.max_price) || 500;
+  const sliderMax = Math.max(Math.ceil(rawMaxPrice), Number(maxPrice) || 0, Number(minPrice) || 0);
+
+  const quickFilterChips = [
+    {
+      id: "all",
+      label: "Все товары",
+      active: !categoryId && !hasDiscount && !tag && sort !== "newest",
+      href: buildCatalogHref({
+        ...urlParams,
+        category_id: undefined,
+        has_discount: undefined,
+        tag: undefined,
+        page: undefined,
+      }),
+    },
+  ];
+
+  if (facets.has_halal || tag === "halal") {
+    quickFilterChips.push({
+      id: "halal",
+      label: "🥩 Халяль",
+      active: tag === "halal",
+      href: buildCatalogHref({
+        ...urlParams,
+        tag: tag === "halal" ? undefined : "halal",
+        page: undefined,
+      }),
+    });
+  }
+
+  if (facets.has_discounts || hasDiscount) {
+    quickFilterChips.push({
+      id: "discount",
+      label: "🔥 Акции %",
+      active: hasDiscount,
+      href: buildCatalogHref({
+        ...urlParams,
+        has_discount: hasDiscount ? undefined : "true",
+        page: undefined,
+      }),
+    });
+  }
+
+  quickFilterChips.push(
+    {
+      id: "newest",
+      label: "✨ Новинки",
+      active: sort === "newest",
+      href: buildCatalogHref({
+        ...urlParams,
+        sort: sort === "newest" ? undefined : "newest",
+        page: undefined,
+      }),
+    },
+    {
+      id: "farm",
+      label: "🌿 Фермерское",
+      active: tag === "farm",
+      href: buildCatalogHref({
+        ...urlParams,
+        tag: tag === "farm" ? undefined : "farm",
+        page: undefined,
+      }),
+    },
+    {
+      id: "popular",
+      label: "⭐ Популярное",
+      active: sort === "popular",
+      href: buildCatalogHref({
+        ...urlParams,
+        sort: sort === "popular" ? undefined : "popular",
+        page: undefined,
+      }),
+    },
+  );
 
   return (
     <>
@@ -155,6 +232,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 currentCategoryId={categoryId}
                 currentParams={urlParams}
                 hasDiscount={hasDiscount}
+                hasDiscountAvailable={facets.has_discounts}
+                hasHalalAvailable={facets.has_halal}
+                discountCount={facets.discount_count}
+                halalCount={facets.halal_count}
                 isHalal={tag === "halal"}
                 maxPrice={maxPrice}
                 minPrice={minPrice}
@@ -169,6 +250,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 currentParams={urlParams}
                 currentSort={sort}
                 hasDiscount={hasDiscount}
+                hasDiscountAvailable={facets.has_discounts}
+                hasHalalAvailable={facets.has_halal}
+                discountCount={facets.discount_count}
+                halalCount={facets.halal_count}
                 isHalal={tag === "halal"}
                 maxPrice={maxPrice}
                 minPrice={minPrice}
@@ -191,70 +276,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
               {/* Компактная лента БЫСТРЫХ ТЕГОВ */}
               <div className="my-5">
                 <QuickFilterChips
-                  chips={[
-                    {
-                      id: "all",
-                      label: "Все товары",
-                      active: !categoryId && !hasDiscount && !tag && sort !== "newest",
-                      href: buildCatalogHref({
-                        ...urlParams,
-                        category_id: undefined,
-                        has_discount: undefined,
-                        tag: undefined,
-                        page: undefined,
-                      }),
-                    },
-                    {
-                      id: "halal",
-                      label: "🥩 Халяль",
-                      active: tag === "halal",
-                      href: buildCatalogHref({
-                        ...urlParams,
-                        tag: tag === "halal" ? undefined : "halal",
-                        page: undefined,
-                      }),
-                    },
-                    {
-                      id: "discount",
-                      label: "🔥 Акции %",
-                      active: hasDiscount,
-                      href: buildCatalogHref({
-                        ...urlParams,
-                        has_discount: hasDiscount ? undefined : "true",
-                        page: undefined,
-                      }),
-                    },
-                    {
-                      id: "newest",
-                      label: "✨ Новинки",
-                      active: sort === "newest",
-                      href: buildCatalogHref({
-                        ...urlParams,
-                        sort: sort === "newest" ? undefined : "newest",
-                        page: undefined,
-                      }),
-                    },
-                    {
-                      id: "farm",
-                      label: "🌿 Фермерское",
-                      active: tag === "farm",
-                      href: buildCatalogHref({
-                        ...urlParams,
-                        tag: tag === "farm" ? undefined : "farm",
-                        page: undefined,
-                      }),
-                    },
-                    {
-                      id: "popular",
-                      label: "⭐ Популярное",
-                      active: sort === "popular",
-                      href: buildCatalogHref({
-                        ...urlParams,
-                        sort: sort === "popular" ? undefined : "popular",
-                        page: undefined,
-                      }),
-                    },
-                  ]}
+                  chips={quickFilterChips}
                   className="py-1"
                 />
               </div>
@@ -381,20 +403,7 @@ const CatalogEmptyState = () => {
   );
 };
 
-const getPriceSliderMax = (
-  items: Array<{ price: string }>,
-  minPrice?: string,
-  maxPrice?: string,
-): number => {
-  // Реальная наивысшая цена товара из базы данных
-  const rawHighest = items[0]?.price ? Number(items[0].price) : 500;
-  // Округляем вверх до красивого кратного 50 (например 320 -> 350, 780 -> 800)
-  const highestPrice = Math.ceil(rawHighest);
-  const currentMax = maxPrice ? Number(maxPrice) : 0;
-  const currentMin = minPrice ? Number(minPrice) : 0;
 
-  return Math.max(highestPrice, currentMax, currentMin);
-};
 
 const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams => ({
   article: searchParams.article,

@@ -98,6 +98,7 @@ export const API_ENDPOINTS = {
     DISCOUNTED: "/api/products/discounted",
     NEW: "/api/products/new",
     LIST: "/api/products",
+    FACETS: "/api/products/facets",
     SEARCH: "/api/products/search",
     SEARCH_SUGGESTIONS: (q: string): string => `/api/products/search/suggestions?q=${encodeURIComponent(q)}`,
     POPULAR_SEARCHES: "/api/products/search/popular",

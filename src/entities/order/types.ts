@@ -216,3 +216,24 @@ export interface OrderTrackingResponse {
   steps: OrderTrackingStep[];
   estimated_delivery?: string | null;
 }
+
+export interface OrderReceiptItemResponse {
+  name: string;
+  quantity: string;
+  price: string;
+  total_amount: string;
+  payment_subject?: number;
+  payment_subject_name?: string;
+}
+
+export interface OrderReceiptResponse {
+  order_id: number;
+  order_number: string;
+  available: boolean;
+  message: string;
+  receipt_url?: string | null;
+  fiscal_number?: string | null;
+  total_amount?: string | null;
+  issued_at?: string | null;
+  items: OrderReceiptItemResponse[];
+}

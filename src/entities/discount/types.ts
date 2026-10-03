@@ -23,6 +23,7 @@ export interface DiscountProductsParams {
   limit?: number;
   category_id?: number;
   in_stock?: boolean;
+  store_id?: number;
   sort?: "discount_desc" | "price_asc" | "price_desc" | "newest";
 }
 

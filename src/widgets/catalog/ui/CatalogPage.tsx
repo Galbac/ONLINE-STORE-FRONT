@@ -5,10 +5,9 @@ import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi } from "@/entities/category";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductListParams, type ProductListResponse } from "@/entities/product";
-import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
-import { cn, ROUTES } from "@/shared/config";
-import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shared/ui";
+import { ROUTES } from "@/shared/config";
+import { AutoSubmitSelect, Container, ViewModeToggle } from "@/shared/ui";
 import type { ProductViewMode } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
@@ -17,6 +16,7 @@ import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import { formatFoundProducts } from "@/utils/pluralize";
 import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
 import { QuickFilterChips } from "./QuickFilterChips";
+import { CatalogProductFeed } from "./CatalogProductFeed";
 
 interface CatalogPageProps {
   searchParams: CatalogSearchParams;
@@ -44,12 +44,6 @@ const sortOptions: Array<{ label: string; value: NonNullable<ProductListParams["
   { label: "По цене: по убыванию", value: "price_desc" },
   { label: "По названию", value: "name_asc" },
 ];
-
-const pageSizeOptions = [
-  { label: "24", value: "24" },
-  { label: "48", value: "48" },
-  { label: "96", value: "96" },
-] as const;
 
 export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const page = toPositiveNumber(searchParams.page, 1);
@@ -128,8 +122,8 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
   const visibleCategories = categories.items.length > 0 ? categories.items : categoryTree.items;
   const selectedCategory = visibleCategories.find((category) => category.id === categoryId);
-  const favoriteProductIds = new Set(favorites.items.map((product) => product.id));
-  const cartProductIds = new Set(cart.items.map((item) => item.product_id));
+  const favoriteProductIds = favorites.items.map((product) => product.id);
+  const cartProductIds = cart.items.map((item) => item.product_id);
 
   const urlParams = toCatalogUrlParams(searchParams);
   // Динамический расчет максимальной границы цен из базы данных (без хардкода 1000)
@@ -264,48 +258,14 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
               {/* Сетка товаров */}
               {products.items.length > 0 ? (
-                <>
-                  <div
-                    className={cn(
-                      "mt-5 grid gap-3.5 sm:gap-4",
-                      viewMode === "grid" ? "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" : "grid-cols-1",
-                    )}
-                  >
-                    {products.items.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        variant={viewMode}
-                        initialInCart={cartProductIds.has(product.id)}
-                        cartControl={
-                          <CatalogCartButton
-                            className="w-full h-10 font-bold"
-                            initialInCart={cartProductIds.has(product.id)}
-                            productId={product.id}
-                            productName={(product.name ?? "").trim()}
-                            minQuantity={product.min_quantity}
-                            quantityStep={product.quantity_step}
-                            unit={product.unit}
-                          />
-                        }
-                        favoriteControl={
-                          <CatalogFavoriteButton
-                            initialFavorite={favoriteProductIds.has(product.id)}
-                            productId={product.id}
-                            productName={(product.name ?? "").trim()}
-                          />
-                        }
-                      />
-                    ))}
-                  </div>
-
-                  <CatalogPagination
-                    currentPage={products.page || page}
-                    pageSize={pageSize}
-                    totalPages={products.pages}
-                    searchParams={searchParams}
-                  />
-                </>
+                <CatalogProductFeed
+                  key={`${JSON.stringify(productParams)}:${viewMode}`}
+                  initialProducts={products}
+                  params={productParams}
+                  viewMode={viewMode}
+                  cartProductIds={cartProductIds}
+                  favoriteProductIds={favoriteProductIds}
+                />
               ) : (
                 <CatalogEmptyState />
               )}
@@ -415,121 +375,6 @@ const CatalogEmptyState = () => {
         Сбросить фильтры
       </Link>
     </div>
-  );
-};
-
-interface CatalogPaginationProps {
-  currentPage: number;
-  pageSize: number;
-  totalPages: number;
-  searchParams: CatalogSearchParams;
-}
-
-const CatalogPagination = ({
-  currentPage,
-  pageSize,
-  searchParams,
-  totalPages,
-}: CatalogPaginationProps) => {
-  const pages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => index + 1);
-
-  return (
-    <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-6">
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
-        <PageLink disabled={currentPage <= 1} page={currentPage - 1} searchParams={searchParams}>
-          ‹
-        </PageLink>
-        {pages.map((page) => (
-          <PageLink
-            active={page === currentPage}
-            key={page}
-            page={page}
-            searchParams={searchParams}
-          >
-            {page}
-          </PageLink>
-        ))}
-        {totalPages > 6 ? <span className="text-slate-400 px-2">...</span> : null}
-        {totalPages > 5 ? (
-          <PageLink page={totalPages} searchParams={searchParams}>
-            {totalPages}
-          </PageLink>
-        ) : null}
-        <PageLink
-          disabled={currentPage >= totalPages}
-          page={currentPage + 1}
-          searchParams={searchParams}
-        >
-          ›
-        </PageLink>
-      </div>
-
-      <div className="hidden sm:flex items-center gap-2">
-        <span className="text-slate-400 text-xs">Показывать по:</span>
-        <div className="flex items-center gap-1">
-          {pageSizeOptions.map((opt) => (
-            <Link
-              key={opt.value}
-              href={buildCatalogHref({
-                ...toCatalogUrlParams(searchParams),
-                limit: opt.value === "24" ? undefined : opt.value,
-                page: undefined,
-              })}
-              className={`flex h-8 w-9 items-center justify-center rounded-lg text-xs font-bold transition ${
-                String(pageSize) === opt.value
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              {opt.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface PageLinkProps {
-  page: number;
-  children: React.ReactNode;
-  active?: boolean;
-  disabled?: boolean;
-  searchParams: CatalogSearchParams;
-}
-
-const PageLink = ({
-  active = false,
-  children,
-  disabled = false,
-  page,
-  searchParams,
-}: PageLinkProps) => {
-  if (disabled) {
-    return (
-      <span className="flex size-9 items-center justify-center rounded-xl border border-slate-200/60 bg-slate-50 text-xs font-bold text-slate-300">
-        {children}
-      </span>
-    );
-  }
-
-  const href = buildCatalogHref({
-    ...toCatalogUrlParams(searchParams),
-    page: page > 1 ? String(page) : undefined,
-  });
-
-  return (
-    <Link
-      className={cn(
-        "flex size-9 items-center justify-center rounded-xl text-xs font-bold transition",
-        active
-          ? "bg-emerald-600 text-white shadow-xs"
-          : "border border-slate-200/80 bg-white text-slate-700 hover:border-emerald-500 hover:text-emerald-700",
-      )}
-      href={href}
-    >
-      {children}
-    </Link>
   );
 };
 

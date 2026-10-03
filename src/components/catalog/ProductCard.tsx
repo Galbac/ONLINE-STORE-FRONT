@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Apple,
   Beef,
+  Eye,
   Fish,
   Leaf,
   Milk,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import type { ProductShortResponse } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton, StockAlertButton } from "@/features/catalog-product-actions";
+import { QuickViewModal } from "@/features/quick-view";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 
@@ -33,6 +35,8 @@ export const ProductCard = ({
   variant = "grid",
   initialInCart = false,
 }: ProductCardProps) => {
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
   // 1. Строгий санитайзинг строк
   const cleanName = (product.name ?? "").trim();
   const rawCategoryName = product.category?.name ?? "Каталог";
@@ -90,99 +94,252 @@ export const ProductCard = ({
   // Список (вариант list)
   if (variant === "list") {
     return (
-      <article className="group relative grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5 sm:grid-cols-[160px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)_auto]">
-        {/* Бейджи скидок и халяль */}
-        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5 pointer-events-none">
-          {product.discount_percent ? (
-            <span className="pointer-events-auto rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 px-2 py-0.5 text-xs font-black text-white shadow-sm shadow-rose-500/30">
-              -{product.discount_percent}%
-            </span>
-          ) : null}
-          {isHalal ? (
-            <span className="pointer-events-auto rounded-md bg-emerald-700/95 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-white uppercase shadow-2xs">
-              ХАЛЯЛЬ
-            </span>
-          ) : null}
-        </div>
-
-        {/* Кнопка избранного всегда поверх */}
-        <div className="absolute top-3 right-3 z-10 flex items-center">
-          {favoriteControl ?? (
-            <CatalogFavoriteButton
-              initialFavorite={false}
-              productId={product.id}
-              productName={cleanName}
-            />
-          )}
-        </div>
-
-        {/* Контейнер изображения с фиксированной геометрией */}
-        <Link
-          className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-50 block border border-slate-100"
-          href={ROUTES.PRODUCT(product.slug)}
-        >
-          {!hasError && imgSrc ? (
-            <Image
-              alt={cleanName}
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              fill
-              sizes="(max-width: 640px) 160px, 180px"
-              src={imgSrc}
-              onError={handleImageError}
-              loading="lazy"
-            />
-          ) : (
-            <div className={`flex h-full w-full flex-col items-center justify-center p-3 text-center ${categoryMeta.bgClass}`}>
-              <span className={`grid size-12 place-items-center rounded-2xl ${categoryMeta.badgeClass} shadow-2xs transition-transform duration-300 group-hover:scale-110`}>
-                <FallbackIcon size={24} />
+      <>
+        <article className="group relative grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-slate-900/5 sm:grid-cols-[160px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)_auto]">
+          {/* Бейджи скидок и халяль */}
+          <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5 pointer-events-none">
+            {product.discount_percent ? (
+              <span className="pointer-events-auto rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 px-2 py-0.5 text-xs font-black text-white shadow-sm shadow-rose-500/30">
+                -{product.discount_percent}%
               </span>
-              <span className="mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                {categoryMeta.label}
+            ) : null}
+            {isHalal ? (
+              <span className="pointer-events-auto rounded-md bg-emerald-700/95 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-white uppercase shadow-2xs">
+                ХАЛЯЛЬ
               </span>
+            ) : null}
+          </div>
+
+          {/* Кнопка избранного всегда поверх */}
+          <div className="absolute top-3 right-3 z-10 flex items-center">
+            {favoriteControl ?? (
+              <CatalogFavoriteButton
+                initialFavorite={false}
+                productId={product.id}
+                productName={cleanName}
+              />
+            )}
+          </div>
+
+          {/* Контейнер изображения с фиксированной геометрией */}
+          <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-50 border border-slate-100">
+            <Link
+              className="relative block h-full w-full"
+              href={ROUTES.PRODUCT(product.slug)}
+            >
+              {!hasError && imgSrc ? (
+                <Image
+                  alt={cleanName}
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 160px, 180px"
+                  src={imgSrc}
+                  onError={handleImageError}
+                  loading="lazy"
+                />
+              ) : (
+                <div className={`flex h-full w-full flex-col items-center justify-center p-3 text-center ${categoryMeta.bgClass}`}>
+                  <span className={`grid size-12 place-items-center rounded-2xl ${categoryMeta.badgeClass} shadow-2xs transition-transform duration-300 group-hover:scale-110`}>
+                    <FallbackIcon size={24} />
+                  </span>
+                  <span className="mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    {categoryMeta.label}
+                  </span>
+                </div>
+              )}
+            </Link>
+
+            {/* Кнопка быстрого просмотра WB */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsQuickViewOpen(true);
+              }}
+              className="absolute bottom-2 inset-x-2 z-20 hidden sm:flex items-center justify-center gap-1.5 rounded-lg bg-white/95 hover:bg-white text-slate-800 text-[11px] font-bold py-1.5 px-2.5 shadow-md backdrop-blur-sm border border-slate-200/60 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-200 active:scale-98 cursor-pointer"
+            >
+              <Eye size={13} className="text-emerald-600" />
+              <span>Быстрый просмотр</span>
+            </button>
+          </div>
+
+          {/* Инфо о товаре */}
+          <div className="min-w-0 pr-8">
+            <Link
+              className="line-clamp-2 text-base font-bold text-slate-900 transition-colors group-hover:text-emerald-700"
+              href={ROUTES.PRODUCT(product.slug)}
+            >
+              {cleanName}
+            </Link>
+            {!product.is_available ? (
+              <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-rose-600">
+                <span className="size-2 rounded-full bg-rose-400" />
+                <span>Нет в наличии</span>
+              </div>
+            ) : isLowStock ? (
+              <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-amber-700">
+                <span className="size-2 rounded-full bg-amber-500" />
+                <span>{product.stock_display}</span>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Цены и кнопка */}
+          <div className="flex items-end justify-between gap-3 lg:min-w-48 lg:flex-col lg:items-end lg:justify-center">
+            <div className="flex flex-wrap items-baseline gap-2 lg:justify-end">
+              <span className="text-2xl font-black text-slate-900 tracking-tight">
+                {toPriceFormat(product.price)}
+              </span>
+              {product.old_price ? (
+                <span className="text-xs font-medium text-slate-400 line-through">
+                  {toPriceFormat(product.old_price)}
+                </span>
+              ) : null}
+              <span className="text-xs font-medium text-slate-400">{unitDisplay}</span>
             </div>
-          )}
-        </Link>
+            {!product.is_available ? (
+              <StockAlertButton productId={product.id} productName={cleanName} />
+            ) : (
+              cartControl ?? (
+                <CatalogCartButton
+                  className="w-full h-10 font-bold"
+                  initialInCart={initialInCart}
+                  minQuantity={product.min_quantity}
+                  productId={product.id}
+                  productName={cleanName}
+                  quantityStep={product.quantity_step}
+                  unit={product.unit}
+                />
+              )
+            )}
+          </div>
+        </article>
 
-        {/* Инфо о товаре */}
-        <div className="min-w-0 pr-8">
+        {isQuickViewOpen && (
+          <QuickViewModal
+            isOpen={isQuickViewOpen}
+            onClose={() => setIsQuickViewOpen(false)}
+            product={product}
+            initialInCart={initialInCart}
+          />
+        )}
+      </>
+    );
+  }
+
+  // Основной вариант GRID
+  return (
+    <>
+      <article className="group relative flex h-full flex-col rounded-2xl bg-white border border-gray-100 p-3 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+        {/* 1. Контейнер картинки */}
+        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-50 border border-slate-100/80">
+          {/* Бейджи скидок и халяль слева вверху */}
+          <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1 pointer-events-none">
+            {product.discount_percent ? (
+              <span className="pointer-events-auto rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 px-2 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-sm shadow-rose-500/30">
+                -{product.discount_percent}%
+              </span>
+            ) : null}
+            {isHalal ? (
+              <span className="pointer-events-auto rounded-md bg-emerald-700/95 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-white uppercase shadow-2xs">
+                ХАЛЯЛЬ
+              </span>
+            ) : null}
+          </div>
+
+          {/* Кнопка «В избранное» (Heart) справа вверху */}
+          <div className="absolute top-2 right-2 z-10 flex items-center">
+            {favoriteControl ?? (
+              <CatalogFavoriteButton
+                initialFavorite={false}
+                productId={product.id}
+                productName={cleanName}
+              />
+            )}
+          </div>
+
+          {/* Ссылка на товар и фото (или категорийный fallback) */}
           <Link
-            className="line-clamp-2 text-base font-bold text-slate-900 transition-colors group-hover:text-emerald-700"
+            className="relative block h-full w-full"
             href={ROUTES.PRODUCT(product.slug)}
+            title={cleanName}
+          >
+            {!hasError && imgSrc ? (
+              <Image
+                alt={cleanName}
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                src={imgSrc}
+                onError={handleImageError}
+                loading="lazy"
+              />
+            ) : (
+              <div className={`flex h-full w-full flex-col items-center justify-center p-3 text-center ${categoryMeta.bgClass}`}>
+                <span className={`grid size-14 place-items-center rounded-2xl ${categoryMeta.badgeClass} shadow-2xs transition-transform duration-300 group-hover:scale-110`}>
+                  <FallbackIcon size={28} />
+                </span>
+                <span className="mt-2.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                  {categoryMeta.label}
+                </span>
+              </div>
+            )}
+          </Link>
+
+          {/* Кнопка «Быстрый просмотр» в стиле Wildberries (img_1.png) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsQuickViewOpen(true);
+            }}
+            className="absolute bottom-2.5 inset-x-2.5 z-20 hidden sm:flex items-center justify-center gap-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-800 text-xs font-bold py-2 px-3 shadow-md backdrop-blur-sm border border-slate-200/60 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-200 active:scale-98 cursor-pointer"
+          >
+            <Eye size={14} className="text-emerald-600" />
+            <span>Быстрый просмотр</span>
+          </button>
+        </div>
+
+        {/* 2. Название товара */}
+        <div className="mt-2.5 h-10 min-h-[2.5rem]">
+          <Link
+            className="line-clamp-2 text-xs sm:text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700 leading-snug"
+            href={ROUTES.PRODUCT(product.slug)}
+            title={cleanName}
           >
             {cleanName}
           </Link>
-          {!product.is_available ? (
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-rose-600">
-              <span className="size-2 rounded-full bg-rose-400" />
-              <span>Нет в наличии</span>
-            </div>
-          ) : isLowStock ? (
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-amber-700">
-              <span className="size-2 rounded-full bg-amber-500" />
-              <span>{product.stock_display}</span>
-            </div>
-          ) : null}
         </div>
 
-        {/* Цены и кнопка */}
-        <div className="flex items-end justify-between gap-3 lg:min-w-48 lg:flex-col lg:items-end lg:justify-center">
-          <div className="flex flex-wrap items-baseline gap-2 lg:justify-end">
-            <span className="text-2xl font-black text-slate-900 tracking-tight">
-              {toPriceFormat(product.price)}
+        {/* 3. Блок цен */}
+        <div className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
+          <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-none">
+            {toPriceFormat(product.price)}
+          </span>
+          {product.old_price ? (
+            <span className="text-[11px] sm:text-xs font-medium text-slate-400 line-through leading-none">
+              {toPriceFormat(product.old_price)}
             </span>
-            {product.old_price ? (
-              <span className="text-xs font-medium text-slate-400 line-through">
-                {toPriceFormat(product.old_price)}
-              </span>
-            ) : null}
-            <span className="text-xs font-medium text-slate-400">{unitDisplay}</span>
-          </div>
+          ) : null}
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-400 leading-none">
+            {unitDisplay}
+          </span>
+        </div>
+
+        {/* 4. Кнопка «В корзину» */}
+        <div className="mt-3 pt-1">
           {!product.is_available ? (
-            <StockAlertButton productId={product.id} productName={cleanName} />
+            <StockAlertButton
+              className="w-full h-10 justify-center text-xs font-bold"
+              productId={product.id}
+              productName={cleanName}
+            />
           ) : (
             cartControl ?? (
               <CatalogCartButton
-                className="w-full h-10 font-bold"
+                className="w-full h-10 justify-center text-xs sm:text-sm font-bold shadow-sm shadow-emerald-700/15 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 initialInCart={initialInCart}
                 minQuantity={product.min_quantity}
                 productId={product.id}
@@ -194,119 +351,16 @@ export const ProductCard = ({
           )}
         </div>
       </article>
-    );
-  }
 
-  // Основной вариант GRID
-  return (
-    <article className="group relative flex h-full flex-col rounded-2xl bg-white border border-gray-100 p-3 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-      {/* 1. Контейнер картинки: aspect-square w-full rounded-xl overflow-hidden bg-gray-50 relative */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-gray-50 border border-slate-100/80">
-        {/* Бейджи скидок и халяль слева вверху (top-2 left-2) */}
-        <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1 pointer-events-none">
-          {product.discount_percent ? (
-            <span className="pointer-events-auto rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 px-2 py-0.5 text-[11px] sm:text-xs font-black text-white shadow-sm shadow-rose-500/30">
-              -{product.discount_percent}%
-            </span>
-          ) : null}
-          {isHalal ? (
-            <span className="pointer-events-auto rounded-md bg-emerald-700/95 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-white uppercase shadow-2xs">
-              ХАЛЯЛЬ
-            </span>
-          ) : null}
-        </div>
-
-        {/* Кнопка «В избранное» (Heart) справа вверху (top-2 right-2) всегда на месте */}
-        <div className="absolute top-2 right-2 z-10 flex items-center">
-          {favoriteControl ?? (
-            <CatalogFavoriteButton
-              initialFavorite={false}
-              productId={product.id}
-              productName={cleanName}
-            />
-          )}
-        </div>
-
-        {/* Ссылка на товар и фото (или категорийный fallback) */}
-        <Link
-          className="relative block h-full w-full"
-          href={ROUTES.PRODUCT(product.slug)}
-          title={cleanName}
-        >
-          {!hasError && imgSrc ? (
-            <Image
-              alt={cleanName}
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              src={imgSrc}
-              onError={handleImageError}
-              loading="lazy"
-            />
-          ) : (
-            <div className={`flex h-full w-full flex-col items-center justify-center p-3 text-center ${categoryMeta.bgClass}`}>
-              <span className={`grid size-14 place-items-center rounded-2xl ${categoryMeta.badgeClass} shadow-2xs transition-transform duration-300 group-hover:scale-110`}>
-                <FallbackIcon size={28} />
-              </span>
-              <span className="mt-2.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
-                {categoryMeta.label}
-              </span>
-            </div>
-          )}
-        </Link>
-
-
-      </div>
-
-      {/* 2. Название товара (ограничение в 2 строки: line-clamp-2 h-10 min-h-[2.5rem]) */}
-      <div className="mt-2.5 h-10 min-h-[2.5rem]">
-        <Link
-          className="line-clamp-2 text-xs sm:text-sm font-bold text-slate-900 transition-colors group-hover:text-emerald-700 leading-snug"
-          href={ROUTES.PRODUCT(product.slug)}
-          title={cleanName}
-        >
-          {cleanName}
-        </Link>
-      </div>
-
-      {/* 4. Блок цен (актуальная крупно + старая зачеркнутая рядом/над ней + единица измерения) */}
-      <div className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
-        <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-none">
-          {toPriceFormat(product.price)}
-        </span>
-        {product.old_price ? (
-          <span className="text-[11px] sm:text-xs font-medium text-slate-400 line-through leading-none">
-            {toPriceFormat(product.old_price)}
-          </span>
-        ) : null}
-        <span className="text-[10px] sm:text-xs font-semibold text-slate-400 leading-none">
-          {unitDisplay}
-        </span>
-      </div>
-
-      {/* 5. Кнопка «В корзину», на десктопе при наличии превращающаяся в степпер [- 1 +] */}
-      <div className="mt-3 pt-1">
-        {!product.is_available ? (
-          <StockAlertButton
-            className="w-full h-10 justify-center text-xs font-bold"
-            productId={product.id}
-            productName={cleanName}
-          />
-        ) : (
-          cartControl ?? (
-            <CatalogCartButton
-              className="w-full h-10 justify-center text-xs sm:text-sm font-bold shadow-sm shadow-emerald-700/15 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-              initialInCart={initialInCart}
-              minQuantity={product.min_quantity}
-              productId={product.id}
-              productName={cleanName}
-              quantityStep={product.quantity_step}
-              unit={product.unit}
-            />
-          )
-        )}
-      </div>
-    </article>
+      {isQuickViewOpen && (
+        <QuickViewModal
+          isOpen={isQuickViewOpen}
+          onClose={() => setIsQuickViewOpen(false)}
+          product={product}
+          initialInCart={initialInCart}
+        />
+      )}
+    </>
   );
 };
 

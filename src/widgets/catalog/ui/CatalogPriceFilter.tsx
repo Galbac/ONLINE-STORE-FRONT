@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
-import { buildCatalogHref } from "../lib/catalogUrl";
 
 export interface CatalogPriceFilterProps {
   action?: string | undefined;
@@ -22,11 +21,10 @@ export const CatalogPriceFilter = ({
   currentParams,
   maxPrice,
   minPrice,
-  resetHref,
   sliderMax,
 }: CatalogPriceFilterProps) => {
   const router = useRouter();
-  const normalizedSliderMax = Math.max(sliderMax, MIN_PRICE + 1);
+  const normalizedSliderMax = Math.max(sliderMax, MIN_PRICE + 10);
   const initialMinPrice = clampPrice(minPrice, MIN_PRICE, normalizedSliderMax, MIN_PRICE);
   const initialMaxPrice = clampPrice(
     maxPrice,
@@ -89,21 +87,6 @@ export const CatalogPriceFilter = ({
     setToPrice(nextPrice);
   };
 
-  const targetResetHref =
-    resetHref ||
-    buildCatalogHref({
-      ...currentParams,
-      max_price: undefined,
-      min_price: undefined,
-      page: undefined,
-    });
-
-  const hasActivePriceFilter =
-    minPrice !== undefined ||
-    maxPrice !== undefined ||
-    fromPrice > MIN_PRICE ||
-    toPrice < normalizedSliderMax;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
@@ -123,7 +106,7 @@ export const CatalogPriceFilter = ({
   };
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <form className="space-y-4" onSubmit={handleSubmit}>
       {Object.entries(currentParams).map(([key, value]) => {
         if (!value || key === "min_price" || key === "max_price" || key === "page") {
           return null;
@@ -131,21 +114,21 @@ export const CatalogPriceFilter = ({
         return <input key={key} name={key} type="hidden" value={value} />;
       })}
 
-      <div className="bg-bg-hover rounded-lg px-4 py-3">
-        <div className="text-text-muted mb-1 flex items-center gap-2 text-xs font-bold uppercase">
-          <SlidersHorizontal size={14} />
+      <div className="bg-slate-50 border border-slate-100 rounded-xl px-3.5 py-2.5">
+        <div className="text-slate-400 mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider">
+          <SlidersHorizontal size={13} className="text-emerald-600" />
           Диапазон
         </div>
-        <div className="text-text-primary flex items-baseline justify-between gap-3">
-          <span className="text-lg font-bold">{fromPrice.toLocaleString("ru-RU")} ₽</span>
-          <span className="text-text-muted text-xs">до</span>
-          <span className="text-lg font-bold">{toPrice.toLocaleString("ru-RU")} ₽</span>
+        <div className="text-slate-900 flex items-baseline justify-between gap-3">
+          <span className="text-base font-extrabold">{fromPrice.toLocaleString("ru-RU")} ₽</span>
+          <span className="text-slate-400 text-xs font-medium">до</span>
+          <span className="text-base font-extrabold">{toPrice.toLocaleString("ru-RU")} ₽</span>
         </div>
       </div>
 
-      <div className="relative h-9">
-        <div className="bg-border absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full">
-          <span className="bg-accent-primary absolute inset-y-0 rounded-full" style={rangeStyle} />
+      <div className="relative h-7 flex items-center">
+        <div className="bg-slate-200 absolute top-1/2 right-0 left-0 h-1.5 -translate-y-1/2 rounded-full overflow-hidden">
+          <span className="bg-emerald-500 absolute inset-y-0 rounded-full" style={rangeStyle} />
         </div>
         <input
           className="price-range-input"
@@ -169,17 +152,17 @@ export const CatalogPriceFilter = ({
         />
       </div>
 
-      <div className="text-text-muted flex justify-between text-xs">
+      <div className="text-slate-400 flex justify-between text-[11px] font-mono px-0.5">
         <span>{MIN_PRICE} ₽</span>
         <span>{Math.round(normalizedSliderMax / 2).toLocaleString("ru-RU")} ₽</span>
         <span>{normalizedSliderMax.toLocaleString("ru-RU")} ₽</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         <label className="block">
-          <span className="text-text-muted mb-2 block text-xs font-bold">От</span>
+          <span className="text-slate-500 mb-1 block text-xs font-semibold">От</span>
           <input
-            className="border-border focus:border-accent-primary h-11 min-w-0 rounded-lg border px-3 text-sm outline-none"
+            className="border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 h-10 w-full min-w-0 rounded-xl border bg-slate-50/50 px-3 text-xs font-bold text-slate-800 outline-none transition"
             inputMode="decimal"
             min={MIN_PRICE}
             max={toPrice}
@@ -190,9 +173,9 @@ export const CatalogPriceFilter = ({
           />
         </label>
         <label className="block">
-          <span className="text-text-muted mb-2 block text-xs font-bold">До</span>
+          <span className="text-slate-500 mb-1 block text-xs font-semibold">До</span>
           <input
-            className="border-border focus:border-accent-primary h-11 min-w-0 rounded-lg border px-3 text-sm outline-none"
+            className="border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 h-10 w-full min-w-0 rounded-xl border bg-slate-50/50 px-3 text-xs font-bold text-slate-800 outline-none transition"
             inputMode="decimal"
             min={fromPrice}
             max={normalizedSliderMax}
@@ -204,22 +187,13 @@ export const CatalogPriceFilter = ({
         </label>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto] gap-2">
-        <button
-          className="bg-accent-primary text-accent-contrast hover:bg-accent-hover h-10 rounded-lg text-sm font-bold transition disabled:opacity-60"
-          type="submit"
-        >
-          Показать товары
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push(targetResetHref, { scroll: false })}
-          className="border-border text-text-secondary hover:bg-bg-hover grid size-10 place-items-center rounded-lg border transition cursor-pointer"
-          aria-label="Сбросить цену"
-        >
-          <X size={16} className={hasActivePriceFilter ? "text-rose-500" : undefined} />
-        </button>
-      </div>
+      {/* Зеленая плашка на всю ширину (крестик удален по задаче 5) */}
+      <button
+        className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider transition-all duration-200 active:scale-98 shadow-sm shadow-emerald-700/15 cursor-pointer flex items-center justify-center gap-1.5"
+        type="submit"
+      >
+        Показать товары
+      </button>
     </form>
   );
 };

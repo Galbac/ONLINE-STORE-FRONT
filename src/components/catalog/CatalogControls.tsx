@@ -13,7 +13,7 @@ export interface CatalogControlsProps {
   currentParams: CatalogUrlParams;
   currentSort: string;
   hasDiscount: boolean;
-  inStock: boolean;
+  inStock?: boolean | undefined;
   isHalal?: boolean | undefined;
   maxPrice?: string | undefined;
   minPrice?: string | undefined;
@@ -34,7 +34,6 @@ export const CatalogControls = ({
   currentParams,
   currentSort,
   hasDiscount,
-  inStock,
   isHalal,
   maxPrice,
   minPrice,
@@ -44,11 +43,10 @@ export const CatalogControls = ({
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // Подсчет активных фильтров
+  // Подсчет активных фильтров (наличие исключено, так как всегда в наличии)
   let activeFiltersCount = 0;
   if (currentParams.category_id) activeFiltersCount++;
   if (hasDiscount) activeFiltersCount++;
-  if (!inStock) activeFiltersCount++; // нестандартное состояние наличия
   if (isHalal || currentParams.tag === "halal") activeFiltersCount++;
   if (minPrice || maxPrice) activeFiltersCount++;
 
@@ -163,7 +161,6 @@ export const CatalogControls = ({
                 currentCategoryId={currentParams.category_id ? Number(currentParams.category_id) : undefined}
                 currentParams={currentParams}
                 hasDiscount={hasDiscount}
-                inStock={inStock}
                 isHalal={isHalal}
                 maxPrice={maxPrice}
                 minPrice={minPrice}

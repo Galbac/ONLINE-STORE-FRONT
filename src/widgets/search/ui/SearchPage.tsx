@@ -193,8 +193,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
               currentParams={urlParams}
               currentCategoryId={categoryId}
               hasDiscount={hasDiscount}
-              inStock={inStock}
-              maxPrice={maxPrice}
+                maxPrice={maxPrice}
               minPrice={minPrice}
               productType={productType}
               query={query}
@@ -205,7 +204,6 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
               <SearchToolbar
                 currentCategoryId={categoryId}
                 hasDiscount={hasDiscount}
-                inStock={inStock}
                 productsTotal={products.total}
                 query={query}
                 searchParams={searchParams}
@@ -317,7 +315,6 @@ interface SearchFiltersProps {
   currentParams: SearchUrlParams;
   currentCategoryId?: number | undefined;
   hasDiscount: boolean;
-  inStock: boolean;
   maxPrice?: string | undefined;
   minPrice?: string | undefined;
   productType?: string | undefined;
@@ -330,7 +327,6 @@ const SearchFilters = ({
   currentCategoryId,
   currentParams,
   hasDiscount,
-  inStock,
   maxPrice,
   minPrice,
   productType,
@@ -385,18 +381,6 @@ const SearchFilters = ({
             </li>
           ))}
         </ul>
-      </FilterPanel>
-
-      <FilterPanel>
-        <ToggleFilter
-          active={inStock}
-          href={buildSearchHref({
-            ...currentParams,
-            in_stock: inStock ? "false" : "true",
-            page: undefined,
-          })}
-          label="Только в наличии"
-        />
       </FilterPanel>
 
       <FilterPanel>
@@ -511,7 +495,6 @@ interface SearchToolbarProps {
   currentCategoryId?: number | undefined;
   selectedCategoryName?: string | undefined;
   hasDiscount: boolean;
-  inStock: boolean;
   searchParams: SearchPageParams;
   sort: ProductSearchParams["sort"];
   viewMode: ProductViewMode;
@@ -520,7 +503,6 @@ interface SearchToolbarProps {
 const SearchToolbar = ({
   currentCategoryId,
   hasDiscount,
-  inStock,
   productsTotal,
   query,
   searchParams,
@@ -535,7 +517,7 @@ const SearchToolbar = ({
           Показано {productsTotal} {getProductCountLabel(productsTotal)}
         </span>
         {selectedCategoryName ? <FilterChip label={selectedCategoryName} /> : null}
-        {inStock ? <FilterChip label="В наличии" /> : null}
+        
         {hasDiscount ? <FilterChip label="Со скидкой" /> : null}
       </div>
       <div className="flex max-w-full flex-wrap items-center gap-4">
@@ -545,7 +527,6 @@ const SearchToolbar = ({
           hiddenFields={getSearchHiddenFields({
             category_id: currentCategoryId ? String(currentCategoryId) : undefined,
             has_discount: hasDiscount ? "true" : undefined,
-            in_stock: inStock ? undefined : "false",
             min_price: searchParams.min_price,
             max_price: searchParams.max_price,
             product_type: searchParams.product_type,

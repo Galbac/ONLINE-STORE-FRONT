@@ -82,12 +82,12 @@ export const OrderTrackingTimeline = ({ orderId }: OrderTrackingTimelineProps) =
         ) : null}
       </div>
 
-      <div className="mt-6 relative pl-6 space-y-8 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
+      <div className="mt-6 relative space-y-7 before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
         {tracking.steps.map((step: OrderTrackingStep) => {
           return (
             <div key={step.step_key} className="relative flex items-start gap-4">
               <span
-                className={`absolute -left-6 flex size-6 items-center justify-center rounded-full text-white ring-4 ring-white transition-all ${
+                className={`relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full text-white ring-4 ring-white transition-all shadow-xs ${
                   isCancelled && step.step_key === "cancelled"
                     ? "bg-rose-500"
                     : step.is_completed
@@ -98,13 +98,13 @@ export const OrderTrackingTimeline = ({ orderId }: OrderTrackingTimelineProps) =
                 {isCancelled && step.step_key === "cancelled" ? (
                   <XCircle size={14} />
                 ) : step.is_completed ? (
-                  <Check size={13} strokeWidth={3} />
+                  <Check size={14} strokeWidth={3} />
                 ) : (
                   <span className="size-2 rounded-full bg-white" />
                 )}
               </span>
 
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 pt-0.5">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h4
                     className={`text-sm font-bold ${
@@ -126,7 +126,7 @@ export const OrderTrackingTimeline = ({ orderId }: OrderTrackingTimelineProps) =
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-xs text-slate-500">{step.description}</p>
+                <p className="mt-1 text-xs text-slate-500 leading-relaxed">{step.description}</p>
               </div>
             </div>
           );

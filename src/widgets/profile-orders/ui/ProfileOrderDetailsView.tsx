@@ -5,6 +5,7 @@ import { OrderCourierTips } from "./OrderCourierTips";
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   CreditCard,
   Info,
@@ -377,17 +378,33 @@ interface OrderItemRowProps {
 }
 
 const OrderItemRow = ({ item }: OrderItemRowProps) => {
+  const [hasError, setHasError] = useState(false);
+
   return (
     <div className="grid gap-4 p-5 sm:grid-cols-[64px_1fr_auto] sm:items-center md:p-7">
       <Link
-        className="bg-bg-hover text-accent-primary grid size-16 place-items-center rounded-lg font-bold"
+        className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs hover:opacity-90 transition group/img"
         href={ROUTES.PRODUCT(item.product_slug)}
       >
-        {getProductMark(item.product_name)}
+        {item.preview_image_url && !hasError ? (
+          <Image
+            alt={item.product_name}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover/img:scale-105"
+            height={64}
+            unoptimized
+            src={item.preview_image_url}
+            width={64}
+            onError={() => setHasError(true)}
+          />
+        ) : (
+          <span className="text-sm font-bold text-emerald-800 bg-emerald-50 size-full grid place-items-center">
+            {getProductMark(item.product_name)}
+          </span>
+        )}
       </Link>
       <div>
         <Link
-          className="text-text-primary hover:text-accent-primary font-bold"
+          className="text-text-primary hover:text-accent-primary font-bold transition"
           href={ROUTES.PRODUCT(item.product_slug)}
         >
           {item.product_name}

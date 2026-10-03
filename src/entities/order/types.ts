@@ -83,6 +83,7 @@ export interface OrderItemResponse {
   product_id: number;
   product_name: string;
   product_slug: string;
+  preview_image_url?: string | null;
   price: string;
   old_price?: string | null;
   quantity: string;

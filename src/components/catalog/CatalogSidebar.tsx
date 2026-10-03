@@ -24,7 +24,7 @@ export interface CatalogSidebarProps {
   currentCategoryId?: number | undefined;
   currentParams: CatalogUrlParams;
   hasDiscount: boolean;
-  inStock: boolean;
+  inStock?: boolean | undefined;
   isHalal?: boolean | undefined;
   minPrice?: string | undefined;
   maxPrice?: string | undefined;
@@ -36,7 +36,6 @@ export const CatalogSidebar = ({
   currentCategoryId,
   currentParams,
   hasDiscount,
-  inStock,
   isHalal,
   maxPrice,
   minPrice,
@@ -118,7 +117,7 @@ export const CatalogSidebar = ({
         )}
       </div>
 
-      {/* 2. Компактный блок диапазона цен с двумя инпутами и плавным слайдером цен */}
+      {/* 2. Компактный блок диапазона цен */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
         <h3 className="mb-3.5 text-sm font-bold text-slate-900">Цена, ₽</h3>
         <CatalogPriceFilter
@@ -129,39 +128,14 @@ export const CatalogSidebar = ({
         />
       </div>
 
-      {/* 3. Чекбоксы / быстрые переключатели: «Только в наличии», «Товары со скидкой», «Халяль» */}
+      {/* 3. Быстрые переключатели: «Товары со скидкой», «Халяль» (блок «в наличии» удален по задаче 6) */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs space-y-4">
         <h3 className="text-sm font-bold text-slate-900">Параметры</h3>
 
-        {/* Только в наличии */}
+        {/* Товары со скидкой */}
         <div className="flex items-center justify-between gap-3">
           <div>
-            <span className="block text-xs font-bold text-slate-800">Только в наличии</span>
-            <span className="text-[11px] text-slate-400">Скрыть недоступные</span>
-          </div>
-          <Link
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-              inStock ? "bg-emerald-600" : "bg-slate-200"
-            }`}
-            href={buildCatalogHref({
-              ...currentParams,
-              in_stock: inStock ? "false" : "true",
-              page: undefined,
-            })}
-            aria-label="Фильтр: только в наличии"
-          >
-            <span
-              className={`absolute top-0.5 grid size-5 place-items-center rounded-full bg-white shadow-xs transition-transform ${
-                inStock ? "right-0.5" : "left-0.5"
-              }`}
-            />
-          </Link>
-        </div>
-
-        {/* Товары со скидкой */}
-        <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100">
-          <div>
-            <span className="block text-xs font-bold text-slate-800">Товары со скидкой</span>
+            <span className="block text-xs font-bold text-slate-800">🔥 Товары со скидкой</span>
             <span className="text-[11px] text-slate-400">Только акции %</span>
           </div>
           <Link
@@ -184,7 +158,7 @@ export const CatalogSidebar = ({
         </div>
 
         {/* Халяль */}
-        <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100">
+        <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
           <div>
             <span className="block text-xs font-bold text-slate-800">🥩 Халяль</span>
             <span className="text-[11px] text-slate-400">Сертифицированное мясо</span>

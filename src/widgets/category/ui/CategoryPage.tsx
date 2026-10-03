@@ -159,8 +159,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
             <CategoryFilters
               currentParams={urlParamsRecord}
               hasDiscount={hasDiscount}
-              inStock={inStock}
-              maxPrice={maxPrice}
+                maxPrice={maxPrice}
               minPrice={minPrice}
               productType={productType}
               sliderMax={sliderMax}
@@ -171,7 +170,6 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
             <section className="min-w-0">
               <CategoryToolbar
                 category={category}
-                inStock={inStock}
                 productsTotal={products.total}
                 searchParams={searchParams}
                 sort={sort}
@@ -269,7 +267,6 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
 interface CategoryFiltersProps {
   currentParams: Record<string, string | undefined>;
   hasDiscount: boolean;
-  inStock: boolean;
   maxPrice?: string | undefined;
   minPrice?: string | undefined;
   productType?: string | undefined;
@@ -281,7 +278,6 @@ interface CategoryFiltersProps {
 const CategoryFilters = ({
   currentParams,
   hasDiscount,
-  inStock,
   maxPrice,
   minPrice,
   productType,
@@ -311,33 +307,7 @@ const CategoryFilters = ({
         </FilterPanel>
       )}
 
-      <FilterPanel>
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold">Только в наличии</h2>
-            <p className="text-text-muted mt-1 text-xs leading-5">Товары на складе</p>
-          </div>
-          <Link
-            className={cn(
-              "relative h-8 w-14 shrink-0 rounded-full transition",
-              inStock ? "bg-accent-primary" : "bg-border",
-            )}
-            href={buildCategoryHref(slug, {
-              ...currentParams,
-              in_stock: inStock ? "false" : "true",
-              page: undefined,
-            })}
-            aria-label="Переключить фильтр наличия"
-          >
-            <span
-              className={cn(
-                "absolute top-1 grid size-6 place-items-center rounded-full bg-white transition",
-                inStock ? "right-1" : "left-1",
-              )}
-            />
-          </Link>
-        </div>
-      </FilterPanel>
+
 
       <FilterPanel>
         <div className="flex items-center justify-between gap-4">
@@ -541,7 +511,6 @@ const SubcategoryCard = ({ subcategory }: SubcategoryCardProps) => {
 
 interface CategoryToolbarProps {
   category: CategoryDetailResponse;
-  inStock: boolean;
   productsTotal: number;
   searchParams: CategorySearchParams;
   sort: NonNullable<ProductListParams["sort"]>;
@@ -550,7 +519,6 @@ interface CategoryToolbarProps {
 
 const CategoryToolbar = ({
   category,
-  inStock,
   productsTotal,
   searchParams,
   sort,
@@ -565,7 +533,6 @@ const CategoryToolbar = ({
           action={ROUTES.CATEGORY(category.slug)}
           defaultValue={sort}
           hiddenFields={getCategoryHiddenFields({
-            in_stock: inStock ? undefined : "false",
             has_discount: searchParams.has_discount,
             min_price: searchParams.min_price,
             max_price: searchParams.max_price,

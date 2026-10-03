@@ -1,7 +1,6 @@
 "use client";
 
 import { StoreBranchSelector } from "@/widgets/header/ui/StoreBranchSelector";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Clock, LayoutGrid, MapPin, Phone } from "lucide-react";
 import { HeaderSearch } from "./HeaderSearch";
@@ -14,43 +13,14 @@ import { HeaderNav } from "@/widgets/header/ui/HeaderNav";
 import { HeaderUserLink } from "@/widgets/header/ui/HeaderUserLink";
 
 export const Header = () => {
-  const [isScrolledCompact, setIsScrolledCompact] = useState(false);
   const { city, phone, phoneHref } = useDynamicStoreInfo();
 
-  useEffect(() => {
-    let ticking = false;
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          // Гистерезис с широкой мертвой зоной (30px - 110px), исключающий дергание хедера при медленном скролле
-          if (currentScrollY > 110) {
-            setIsScrolledCompact(true);
-          } else if (currentScrollY < 30) {
-            setIsScrolledCompact(false);
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md transition-all duration-300 shadow-xs">
-      {/* 1. Верхний микро-бар (с интеллектуальным скрытием при скролле) */}
-      <div
-        className={`hidden sm:block border-b border-slate-100 bg-slate-50/70 text-xs text-slate-500 transition-all duration-300 overflow-hidden ${
-          isScrolledCompact ? "max-h-0 py-0 opacity-0 border-transparent" : "max-h-12 py-1.5 opacity-100"
-        }`}
-      >
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs">
+      {/* 1. Верхний микро-бар (стабильно зафиксирован, без прыжков) */}
+      <div className="hidden sm:block border-b border-slate-100 bg-slate-50/70 text-xs text-slate-500 py-1.5">
         <Container className="flex items-center justify-between gap-4">
-          {/* На мобилках: только город («Кизляр») и телефон в одну строку */}
+          {/* Город и выбор филиала */}
           <div className="flex items-center gap-2 sm:gap-4">
             <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700">
               <MapPin size={13} className="text-emerald-600 shrink-0" />
@@ -58,14 +28,19 @@ export const Header = () => {
             </span>
             <StoreBranchSelector />
 
-            {/* Скрываем длинный текст на мобильных устройствах (< md) */}
-            <span className="hidden md:inline-flex items-center gap-3">
+            {/* Часы работы и статус доставки */}
+            <div className="hidden lg:inline-flex items-center gap-2.5 shrink-0">
               <span className="text-slate-300 select-none">|</span>
-              <span className="inline-flex items-center gap-1.5 text-slate-600">
-                <Clock size={12} className="text-emerald-600 shrink-0" />
-                <span>Заказы онлайн 24/7 • Доставка курьером 08:00–22:00</span>
-              </span>
-            </span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/90 bg-emerald-50/90 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-950 shadow-2xs">
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
+                </span>
+                <span className="font-bold text-emerald-900">Заказы онлайн 24/7</span>
+                <span className="text-emerald-300 select-none">•</span>
+                <span className="text-emerald-800 font-medium">Доставка 08:00–22:00</span>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
@@ -83,12 +58,8 @@ export const Header = () => {
         </Container>
       </div>
 
-      {/* 2. Главная навигационная полоса: компактная (64px) при скролле */}
-      <Container
-        className={`transition-all duration-300 ${
-          isScrolledCompact ? "py-2 sm:h-16 flex flex-col justify-center" : "py-3 sm:py-3.5"
-        }`}
-      >
+      {/* 2. Главная навигационная полоса */}
+      <Container className="py-2.5 sm:py-3">
         <div className="flex flex-col gap-2.5 lg:grid lg:grid-cols-[auto_auto_minmax(200px,1fr)_auto] lg:items-center lg:gap-5">
           <div className="flex items-center justify-between gap-3">
             <Logo />
@@ -118,12 +89,8 @@ export const Header = () => {
           </div>
         </div>
 
-        {/* 3. Подменю категорий: плавно сворачивается при скролле вниз */}
-        <div
-          className={`transition-all duration-300 overflow-hidden ${
-            isScrolledCompact ? "max-h-0 opacity-0 mt-0" : "max-h-16 opacity-100"
-          }`}
-        >
+        {/* 3. Подменю категорий товаров */}
+        <div className="mt-2 pt-2 border-t border-slate-100/80">
           <HeaderNav />
         </div>
       </Container>

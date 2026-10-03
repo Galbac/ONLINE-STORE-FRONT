@@ -13,18 +13,19 @@ import { CART_CHANGED_EVENT } from "@/shared/lib/cart-events";
 import { toPriceFormat } from "@/shared/lib/format";
 import { getStoredAccessToken } from "@/shared/ui/auth-guard";
 
-interface QuickViewButtonProps {
+export interface QuickViewModalProps {
   product: ProductShortResponse;
+  isOpen: boolean;
+  onClose: () => void;
   initialInCart?: boolean;
-  className?: string;
 }
 
-export const QuickViewButton = ({
+export const QuickViewModal = ({
   product,
+  isOpen,
+  onClose,
   initialInCart = false,
-  className,
-}: QuickViewButtonProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+}: QuickViewModalProps) => {
   const [mounted, setMounted] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [productDetail, setProductDetail] = useState<ProductDetailResponse | null>(null);
@@ -109,7 +110,7 @@ export const QuickViewButton = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setIsOpen(false);
+        onClose();
       }
     };
 
@@ -118,7 +119,9 @@ export const QuickViewButton = ({
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const activeImageUrl = selectedImage ?? product.preview_image_url;
   const allImages = productDetail?.images?.length
@@ -132,13 +135,13 @@ export const QuickViewButton = ({
     ? ROUTES.CATEGORY(product.category.slug)
     : ROUTES.CATALOG;
 
-  const modalContent = isOpen ? (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby={`quick-view-title-${product.id}`}
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={() => setIsOpen(false)}
+      onClick={onClose}
     >
       <div
         className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col md:flex-row"
@@ -147,8 +150,8 @@ export const QuickViewButton = ({
         {/* Close button */}
         <button
           type="button"
-          onClick={() => setIsOpen(false)}
-          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 z-30 flex size-9 items-center justify-center rounded-full bg-slate-100/95 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all hover:scale-105 active:scale-95 shadow-xs"
+          onClick={onClose}
+          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 z-30 flex size-9 items-center justify-center rounded-full bg-slate-100/95 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all hover:scale-105 active:scale-95 shadow-xs cursor-pointer"
           aria-label="Закрыть быстрое окно"
         >
           <X size={18} />
@@ -193,7 +196,7 @@ export const QuickViewButton = ({
                     type="button"
                     onClick={() => setSelectedImage(img.url)}
                     className={cn(
-                      "relative size-12 shrink-0 overflow-hidden rounded-xl border-2 bg-white transition-all",
+                      "relative size-12 shrink-0 overflow-hidden rounded-xl border-2 bg-white transition-all cursor-pointer",
                       isSelected
                         ? "border-emerald-600 ring-2 ring-emerald-600/20"
                         : "border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-100",
@@ -225,7 +228,7 @@ export const QuickViewButton = ({
             <div className="flex flex-wrap items-center gap-2 pr-8">
               <Link
                 href={categoryLink}
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
                 className="inline-flex items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-200/50 hover:bg-emerald-100 transition"
               >
                 {categoryName}
@@ -252,7 +255,7 @@ export const QuickViewButton = ({
               id={`quick-view-title-${product.id}`}
               className="mt-3 text-lg sm:text-2xl font-black text-slate-900 leading-snug tracking-tight hover:text-emerald-700 transition"
             >
-              <Link href={ROUTES.PRODUCT(product.slug)} onClick={() => setIsOpen(false)}>
+              <Link href={ROUTES.PRODUCT(product.slug)} onClick={onClose}>
                 {product.name}
               </Link>
             </h2>
@@ -332,7 +335,7 @@ export const QuickViewButton = ({
 
             <Link
               href={ROUTES.PRODUCT(product.slug)}
-              onClick={() => setIsOpen(false)}
+              onClick={onClose}
               className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 hover:bg-emerald-50 hover:border-emerald-200/80 hover:text-emerald-800 py-2.5 px-4 text-xs font-bold text-slate-700 transition active:scale-[0.99]"
             >
               <span>Перейти на страницу товара</span>
@@ -342,7 +345,23 @@ export const QuickViewButton = ({
         </div>
       </div>
     </div>
-  ) : null;
+  );
+
+  return createPortal(modalContent, document.body);
+};
+
+export interface QuickViewButtonProps {
+  product: ProductShortResponse;
+  initialInCart?: boolean;
+  className?: string;
+}
+
+export const QuickViewButton = ({
+  product,
+  initialInCart = false,
+  className,
+}: QuickViewButtonProps) => {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
@@ -355,7 +374,7 @@ export const QuickViewButton = ({
             setIsOpen(true);
           }}
           className={cn(
-            "peer flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur-md transition-all duration-200 border border-slate-200/70 hover:border-emerald-400 hover:scale-110 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 opacity-0 pointer-events-none -translate-x-1.5 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-x-0 focus-visible:opacity-100 focus-visible:pointer-events-auto focus-visible:translate-x-0 focus-visible:ring-2 focus-visible:ring-emerald-500",
+            "peer flex size-7 sm:size-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur-md transition-all duration-200 border border-slate-200/70 hover:border-emerald-400 hover:scale-110 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 opacity-0 pointer-events-none -translate-x-1.5 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-x-0 focus-visible:opacity-100 focus-visible:pointer-events-auto focus-visible:translate-x-0 focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer",
             className,
           )}
           aria-label={`Быстрый просмотр ${product.name}`}
@@ -370,7 +389,12 @@ export const QuickViewButton = ({
         </span>
       </div>
 
-      {mounted ? createPortal(modalContent, document.body) : null}
+      <QuickViewModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        product={product}
+        initialInCart={initialInCart}
+      />
     </>
   );
 };

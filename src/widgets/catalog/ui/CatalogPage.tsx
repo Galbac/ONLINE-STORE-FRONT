@@ -55,7 +55,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const page = toPositiveNumber(searchParams.page, 1);
   const pageSize = toPageSize(searchParams.limit);
   const categoryId = toOptionalNumber(searchParams.category_id);
-  const inStock = searchParams.in_stock !== "false";
   const hasDiscount = searchParams.has_discount === "true";
   const minPrice = toOptionalPrice(searchParams.min_price);
   const maxPrice = toOptionalPrice(searchParams.max_price);
@@ -69,11 +68,8 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     page,
     limit: pageSize,
     sort,
+    in_stock: true,
   };
-
-  if (inStock) {
-    productParams.in_stock = true;
-  }
 
   if (maxPrice !== undefined) {
     productParams.max_price = maxPrice;
@@ -102,15 +98,13 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     productParams.article = article;
   }
 
+  // Запрос реальной максимальной цены в базе данных среди доступных товаров (сортировка по убыванию цены)
   const priceBoundsParams: ProductListParams = {
     limit: 1,
     page: 1,
     sort: "price_desc",
+    in_stock: true,
   };
-
-  if (inStock) {
-    priceBoundsParams.in_stock = true;
-  }
 
   if (categoryId !== undefined) {
     priceBoundsParams.category_id = categoryId;
@@ -138,6 +132,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const cartProductIds = new Set(cart.items.map((item) => item.product_id));
 
   const urlParams = toCatalogUrlParams(searchParams);
+  // Динамический расчет максимальной границы цен из базы данных (без хардкода 1000)
   const sliderMax = getPriceSliderMax(priceBounds.items, minPrice, maxPrice);
 
   return (
@@ -163,7 +158,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 currentCategoryId={categoryId}
                 currentParams={urlParams}
                 hasDiscount={hasDiscount}
-                inStock={inStock}
                 isHalal={tag === "halal"}
                 maxPrice={maxPrice}
                 minPrice={minPrice}
@@ -178,7 +172,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 currentParams={urlParams}
                 currentSort={sort}
                 hasDiscount={hasDiscount}
-                inStock={inStock}
                 isHalal={tag === "halal"}
                 maxPrice={maxPrice}
                 minPrice={minPrice}
@@ -192,14 +185,13 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 hasDiscount={hasDiscount}
                 selectedCategoryName={selectedCategory?.name}
                 productsTotal={products.total}
-                inStock={inStock}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
                 sort={sort}
                 viewMode={viewMode}
               />
 
-              {/* Компактная лента БЫСТРЫХ ТЕГОВ (без дублирования 12 категорий из сайдбара) */}
+              {/* Компактная лента БЫСТРЫХ ТЕГОВ */}
               <div className="my-5">
                 <QuickFilterChips
                   chips={[
@@ -332,7 +324,6 @@ interface CatalogToolbarProps {
   hasDiscount: boolean;
   productsTotal: number;
   selectedCategoryName?: string | undefined;
-  inStock: boolean;
   minPrice?: string | undefined;
   maxPrice?: string | undefined;
   viewMode: ProductViewMode;
@@ -341,7 +332,6 @@ interface CatalogToolbarProps {
 const CatalogToolbar = ({
   currentParams,
   hasDiscount,
-  inStock,
   maxPrice,
   minPrice,
   productsTotal,
@@ -353,13 +343,11 @@ const CatalogToolbar = ({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          {/* Исправлена ошибка склонения русских числительных: 159 товаров */}
           <p className="text-slate-600 text-sm font-semibold">
             {formatFoundProducts(productsTotal)}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {selectedCategoryName ? <FilterChip label={selectedCategoryName} /> : null}
-            {inStock ? <FilterChip label="В наличии" /> : null}
             {hasDiscount ? <FilterChip label="Со скидкой" /> : null}
             {maxPrice ? <FilterChip label={`Цена: до ${maxPrice} ₽`} /> : null}
             {minPrice ? <FilterChip label={`Цена: от ${minPrice} ₽`} /> : null}
@@ -378,7 +366,6 @@ const CatalogToolbar = ({
             hiddenFields={getCatalogSortHiddenFields({
               category_id: currentParams.category_id,
               has_discount: currentParams.has_discount,
-              in_stock: currentParams.in_stock,
               limit: currentParams.limit,
               max_price: maxPrice,
               min_price: minPrice,
@@ -551,18 +538,21 @@ const getPriceSliderMax = (
   minPrice?: string,
   maxPrice?: string,
 ): number => {
-  const highestPrice = items[0]?.price ? Math.ceil(Number(items[0].price)) : 2000;
+  // Реальная наивысшая цена товара из базы данных
+  const rawHighest = items[0]?.price ? Number(items[0].price) : 500;
+  // Округляем вверх до красивого кратного 50 (например 320 -> 350, 780 -> 800)
+  const highestPrice = Math.max(Math.ceil(rawHighest / 50) * 50, 100);
   const currentMax = maxPrice ? Number(maxPrice) : 0;
   const currentMin = minPrice ? Number(minPrice) : 0;
 
-  return Math.max(highestPrice, currentMax, currentMin, 1000);
+  return Math.max(highestPrice, currentMax, currentMin);
 };
 
 const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams => ({
   article: searchParams.article,
   category_id: searchParams.category_id,
   has_discount: searchParams.has_discount,
-  in_stock: searchParams.in_stock,
+  in_stock: undefined, // наличие не передается в URL, так как действует всегда
   limit: searchParams.limit,
   max_price: searchParams.max_price,
   min_price: searchParams.min_price,

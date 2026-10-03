@@ -394,6 +394,7 @@ export const AdminDashboardView = ({
             <RecentOrdersWidget
               orders={recentOrders}
               fallbackOrders={dashboard.recent_orders || []}
+              newOrdersCount={dashboard.orders.new_count}
               periodLabel={filters.label}
               hasFilteredOrders={hasFilteredOrders}
             />
@@ -883,11 +884,13 @@ function HourlyHeatmapWidget({ items }: { items: { hour: number; orders_count: n
 function RecentOrdersWidget({
   orders,
   fallbackOrders,
+  newOrdersCount,
   periodLabel,
   hasFilteredOrders,
 }: {
   orders: any[];
   fallbackOrders: any[];
+  newOrdersCount: number;
   periodLabel: string;
   hasFilteredOrders: boolean;
 }) {
@@ -898,6 +901,14 @@ function RecentOrdersWidget({
       <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-slate-100 mb-3">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-black text-slate-900">Заказы</h2>
+          <span
+            aria-label={`${newOrdersCount} новых заказов`}
+            className={`rounded-lg px-2 py-0.5 text-[11px] font-bold ${
+              newOrdersCount > 0 ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-500"
+            }`}
+          >
+            Новые: {newOrdersCount.toLocaleString("ru-RU")}
+          </span>
           <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
             {hasFilteredOrders ? periodLabel : "Последние из БД"}
           </span>

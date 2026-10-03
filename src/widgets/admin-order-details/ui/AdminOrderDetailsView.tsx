@@ -26,6 +26,20 @@ type ActionName =
   | "status"
   | "sync";
 
+const ORDER_STATUS_TRANSITIONS: Record<string, string[]> = {
+  pending_payment: ["new", "cancelled"],
+  new: ["confirmed", "awaiting_confirmation", "assembling", "cancelled"],
+  confirmed: ["assembling", "cancelled"],
+  awaiting_confirmation: ["confirmed", "assembling", "cancelled"],
+  assembling: ["assembled", "delivering"],
+  assembled: ["ready_for_pickup", "delivering", "completed"],
+  ready_for_pickup: ["completed"],
+  delivering: ["delivered", "completed"],
+  delivered: ["completed"],
+  completed: [],
+  cancelled: [],
+};
+
 export const AdminOrderDetailsView = ({
   initialOrder,
   initialPayment,
@@ -36,6 +50,8 @@ export const AdminOrderDetailsView = ({
   const [pendingAction, setPendingAction] = useState<ActionName | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const availableStatuses = [order.status, ...(ORDER_STATUS_TRANSITIONS[order.status] ?? [])]
+    .filter((status, index, statuses) => statuses.indexOf(status) === index);
 
   const runAction = async (action: ActionName, handler: () => Promise<void>): Promise<void> => {
     setPendingAction(action);
@@ -364,9 +380,9 @@ export const AdminOrderDetailsView = ({
                   className="border-border bg-bg-primary focus:border-accent-primary h-11 w-full rounded-lg border px-3 text-sm font-semibold outline-none cursor-pointer"
                   required
                 >
-                  {Object.entries(ORDER_STATUS_LABELS).map(([val, label]) => (
-                    <option key={val} value={val}>
-                      {label}
+                  {availableStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {ORDER_STATUS_LABELS[status] ?? formatOrderStatus(status)}
                     </option>
                   ))}
                 </select>

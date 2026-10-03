@@ -32,7 +32,7 @@ export const QuickViewModal = ({
   initialInCart = false,
 }: QuickViewModalProps) => {
   const [mounted, setMounted] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageId, setSelectedImageId] = useState<number | string | null>(null);
   const [productDetail, setProductDetail] = useState<ProductDetailResponse | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isInCart, setIsInCart] = useState(initialInCart);
@@ -100,7 +100,7 @@ export const QuickViewModal = ({
   // Fetch full details (description, additional gallery photos) on open
   useEffect(() => {
     if (!isOpen) {
-      setSelectedImage(null);
+      setSelectedImageId(null);
       setProductDetail(null);
       return;
     }
@@ -146,12 +146,17 @@ export const QuickViewModal = ({
 
   if (!isOpen || !mounted) return null;
 
-  const activeImageUrl = selectedImage ?? product.preview_image_url;
   const allImages = productDetail?.images?.length
     ? productDetail.images
     : product.preview_image_url
       ? [{ id: 0, url: product.preview_image_url, sort_order: 0 }]
       : [];
+  const selectedImage =
+    selectedImageId === null
+      ? undefined
+      : allImages.find((image) => (image.id || image.url) === selectedImageId);
+  const activeImageUrl = selectedImage?.url ?? product.preview_image_url;
+  const initialImageIndex = allImages.findIndex((image) => image.url === product.preview_image_url);
 
   const categoryName = product.category?.name ?? "Каталог";
   const categoryLink = product.category?.slug
@@ -217,15 +222,19 @@ export const QuickViewModal = ({
           {/* Thumbnails row if multiple images exist */}
           {allImages.length > 1 ? (
             <div className="mt-4 flex max-w-full items-center gap-2 overflow-x-auto px-1 py-1">
-              {allImages.map((img) => {
-                const isSelected = activeImageUrl === img.url;
+              {allImages.map((img, index) => {
+                const imageKey = img.id || img.url;
+                const isSelected =
+                  selectedImageId === null
+                    ? index === initialImageIndex
+                    : imageKey === selectedImageId;
                 return (
                   <button
                     key={img.id || img.url}
                     type="button"
-                    onClick={() => setSelectedImage(img.url)}
+                    onClick={() => setSelectedImageId(imageKey)}
                     className={cn(
-                      "relative size-12 shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 bg-white transition-all",
+                      "relative size-12 shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 bg-white transition-all focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none",
                       isSelected
                         ? "border-emerald-600 ring-2 ring-emerald-600/20"
                         : "border-slate-200 opacity-70 hover:border-slate-300 hover:opacity-100",

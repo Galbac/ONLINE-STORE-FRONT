@@ -13,6 +13,14 @@ const getAuthHeaders = (accessToken?: string | null): HeadersInit | undefined =>
 };
 
 export const notificationApi = {
+  getUnreadCount: async (accessToken?: string | null): Promise<{ unread_count: number }> => {
+    return apiClient.get<{ unread_count: number }>(
+      API_ENDPOINTS.NOTIFICATION.UNREAD_COUNT,
+      undefined,
+      getAuthHeaders(accessToken),
+    );
+  },
+
   getList: async (
     params: NotificationListParams = {},
     accessToken?: string | null,
@@ -35,6 +43,14 @@ export const notificationApi = {
   ): Promise<NotificationResponse> => {
     return apiClient.patch<undefined, NotificationResponse>(
       API_ENDPOINTS.NOTIFICATION.READ_BY_ID(notificationId),
+      undefined,
+      getAuthHeaders(accessToken),
+    );
+  },
+
+  markAllAsRead: async (accessToken?: string | null): Promise<{ updated_count: number }> => {
+    return apiClient.patch<undefined, { updated_count: number }>(
+      API_ENDPOINTS.NOTIFICATION.READ_ALL,
       undefined,
       getAuthHeaders(accessToken),
     );

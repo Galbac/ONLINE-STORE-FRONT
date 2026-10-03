@@ -121,19 +121,15 @@ export const AdminAutoFiltersForm = ({
 
       {children}
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 pt-1">
-        <div className="flex items-center gap-2 text-xs text-text-muted">
-          {isPending ? (
-            <span className="inline-flex items-center gap-1.5 font-medium text-emerald-600">
-              <Loader2 className="animate-spin" size={13} />
-              Обновление списка...
-            </span>
-          ) : (
-            <span className="text-[11px] text-slate-400">
-              Фильтры применяются автоматически
-            </span>
-          )}
-        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-2 text-xs text-text-muted">
+            {isPending ? (
+              <span className="inline-flex items-center gap-1.5 font-medium text-emerald-600">
+                <Loader2 className="animate-spin" size={13} />
+                Обновление списка...
+              </span>
+            ) : null}
+          </div>
 
         {showReset && resetHref && (
           <Link

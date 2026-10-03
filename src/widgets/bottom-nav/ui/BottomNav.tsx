@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, Home, LayoutGrid, ReceiptText, ShoppingBag, User } from "lucide-react";
+import { Bell, Heart, Home, LayoutGrid, ReceiptText, ShoppingBag, User } from "lucide-react";
 
 import { cartApi } from "@/entities/cart";
 import { useFavoritesStore } from "@/entities/favorite";
@@ -14,6 +14,7 @@ import { isAccessTokenValid } from "@/shared/lib/auth-token";
 import { CART_CHANGED_EVENT, type CartChangedDetail } from "@/shared/lib/cart-events";
 import { FAVORITES_CHANGED_EVENT, type FavoritesChangedDetail } from "@/shared/lib/favorite-events";
 import { getStoredAccessToken } from "@/shared/ui";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
 export const BottomNav = () => {
   const rawPathname = usePathname();
@@ -22,6 +23,7 @@ export const BottomNav = () => {
   const [isAuth, setIsAuth] = useState<boolean>(false);
   const [favoritesCount, setFavoritesCount] = useState<number>(0);
   const [ordersCount, setOrdersCount] = useState<number>(0);
+  const notificationsCount = useUnreadNotifications();
 
   useEffect(() => {
     if (pathname.startsWith("/admin")) return;
@@ -150,9 +152,10 @@ export const BottomNav = () => {
 
   const isOrdersActive =
     pathname === ROUTES.PROFILE_ORDERS || pathname.startsWith(`${ROUTES.PROFILE_ORDERS}/`);
+  const isNotificationsActive = pathname.startsWith("/profile/notifications");
 
   const isProfileActive =
-    (pathname.startsWith("/profile") && !isFavoritesActive && !isOrdersActive) ||
+    (pathname.startsWith("/profile") && !isFavoritesActive && !isOrdersActive && !isNotificationsActive) ||
     pathname === ROUTES.LOGIN;
 
   const items = [
@@ -191,6 +194,14 @@ export const BottomNav = () => {
       isActive: isOrdersActive,
     },
     {
+      href: "/profile/notifications",
+      label: "Уведомления",
+      icon: Bell,
+      badge: notificationsCount > 0 ? (notificationsCount > 99 ? "99+" : String(notificationsCount)) : null,
+      badgeClassName: "bg-rose-500 text-white",
+      isActive: isNotificationsActive,
+    },
+    {
       href: isAuth ? ROUTES.PROFILE : ROUTES.LOGIN,
       label: isAuth ? "Профиль" : "Войти",
       icon: User,
@@ -204,7 +215,7 @@ export const BottomNav = () => {
       className="border-border/80 bg-bg-primary/95 supports-[backdrop-filter]:bg-bg-primary/80 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-md transition-all lg:hidden"
       style={{ paddingBottom: "max(var(--sab, 0px), 8px)" }}
     >
-      <div className="grid grid-cols-6 items-center justify-around px-2 pt-2">
+      <div className="grid grid-cols-7 items-center justify-around px-1 pt-2">
         {items.map((item) => {
           const Icon = item.icon;
           return (

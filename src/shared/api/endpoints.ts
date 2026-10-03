@@ -191,6 +191,8 @@ export const API_ENDPOINTS = {
   NOTIFICATION: {
     LIST: "/api/notifications",
     READ_BY_ID: (notificationId: number): string => `/api/notifications/${notificationId}/read`,
+    READ_ALL: "/api/notifications/read-all",
+    UNREAD_COUNT: "/api/notifications/unread-count",
     TEST_EMAIL: "/api/notifications/test-email",
     TEST_TELEGRAM: "/api/notifications/test-telegram",
   },

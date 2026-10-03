@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -63,6 +63,7 @@ export const ProfileNotificationsView = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const didAutoReadOnEntry = useRef(false);
 
   const {
     permission,
@@ -94,10 +95,12 @@ export const ProfileNotificationsView = () => {
         setIsLoading(true);
         setErrorMessage(null);
 
-        const response = await notificationApi.getList(
-          toNotificationParams(activeFilter),
-          accessToken,
-        );
+        if (!didAutoReadOnEntry.current) {
+          didAutoReadOnEntry.current = true;
+          await notificationApi.markAllAsRead(accessToken);
+          window.dispatchEvent(new CustomEvent("customer-notifications-read"));
+        }
+        const response = await notificationApi.getList(toNotificationParams(activeFilter), accessToken);
 
         if (active) {
           setNotifications(response.items);

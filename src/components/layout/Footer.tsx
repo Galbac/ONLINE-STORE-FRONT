@@ -12,18 +12,8 @@ interface FooterLink {
   label: string;
 }
 
-const buyerLinks: FooterLink[] = [
-  { href: ROUTES.CATALOG, label: "Каталог товаров" },
-  { href: "/catalog?has_discount=true", label: "Акции и спецпредложения" },
-  { href: `${ROUTES.CATALOG}?sort=popular`, label: "Хиты продаж" },
-  { href: ROUTES.CHECKOUT, label: "Оформление заказа" },
-  { href: ROUTES.PROFILE_ORDERS, label: "Мои заказы" },
-  { href: ROUTES.FAVORITES, label: "Список избранного" },
-];
-
 const helpAndDocLinks: FooterLink[] = [
   { href: ROUTES.FEEDBACK, label: "Служба поддержки" },
-  { href: ROUTES.PROFILE_ADDRESSES, label: "Адреса и самовывоз" },
   { href: ROUTES.OFFER, label: "Публичная оферта" },
   { href: ROUTES.PRIVACY, label: "Политика конфиденциальности" },
   { href: ROUTES.PERSONAL_DATA_CONSENT, label: "Обработка персональных данных" },
@@ -40,7 +30,7 @@ export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) =>
     <footer className="hidden lg:block mt-16 border-t border-slate-200 bg-white text-slate-600">
       <Container className="py-12">
         {/* Сетка колонок футера */}
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-2">
           {/* Колонка 1: Логотип, описание сервиса, статус работы магазина */}
           <div className="flex flex-col">
             <Link className="flex items-center gap-2.5" href={ROUTES.HOME}>
@@ -60,10 +50,7 @@ export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) =>
             </div>
           </div>
 
-          {/* Колонка 2: Покупателям (ссылки) */}
-          <FooterColumn links={buyerLinks} title="Покупателям" />
-
-          {/* Колонка 3: Помощь и документы (ссылки) */}
+          {/* Помощь и документы */}
           <FooterColumn links={helpAndDocLinks} title="Помощь и документы" />
 
         </div>

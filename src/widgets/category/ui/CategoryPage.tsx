@@ -114,8 +114,13 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
     }),
   ]);
 
-  const rawMaxPrice = Number(facets.max_price) || 5000;
-  const sliderMax = Math.ceil(Math.max(100, rawMaxPrice) / 100) * 100;
+  const rawMaxPrice = Number(facets.max_price) || 0;
+  const sliderMax = Math.max(
+    100,
+    Math.ceil(rawMaxPrice),
+    Number(maxPrice) || 0,
+    Number(minPrice) || 0,
+  );
 
   const childCategories = category.children ?? [];
   const favoriteProductIds = new Set(favorites.items.map((product) => product.id));

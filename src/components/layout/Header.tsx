@@ -11,6 +11,7 @@ import { HeaderCartLink } from "@/widgets/header/ui/HeaderCartLink";
 import { HeaderFavoritesLink } from "@/widgets/header/ui/HeaderFavoritesLink";
 import { HeaderNav } from "@/widgets/header/ui/HeaderNav";
 import { HeaderUserLink } from "@/widgets/header/ui/HeaderUserLink";
+import { HeaderNotificationsLink } from "@/widgets/header/ui/HeaderNotificationsLink";
 
 export const Header = () => {
   const { city, phone, phoneHref } = useDynamicStoreInfo();
@@ -84,6 +85,7 @@ export const Header = () => {
           {/* Панель пользователя: скрыта на мобилках и планшетах (< lg), т.к. корзина и избранное есть в BottomNav */}
           <div className="hidden lg:flex items-center gap-1 sm:gap-2 shrink-0">
             <HeaderUserLink />
+            <HeaderNotificationsLink />
             <HeaderFavoritesLink />
             <HeaderCartLink />
           </div>

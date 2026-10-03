@@ -2,7 +2,7 @@
 
 import { StoreBranchSelector } from "@/widgets/header/ui/StoreBranchSelector";
 import Link from "next/link";
-import { Clock, LayoutGrid, MapPin, Phone } from "lucide-react";
+import { LayoutGrid, MapPin, Phone } from "lucide-react";
 import { HeaderSearch } from "./HeaderSearch";
 import { ROUTES } from "@/shared/config";
 import { useDynamicStoreInfo } from "@/entities/settings";

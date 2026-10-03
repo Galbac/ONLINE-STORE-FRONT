@@ -14,7 +14,8 @@ import {
 import { ROUTES } from "@/shared/config";
 import { getAdminErrorMessage } from "@/shared/api";
 import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
-import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatDeliveryType } from "@/shared/lib/format";
+import { toPriceFormat, formatOrderStatus, formatDeliveryType } from "@/shared/lib/format";
+import { OrderStatusBadge, PaymentStatusBadge } from "@/shared/ui";
 
 interface AdminUserDetailsViewProps {
   initialOrders: AdminUserOrdersResponse;
@@ -319,8 +320,8 @@ const OrdersTable = ({ orders }: { orders: AdminUserOrderShortResponse[] }) => {
                 </Link>
                 <p className="text-text-muted mt-1 text-xs">{order.items_count ?? 0} поз.</p>
               </TableCell>
-              <TableCell>{formatOrderStatus(order.status)}</TableCell>
-              <TableCell>{formatPaymentStatus(order.payment_status)}</TableCell>
+              <TableCell><OrderStatusBadge status={order.status} /></TableCell>
+              <TableCell><PaymentStatusBadge status={order.payment_status} /></TableCell>
               <TableCell>{formatDeliveryType(order.delivery_type)}</TableCell>
               <TableCell>{toPriceFormat(order.final_price)}</TableCell>
               <TableCell>{formatDate(order.created_at)}</TableCell>

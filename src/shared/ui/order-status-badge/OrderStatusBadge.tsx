@@ -1,18 +1,25 @@
 import { cn } from "@/shared/config";
-import { ORDER_STATUS_LABELS } from "@/shared/lib/format";
+import { formatOrderStatus } from "@/shared/lib/format";
 
 export type OrderStatusType =
   | "created"
+  | "new"
   | "pending_payment"
   | "paid"
   | "confirmed"
+  | "awaiting_confirmation"
   | "assembling"
   | "assembled"
+  | "ready_for_pickup"
   | "delivering"
+  | "in_delivery"
   | "in_transit"
+  | "on_the_way"
   | "delivered"
   | "completed"
   | "cancelled"
+  | "canceled"
+  | "rejected"
   | string;
 
 interface OrderStatusBadgeProps {
@@ -32,12 +39,24 @@ const STATUS_STYLES: Record<
     border: "border-amber-200/90",
     dot: "bg-amber-500",
   },
+  new: {
+    bg: "bg-sky-50",
+    text: "text-sky-800",
+    border: "border-sky-200/90",
+    dot: "bg-sky-500",
+  },
   pending_payment: {
     bg: "bg-amber-50",
     text: "text-amber-800",
     border: "border-amber-300/80",
     dot: "bg-amber-500",
     pulse: true,
+  },
+  awaiting_confirmation: {
+    bg: "bg-amber-50",
+    text: "text-amber-800",
+    border: "border-amber-200/90",
+    dot: "bg-amber-500",
   },
   paid: {
     bg: "bg-teal-50",
@@ -46,10 +65,10 @@ const STATUS_STYLES: Record<
     dot: "bg-teal-500",
   },
   confirmed: {
-    bg: "bg-sky-50",
-    text: "text-sky-800",
-    border: "border-sky-200/90",
-    dot: "bg-sky-500",
+    bg: "bg-blue-50",
+    text: "text-blue-800",
+    border: "border-blue-200/90",
+    dot: "bg-blue-500",
   },
   assembling: {
     bg: "bg-indigo-50",
@@ -64,6 +83,12 @@ const STATUS_STYLES: Record<
     border: "border-violet-200/90",
     dot: "bg-violet-500",
   },
+  ready_for_pickup: {
+    bg: "bg-purple-50",
+    text: "text-purple-800",
+    border: "border-purple-200/90",
+    dot: "bg-purple-500",
+  },
   delivering: {
     bg: "bg-cyan-50",
     text: "text-cyan-800",
@@ -71,7 +96,21 @@ const STATUS_STYLES: Record<
     dot: "bg-cyan-500",
     pulse: true,
   },
+  in_delivery: {
+    bg: "bg-cyan-50",
+    text: "text-cyan-800",
+    border: "border-cyan-200/90",
+    dot: "bg-cyan-500",
+    pulse: true,
+  },
   in_transit: {
+    bg: "bg-cyan-50",
+    text: "text-cyan-800",
+    border: "border-cyan-200/90",
+    dot: "bg-cyan-500",
+    pulse: true,
+  },
+  on_the_way: {
     bg: "bg-cyan-50",
     text: "text-cyan-800",
     border: "border-cyan-200/90",
@@ -96,6 +135,18 @@ const STATUS_STYLES: Record<
     border: "border-rose-200/90",
     dot: "bg-rose-500",
   },
+  canceled: {
+    bg: "bg-rose-50",
+    text: "text-rose-700",
+    border: "border-rose-200/90",
+    dot: "bg-rose-500",
+  },
+  rejected: {
+    bg: "bg-rose-50",
+    text: "text-rose-700",
+    border: "border-rose-200/90",
+    dot: "bg-rose-500",
+  },
 };
 
 export const OrderStatusBadge = ({
@@ -105,10 +156,10 @@ export const OrderStatusBadge = ({
   showDot = true,
 }: OrderStatusBadgeProps) => {
   if (!status) {
-    return <span className="text-slate-400 text-xs">-</span>;
+    return <span className="text-slate-400 text-xs">—</span>;
   }
 
-  const normalized = status.toLowerCase();
+  const normalized = status.trim().toLowerCase();
   const style = STATUS_STYLES[normalized] || {
     bg: "bg-slate-100",
     text: "text-slate-700",
@@ -116,7 +167,7 @@ export const OrderStatusBadge = ({
     dot: "bg-slate-400",
   };
 
-  const label = ORDER_STATUS_LABELS[normalized] || status;
+  const label = formatOrderStatus(status);
 
   return (
     <span

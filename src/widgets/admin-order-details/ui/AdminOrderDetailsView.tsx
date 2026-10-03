@@ -8,7 +8,8 @@ import { adminOrderApi, type AdminOrderDetailResponse } from "@/entities/admin-o
 import { paymentApi, type PaymentDetailResponse } from "@/entities/payment";
 import { getStoredAdminAccessToken, getAdminErrorMessage } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
-import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus, formatDeliveryType } from "@/shared/lib/format";
+import { OrderStatusBadge, PaymentStatusBadge, SyncStatusBadge } from "@/shared/ui";
+import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus, formatDeliveryType, formatUnit, ORDER_STATUS_LABELS } from "@/shared/lib/format";
 import { formatPhoneMask } from "@/shared/lib/format/phone";
 
 interface AdminOrderDetailsViewProps {
@@ -240,13 +241,13 @@ export const AdminOrderDetailsView = ({
       {error ? <Alert tone="error">{error}</Alert> : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Статус заказа" value={formatOrderStatus(order.status)} />
+        <SummaryCard label="Статус заказа" value={<OrderStatusBadge size="md" status={order.status} />} />
         <SummaryCard
           label="Статус оплаты"
-          value={formatPaymentStatus(order.payment_status ?? paymentSummary?.status)}
+          value={<PaymentStatusBadge size="md" status={order.payment_status ?? paymentSummary?.status} />}
         />
         <SummaryCard label="Сумма" value={toPriceFormat(order.final_price)} />
-        <SummaryCard label="Синхронизация 1С" value={formatSyncStatus(order.sync_status)} />
+        <SummaryCard label="Синхронизация 1С" value={<SyncStatusBadge size="md" status={order.sync_status} />} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -277,11 +278,11 @@ export const AdminOrderDetailsView = ({
                       <TableCell>
                         <p className="text-text-primary font-bold">{item.product_name}</p>
                         <p className="text-text-muted mt-1 text-xs">
-                          Product ID: {item.product_id}
+                          Артикул: {item.product_id}
                         </p>
                       </TableCell>
                       <TableCell>
-                        {formatQuantity(item.quantity)} {item.unit}
+                        {formatQuantity(item.quantity)} {formatUnit(item.unit)}
                       </TableCell>
                       <TableCell>{toPriceFormat(item.price)}</TableCell>
                       <TableCell>{toPriceFormat(item.final_price)}</TableCell>
@@ -309,7 +310,7 @@ export const AdminOrderDetailsView = ({
                     className="border-border rounded-lg border p-3"
                     key={`${item.status}-${item.created_at}`}
                   >
-                    <p className="text-text-primary font-bold">{item.status}</p>
+                    <p className="text-text-primary font-bold">{formatOrderStatus(item.status)}</p>
                     <p className="text-text-muted mt-1 text-sm">{formatDate(item.created_at)}</p>
                     {item.comment ? (
                       <p className="text-text-secondary mt-2 text-sm">{item.comment}</p>
@@ -355,7 +356,21 @@ export const AdminOrderDetailsView = ({
 
           <Card title="Статус заказа">
             <form className="space-y-3" onSubmit={handleStatusUpdate}>
-              <Input defaultValue={order.status} label="Новый статус" name="status" required />
+              <label className="block">
+                <span className="text-text-secondary mb-1.5 block text-xs font-bold">Новый статус</span>
+                <select
+                  name="status"
+                  defaultValue={order.status}
+                  className="border-border bg-bg-primary focus:border-accent-primary h-11 w-full rounded-lg border px-3 text-sm font-semibold outline-none cursor-pointer"
+                  required
+                >
+                  {Object.entries(ORDER_STATUS_LABELS).map(([val, label]) => (
+                    <option key={val} value={val}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Textarea label="Комментарий к статусу" name="comment" />
               <SubmitButton disabled={pendingAction === "status"} icon={<Save size={16} />}>
                 Сменить статус
@@ -439,7 +454,7 @@ export const AdminOrderDetailsView = ({
   );
 };
 
-const SummaryCard = ({ label, value }: { label: string; value: string }) => {
+const SummaryCard = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
     <article className="border-border bg-bg-primary shadow-soft rounded-lg border p-5">
       <p className="text-text-secondary text-sm">{label}</p>

@@ -5,7 +5,7 @@ import { ArrowLeft, Printer } from "lucide-react";
 import type { AdminOrderDetailResponse, AdminOrderPrintResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
 import { formatPhoneMask } from "@/shared/lib/format/phone";
-import { toPriceFormat, formatPaymentStatus, formatOrderStatus, formatDeliveryType } from "@/shared/lib/format";
+import { toPriceFormat, formatPaymentStatus, formatOrderStatus, formatDeliveryType, formatUnit } from "@/shared/lib/format";
 
 interface AdminOrderPrintViewProps {
   orderId: number;
@@ -109,7 +109,7 @@ const PrintableOrder = ({ order }: { order: AdminOrderDetailResponse }) => {
                 <tr className="border-b border-neutral-200" key={item.id}>
                   <TableCell>{item.product_name}</TableCell>
                   <TableCell>
-                    {formatQuantity(item.quantity)} {item.unit}
+                    {formatQuantity(item.quantity)} {formatUnit(item.unit)}
                   </TableCell>
                   <TableCell>{toPriceFormat(item.price)}</TableCell>
                   <TableCell>{toPriceFormat(item.final_price)}</TableCell>

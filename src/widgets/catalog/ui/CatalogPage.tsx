@@ -541,7 +541,7 @@ const getPriceSliderMax = (
   // Реальная наивысшая цена товара из базы данных
   const rawHighest = items[0]?.price ? Number(items[0].price) : 500;
   // Округляем вверх до красивого кратного 50 (например 320 -> 350, 780 -> 800)
-  const highestPrice = Math.max(Math.ceil(rawHighest / 50) * 50, 100);
+  const highestPrice = Math.ceil(rawHighest);
   const currentMax = maxPrice ? Number(maxPrice) : 0;
   const currentMin = minPrice ? Number(minPrice) : 0;
 

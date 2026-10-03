@@ -3,10 +3,17 @@ import Link from "next/link";
 import { Download, Eye, Search } from "lucide-react";
 import type { AdminOrderListItemResponse, AdminOrderListResponse } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
+import { OrderStatusBadge, PaymentStatusBadge, SyncStatusBadge } from "@/shared/ui";
 import { formatPhoneMask } from "@/shared/lib/format/phone";
-import { toPriceFormat, formatOrderStatus, formatPaymentStatus, formatSyncStatus,
+import {
+  toPriceFormat,
   formatDeliveryType,
-  formatPaymentMethod, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, SYNC_STATUS_LABELS, DELIVERY_TYPE_LABELS } from "@/shared/lib/format";
+  formatPaymentMethod,
+  ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
+  SYNC_STATUS_LABELS,
+  DELIVERY_TYPE_LABELS,
+} from "@/shared/lib/format";
 
 export interface AdminOrderFilters {
   date_from: string;
@@ -259,14 +266,16 @@ const OrderRow = ({ order }: { order: AdminOrderListItemResponse }) => {
       </TableCell>
       <TableCell>{toPriceFormat(order.final_price)}</TableCell>
       <TableCell>
-        <TextPill>{formatOrderStatus(order.status)}</TextPill>
+        <OrderStatusBadge status={order.status} />
       </TableCell>
       <TableCell>
-        <p className="text-text-primary font-bold">{formatPaymentStatus(order.payment_status)}</p>
+        <PaymentStatusBadge status={order.payment_status} />
         <p className="text-text-muted mt-1 text-xs">{formatPaymentMethod(order.payment_method)}</p>
       </TableCell>
       <TableCell>{formatDeliveryType(order.delivery_type)}</TableCell>
-      <TableCell>{formatSyncStatus(order.sync_status)}</TableCell>
+      <TableCell>
+        <SyncStatusBadge status={order.sync_status} />
+      </TableCell>
       <TableCell>{formatDate(order.created_at)}</TableCell>
       <TableCell>
         <Link
@@ -278,14 +287,6 @@ const OrderRow = ({ order }: { order: AdminOrderListItemResponse }) => {
         </Link>
       </TableCell>
     </tr>
-  );
-};
-
-const TextPill = ({ children }: { children: ReactNode }) => {
-  return (
-    <span className="bg-bg-secondary border-border text-text-primary inline-flex rounded-lg border px-2.5 py-1 text-xs font-bold">
-      {children}
-    </span>
   );
 };
 

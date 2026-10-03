@@ -20,6 +20,7 @@ import {
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { Container } from "@/shared/ui";
+import { useDynamicStoreInfo } from "@/entities/settings";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { LEGAL_DOCS_NAV } from "../data/legalDocs";
@@ -31,6 +32,7 @@ interface LegalDocLayoutProps {
 }
 
 export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
+  const { phone, phoneHref, email } = useDynamicStoreInfo();
   const [activeSectionId, setActiveSectionId] = useState<string>(
     document.sections[0]?.id || "",
   );
@@ -285,17 +287,17 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                 </div>
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
                   <a
-                    href={`mailto:${STORE_INFO.email}`}
+                    href={`mailto:${email}`}
                     className="text-emerald-700 font-semibold hover:underline"
                   >
-                    {STORE_INFO.email}
+                    {email}
                   </a>
                   <span className="text-slate-300">•</span>
                   <a
-                    href={STORE_INFO.phoneHref}
+                    href={phoneHref}
                     className="text-slate-700 font-semibold hover:text-emerald-700"
                   >
-                    {formatPhoneMask(STORE_INFO.phone)}
+                    {phone}
                   </a>
                 </div>
               </div>
@@ -529,8 +531,8 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                     <div className="space-y-1">
                       <p className="flex items-center gap-1.5">
                         <Phone size={12} className="text-slate-400" />
-                        <a href={STORE_INFO.phoneHref} className="font-semibold text-slate-800 hover:text-emerald-700">
-                          {formatPhoneMask(STORE_INFO.phone)}
+                        <a href={phoneHref} className="font-semibold text-slate-800 hover:text-emerald-700">
+                          {phone}
                         </a>
                       </p>
                       <p className="flex items-center gap-1.5">

@@ -22,9 +22,10 @@ import {
   X,
 } from "lucide-react";
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
-import { cn, ROUTES, STORE_INFO } from "@/shared/config";
+import { cn, ROUTES } from "@/shared/config";
 import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { Button, Container } from "@/shared/ui";
+import { useDynamicStoreInfo } from "@/entities/settings";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 
@@ -78,6 +79,7 @@ interface FeedbackResponsePayload {
 }
 
 export default function FeedbackPage() {
+  const { phone: storePhone, phoneHref: storePhoneHref, email: storeEmail, city: storeCity, workingHours: storeWorkingHours } = useDynamicStoreInfo();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -756,7 +758,7 @@ export default function FeedbackPage() {
 
             {/* Sidebar info (Right Column) */}
             <div className="space-y-6">
-              {/* Direct Contacts with fixed typo */}
+              {/* Direct Contacts with dynamic data */}
               <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <Headphones size={18} className="text-emerald-600" />
@@ -766,24 +768,26 @@ export default function FeedbackPage() {
                   <div className="flex items-center gap-2.5">
                     <Phone size={15} className="text-slate-400 shrink-0" />
                     <a
-                      href={STORE_INFO.phoneHref}
+                      href={storePhoneHref}
                       className="font-bold text-slate-800 hover:text-emerald-700 transition"
                     >
-                      {formatPhoneMask(STORE_INFO.phone)}
+                      {storePhone}
                     </a>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Mail size={15} className="text-slate-400 shrink-0" />
                     <a
-                      href={`mailto:${STORE_INFO.email}`}
+                      href={`mailto:${storeEmail}`}
                       className="font-bold text-slate-800 hover:text-emerald-700 transition"
                     >
-                      {STORE_INFO.email}
+                      {storeEmail}
                     </a>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <MapPin size={15} className="text-slate-400 mt-0.5 shrink-0" />
-                    <span className="leading-relaxed">Кизляр, работаем без выходных с 08:00 до 22:00</span>
+                    <span className="leading-relaxed">
+                      {storeCity}, {storeWorkingHours || "работаем без выходных с 08:00 до 22:00"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -809,15 +813,15 @@ export default function FeedbackPage() {
                 </p>
 
                 <a
-                  href="tel:+79285191485"
+                  href={storePhoneHref}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-amber-700 active:scale-95"
                 >
                   <Phone size={14} />
-                  <span>Позвонить диспетчеру: +7 (928) 519-14-85</span>
+                  <span>Позвонить диспетчеру: {storePhone}</span>
                 </a>
 
                 <p className="text-[10px] text-slate-400 text-center">
-                  Диспетчер отвечает в течение 30 секунд (08:00–22:00)
+                  Диспетчер отвечает в течение 30 секунд ({storeWorkingHours || "08:00–22:00"})
                 </p>
               </div>
 

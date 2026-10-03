@@ -187,13 +187,7 @@ export const CatalogPriceFilter = ({
         </label>
       </div>
 
-      {/* Зеленая плашка на всю ширину (крестик удален по задаче 5) */}
-      <button
-        className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider transition-all duration-200 active:scale-98 shadow-sm shadow-emerald-700/15 cursor-pointer flex items-center justify-center gap-1.5"
-        type="submit"
-      >
-        Показать товары
-      </button>
+
     </form>
   );
 };

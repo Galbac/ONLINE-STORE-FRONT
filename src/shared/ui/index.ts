@@ -26,3 +26,6 @@ export { OrderStatusBadge } from "./order-status-badge";
 
 export { PhoneInput } from "./phone-input";
 export type { PhoneInputProps } from "./phone-input";
+
+export { PaymentStatusBadge } from "./payment-status-badge";
+export { SyncStatusBadge } from "./sync-status-badge";

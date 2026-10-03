@@ -80,6 +80,18 @@ if (publicApiUrl) {
 const nextConfig: NextConfig = {
   output: "standalone",
   devIndicators: false,
+  serverExternalPackages: [
+    "@sentry/nextjs",
+    "@sentry/node",
+    "@sentry/core",
+    "@opentelemetry/api",
+    "@opentelemetry/core",
+    "@opentelemetry/instrumentation",
+    "@opentelemetry/resources",
+    "@opentelemetry/sdk-trace",
+    "@opentelemetry/sdk-trace-base",
+    "@opentelemetry/semantic-conventions",
+  ],
 
 
   images: {

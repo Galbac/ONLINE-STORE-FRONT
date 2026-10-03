@@ -17,12 +17,19 @@ import {
   Truck,
   X,
 } from "lucide-react";
+import { authApi } from "@/entities/auth";
 import { orderApi, type OrderShortResponse } from "@/entities/order";
+import { isApiErrorStatus, extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { toPriceFormat } from "@/shared/lib/format";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
-import { extractErrorMessage } from "@/shared/api";
-import { Container } from "@/shared/ui";
+import { toPriceFormat, formatPaymentStatus } from "@/shared/lib/format";
+import {
+  clearStoredAuth,
+  Container,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  storeAuthTokens,
+} from "@/shared/ui";
 
 interface ProfileOrdersViewProps {
   initialOrders: {
@@ -30,7 +37,7 @@ interface ProfileOrdersViewProps {
   };
 }
 
-type OrderFilter = "all" | "new" | "processing" | "completed" | "cancelled";
+type OrderFilter = "all" | "pending_payment" | "new" | "processing" | "completed" | "cancelled";
 
 interface FilterOption {
   label: string;
@@ -39,6 +46,7 @@ interface FilterOption {
 
 const filterOptions: FilterOption[] = [
   { label: "Все заказы", value: "all" },
+  { label: "К оплате", value: "pending_payment" },
   { label: "Новые", value: "new" },
   { label: "В обработке", value: "processing" },
   { label: "Выполненные", value: "completed" },
@@ -47,6 +55,7 @@ const filterOptions: FilterOption[] = [
 
 export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => {
   const [orders, setOrders] = useState<OrderShortResponse[]>(initialOrders.items);
+  const [isLoading, setIsLoading] = useState<boolean>(initialOrders.items.length === 0);
   const [activeFilter, setActiveFilter] = useState<OrderFilter>("all");
   const [searchNumber, setSearchNumber] = useState<string>("");
   const [datePeriod, setDatePeriod] = useState<string>("all");
@@ -56,24 +65,79 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const accessToken = getAccessToken();
-
-    if (!accessToken) {
-      return;
-    }
-
     let isMounted = true;
 
     const loadOrders = async (): Promise<void> => {
+      let accessToken = getStoredAccessToken();
+
+      // Автоматическое обновление токена, если access_token истек
+      if (!accessToken) {
+        const refreshToken = getStoredRefreshToken();
+        if (refreshToken) {
+          try {
+            const refreshRes = await authApi.refresh({ refresh_token: refreshToken });
+            if (refreshRes.access_token) {
+              storeAuthTokens({
+                accessToken: refreshRes.access_token,
+                refreshToken: refreshRes.refresh_token,
+              });
+              accessToken = refreshRes.access_token;
+            }
+          } catch {
+            // refresh не удался
+          }
+        }
+      }
+
+      if (!accessToken) {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
         const response = await orderApi.getProfileOrders({ offset: 0, limit: 100 }, accessToken);
 
         if (isMounted) {
           setOrders(response.items);
+          setIsLoading(false);
         }
       } catch (err: unknown) {
+        if (!isMounted) {
+          return;
+        }
+
+        // При 401 пробуем повторить через refresh token
+        if (isApiErrorStatus(err, 401)) {
+          const refreshToken = getStoredRefreshToken();
+          if (refreshToken) {
+            try {
+              const refreshRes = await authApi.refresh({ refresh_token: refreshToken });
+              if (refreshRes.access_token) {
+                storeAuthTokens({
+                  accessToken: refreshRes.access_token,
+                  refreshToken: refreshRes.refresh_token,
+                });
+                const retryResponse = await orderApi.getProfileOrders(
+                  { offset: 0, limit: 100 },
+                  refreshRes.access_token,
+                );
+                if (isMounted) {
+                  setOrders(retryResponse.items);
+                  setIsLoading(false);
+                  return;
+                }
+              }
+            } catch {
+              clearStoredAuth();
+            }
+          }
+        }
+
         if (isMounted) {
           setErrorMessage(extractErrorMessage(err, "Не удалось загрузить заказы."));
+          setIsLoading(false);
         }
       }
     };
@@ -89,6 +153,7 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
   const counts = useMemo(() => {
     return {
       all: orders.length,
+      pending_payment: orders.filter((o) => matchesFilter(o.status, "pending_payment")).length,
       new: orders.filter((o) => matchesFilter(o.status, "new")).length,
       processing: orders.filter((o) => matchesFilter(o.status, "processing")).length,
       completed: orders.filter((o) => matchesFilter(o.status, "completed")).length,
@@ -120,7 +185,7 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
   }, [activeFilter, datePeriod, orders, searchNumber]);
 
   const handleRepeatOrder = (order: OrderShortResponse): void => {
-    const accessToken = getAccessToken();
+    const accessToken = getStoredAccessToken();
 
     startTransition(async () => {
       try {
@@ -183,12 +248,17 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
           {filterOptions.map((option) => {
             const count = counts[option.value];
             const isActive = activeFilter === option.value;
+            const isPendingPaymentTab = option.value === "pending_payment";
             return (
               <button
                 className={cn(
                   "flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                   isActive
-                    ? "bg-emerald-700 text-white shadow-sm shadow-emerald-700/20"
+                    ? isPendingPaymentTab
+                      ? "bg-amber-600 text-white shadow-sm shadow-amber-600/20"
+                      : "bg-emerald-700 text-white shadow-sm shadow-emerald-700/20"
+                    : isPendingPaymentTab && count > 0
+                    ? "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900",
                 )}
                 key={option.value}
@@ -199,7 +269,11 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
                 <span
                   className={cn(
                     "rounded-full px-2 py-0.5 text-[10px] font-black",
-                    isActive ? "bg-emerald-600/90 text-white" : "bg-slate-200 text-slate-700",
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : isPendingPaymentTab && count > 0
+                      ? "bg-amber-200 text-amber-900"
+                      : "bg-slate-200 text-slate-700",
                   )}
                 >
                   {count}
@@ -218,14 +292,14 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
               placeholder="Поиск по номеру заказа (#123)..."
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value)}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9.5 pr-8 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 shadow-2xs"
             />
             {searchNumber ? (
               <button
                 type="button"
                 onClick={() => setSearchNumber("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
-                aria-label="Очистить поиск"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                title="Очистить поиск"
               >
                 <X size={14} />
               </button>
@@ -253,9 +327,11 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
           <StatusPanel tone="success" text={statusMessage} />
         ) : null}
 
-        {/* 3. Список заказов или разделенные Empty States */}
+        {/* 3. Список заказов, скелетоны загрузки или разделенные Empty States */}
         <section className="space-y-5">
-          {visibleOrders.length > 0 ? (
+          {isLoading ? (
+            <OrdersLoadingSkeleton />
+          ) : visibleOrders.length > 0 ? (
             visibleOrders.map((order) => (
               <OrderCard
                 isPending={isPending && pendingOrderId === order.id}
@@ -296,6 +372,32 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
   );
 };
 
+const OrdersLoadingSkeleton = () => {
+  return (
+    <div className="space-y-5 animate-pulse">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div className="space-y-2">
+              <div className="h-5 w-32 rounded-lg bg-slate-200" />
+              <div className="h-3 w-40 rounded-md bg-slate-100" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-7 w-28 rounded-xl bg-slate-200" />
+              <div className="h-7 w-24 rounded-lg bg-slate-200" />
+            </div>
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div className="h-12 rounded-xl bg-slate-100" />
+            <div className="h-12 rounded-xl bg-slate-100" />
+            <div className="h-12 rounded-xl bg-slate-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 interface OrderCardProps {
   isPending: boolean;
   onRepeat: (order: OrderShortResponse) => void;
@@ -319,9 +421,27 @@ const getStatusStepIndex = (status: string): number => {
   return 0;
 };
 
-const OrderStatusStepper = ({ status }: { status: string }) => {
-  const normalized = status.toLowerCase();
+const OrderStatusStepper = ({ order }: { order: OrderShortResponse }) => {
+  const normalized = order.status.toLowerCase();
   const isCancelled = normalized === "cancelled" || normalized === "canceled";
+
+  if (normalized === "pending_payment") {
+    return (
+      <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50/80 border border-amber-200/80 px-3.5 py-2.5 text-xs text-amber-900">
+        <span className="font-bold flex items-center gap-1.5">
+          <CreditCard size={15} className="text-amber-600 shrink-0" />
+          Заказ ожидает оплаты онлайн
+        </span>
+        <Link
+          href={ROUTES.PROFILE_ORDER(order.id)}
+          className="inline-flex items-center gap-1 font-extrabold text-amber-700 hover:text-amber-900 hover:underline"
+        >
+          <span>Оплатить заказ</span>
+          <ChevronRight size={13} />
+        </Link>
+      </div>
+    );
+  }
 
   if (isCancelled) {
     return (
@@ -331,7 +451,7 @@ const OrderStatusStepper = ({ status }: { status: string }) => {
     );
   }
 
-  const currentIdx = getStatusStepIndex(status);
+  const currentIdx = getStatusStepIndex(order.status);
 
   return (
     <div className="mt-4 pt-4 border-t border-slate-100">
@@ -391,6 +511,7 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
   const DeliveryIcon = order.delivery_type === "pickup" ? Store : Truck;
   const PaymentIcon = order.payment_method === "cash" || order.payment_method === "on_delivery" ? Banknote : CreditCard;
   const status = getStatusMeta(order.status);
+  const isPendingPayment = order.status === "pending_payment";
 
   return (
     <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-slate-300 md:p-6">
@@ -454,8 +575,27 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
           </div>
         </div>
 
-        {/* Кнопки приведены к дизайн-системе: основной акцент — изумрудный (#047857), вторичные — серый (#F3F4F6) */}
+        {/* Кнопки действий */}
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+          {isPendingPayment ? (
+            <Link
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 px-4 text-xs font-bold text-white shadow-xs active:scale-95 transition"
+              href={ROUTES.PROFILE_ORDER(order.id)}
+            >
+              <CreditCard size={14} />
+              <span>Оплатить заказ</span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 active:scale-95 transition disabled:opacity-60 cursor-pointer"
+              disabled={isPending}
+              onClick={() => onRepeat(order)}
+            >
+              <RefreshCcw size={14} className={isPending ? "animate-spin" : ""} />
+              <span>{isPending ? "Повторяем..." : "Повторить заказ"}</span>
+            </button>
+          )}
           <Link
             className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200/80 px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-200 active:scale-95 transition"
             href={ROUTES.PROFILE_ORDER(order.id)}
@@ -463,18 +603,9 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
             <span>Подробнее</span>
             <ChevronRight size={15} />
           </Link>
-          <button
-            type="button"
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 active:scale-95 transition disabled:opacity-60 cursor-pointer"
-            disabled={isPending}
-            onClick={() => onRepeat(order)}
-          >
-            <RefreshCcw size={14} className={isPending ? "animate-spin" : ""} />
-            <span>{isPending ? "Повторяем..." : "Повторить заказ"}</span>
-          </button>
         </div>
       </div>
-      <OrderStatusStepper status={order.status} />
+      <OrderStatusStepper order={order} />
     </article>
   );
 };
@@ -533,7 +664,7 @@ const EmptyOrdersFirstTime = () => {
 };
 
 /**
- * 2. Empty State для случая, когда поиск или фильтр вернул 0 результатов
+ * 2. Empty State для случая, когда заказы есть, но фильтр вернул 0
  */
 interface EmptyOrdersFilteredProps {
   onReset: () => void;
@@ -542,11 +673,11 @@ interface EmptyOrdersFilteredProps {
 const EmptyOrdersFiltered = ({ onReset }: EmptyOrdersFilteredProps) => {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-sm sm:p-12">
-      <span className="mx-auto flex size-18 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-        <SearchX size={34} />
+      <span className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 shadow-2xs">
+        <SearchX size={30} />
       </span>
-      <h2 className="mt-6 text-2xl font-bold text-slate-900">Ничего не найдено по вашему запросу</h2>
-      <p className="mx-auto mt-2.5 max-w-md text-sm text-slate-500 leading-relaxed">
+      <h2 className="mt-5 text-xl font-bold text-slate-900">Заказы не найдены</h2>
+      <p className="mx-auto mt-2 max-w-md text-xs text-slate-500 leading-relaxed">
         В выбранном статусе или за указанный период заказов не обнаружено. Измените параметры поиска или сбросьте фильтры.
       </p>
       <div className="mt-7">
@@ -563,12 +694,6 @@ const EmptyOrdersFiltered = ({ onReset }: EmptyOrdersFilteredProps) => {
   );
 };
 
-const getAccessToken = (): string | null => {
-  return (
-    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token")
-  );
-};
-
 const matchesFilter = (status: string, filter: OrderFilter): boolean => {
   const normalizedStatus = status.toLowerCase();
 
@@ -576,8 +701,12 @@ const matchesFilter = (status: string, filter: OrderFilter): boolean => {
     return true;
   }
 
+  if (filter === "pending_payment") {
+    return normalizedStatus === "pending_payment";
+  }
+
   if (filter === "new") {
-    return ["new", "created", "pending"].includes(normalizedStatus);
+    return ["new", "created", "pending", "pending_payment"].includes(normalizedStatus);
   }
 
   if (filter === "processing") {
@@ -593,6 +722,13 @@ const matchesFilter = (status: string, filter: OrderFilter): boolean => {
 
 const getStatusMeta = (status: string): { className: string; label: string } => {
   const normalizedStatus = status.toLowerCase();
+
+  if (normalizedStatus === "pending_payment") {
+    return {
+      className: "bg-amber-100 text-amber-900 border border-amber-300",
+      label: "Ожидает оплаты",
+    };
+  }
 
   if (["delivered", "completed", "done"].includes(normalizedStatus)) {
     return {
@@ -631,18 +767,6 @@ const formatPaymentMethod = (paymentMethod?: string | null): string => {
   }
 
   return "Банковской картой";
-};
-
-const formatPaymentStatus = (paymentStatus?: string | null): string => {
-  if (paymentStatus === "paid" || paymentStatus === "success") {
-    return "Онлайн оплачен";
-  }
-
-  if (paymentStatus === "failed" || paymentStatus === "cancelled") {
-    return "Не оплачен";
-  }
-
-  return "При получении";
 };
 
 const formatItemsCount = (itemsCount?: number): string => {

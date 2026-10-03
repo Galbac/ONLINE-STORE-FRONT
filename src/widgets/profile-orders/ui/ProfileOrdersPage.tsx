@@ -1,3 +1,5 @@
+"use client";
+
 import type { ProfileOrderListResponse } from "@/entities/order";
 import { AuthGuard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";

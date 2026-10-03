@@ -1,11 +1,8 @@
 "use client";
 
-import { OrderTrackingTimeline } from "@/widgets/order-tracking";
-import { OrderCourierTips } from "./OrderCourierTips";
-
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import {
   CreditCard,
   ExternalLink,
@@ -30,13 +27,14 @@ import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Button, Container } from "@/shared/ui";
+import { OrderTrackingTimeline } from "@/widgets/order-tracking";
+import { OrderCourierTips } from "./OrderCourierTips";
 
 interface ProfileOrderDetailsViewProps {
   initialOrder: OrderDetailResponse;
   initialPayment: PaymentDetailResponse | null;
   initialStatus: OrderStatusResponse;
 }
-
 
 export const ProfileOrderDetailsView = ({
   initialOrder,
@@ -55,7 +53,9 @@ export const ProfileOrderDetailsView = ({
   const [isPending, startTransition] = useTransition();
   const statusMeta = getStatusMeta(orderStatus.status || order.status);
   const paymentStatus = payment?.status ?? order.payment_status ?? order.payment?.status ?? null;
-  const canCancelOrder = isOrderCancelable(orderStatus.status || order.status);
+  const canCancelOrder =
+    isOrderCancelable(orderStatus.status || order.status) &&
+    !["paid", "succeeded", "success"].includes((paymentStatus ?? "").toLowerCase());
   const canCancelPayment = payment ? isPaymentCancelable(payment.status) : false;
   const canPayOrder =
     ["online", "sbp"].includes((order.payment_method ?? "").toLowerCase()) &&
@@ -97,7 +97,9 @@ export const ProfileOrderDetailsView = ({
         setMessage(`${response.message}${warningText}`);
       } catch (err: unknown) {
         setMessage(null);
-        setErrorMessage(extractErrorMessage(err, "Не удалось повторить заказ. Возможно, товары недоступны."));
+        setErrorMessage(
+          extractErrorMessage(err, "Не удалось повторить заказ. Возможно, товары недоступны."),
+        );
       } finally {
         setPendingAction(null);
       }
@@ -121,6 +123,7 @@ export const ProfileOrderDetailsView = ({
   };
 
   const handleCancelOrder = (): void => {
+    if (!window.confirm(`Отменить заказ ${order.order_number}?`)) return;
     const accessToken = getAccessToken();
 
     startTransition(async () => {
@@ -150,7 +153,9 @@ export const ProfileOrderDetailsView = ({
         setMessage(response.message);
       } catch (err: unknown) {
         setMessage(null);
-        setErrorMessage(extractErrorMessage(err, "Не удалось отменить заказ. Возможно, статус уже изменился."));
+        setErrorMessage(
+          extractErrorMessage(err, "Не удалось отменить заказ. Возможно, статус уже изменился."),
+        );
       } finally {
         setPendingAction(null);
       }
@@ -188,7 +193,9 @@ export const ProfileOrderDetailsView = ({
         setMessage(response.message);
       } catch (err: unknown) {
         setMessage(null);
-        setErrorMessage(extractErrorMessage(err, "Не удалось отменить платеж. Проверьте статус оплаты позже."));
+        setErrorMessage(
+          extractErrorMessage(err, "Не удалось отменить платеж. Проверьте статус оплаты позже."),
+        );
       } finally {
         setPendingAction(null);
       }
@@ -226,7 +233,7 @@ export const ProfileOrderDetailsView = ({
               type="button"
               disabled={isPending}
               onClick={handleOpenReceipt}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition active:scale-95"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-95"
             >
               <Receipt size={16} className="text-emerald-600" />
               {pendingAction === "receipt" ? "Загружаем чек…" : "Чек 54-ФЗ"}
@@ -278,9 +285,7 @@ export const ProfileOrderDetailsView = ({
           <OrderTrackingTimeline orderId={order.id} />
         </div>
 
-        {order.status === "delivered" ? (
-          <OrderCourierTips orderId={order.id} />
-        ) : null}
+        {order.status === "delivered" ? <OrderCourierTips orderId={order.id} /> : null}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">
           <section className="border-border rounded-lg border bg-white shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
@@ -424,7 +429,7 @@ export const ProfileOrderDetailsView = ({
             </div>
           </div>
           <Link
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-100 border border-slate-200/80 px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-200 active:scale-95 transition"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200/80 bg-slate-100 px-4 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-200 active:scale-95"
             href={ROUTES.FEEDBACK}
           >
             Связаться с поддержкой
@@ -469,7 +474,10 @@ export const ProfileOrderDetailsView = ({
                   <div className="border-border mt-5 space-y-3 border-y py-4">
                     {receipt.items.length > 0 ? (
                       receipt.items.map((item, index) => (
-                        <div className="flex justify-between gap-4 text-sm" key={`${item.name}-${index}`}>
+                        <div
+                          className="flex justify-between gap-4 text-sm"
+                          key={`${item.name}-${index}`}
+                        >
                           <div className="min-w-0">
                             <p className="text-text-primary font-medium">{item.name}</p>
                             <p className="text-text-secondary mt-1">
@@ -487,8 +495,12 @@ export const ProfileOrderDetailsView = ({
                   </div>
 
                   <div className="text-text-secondary mt-4 space-y-2 text-sm">
-                    {receipt.fiscal_number ? <p>Фискальный номер: {receipt.fiscal_number}</p> : null}
-                    {receipt.issued_at ? <p>Дата выдачи: {formatDateTime(receipt.issued_at)}</p> : null}
+                    {receipt.fiscal_number ? (
+                      <p>Фискальный номер: {receipt.fiscal_number}</p>
+                    ) : null}
+                    {receipt.issued_at ? (
+                      <p>Дата выдачи: {formatDateTime(receipt.issued_at)}</p>
+                    ) : null}
                     {receipt.total_amount ? (
                       <p className="text-text-primary flex justify-between pt-2 text-base font-bold">
                         <span>Итого</span>
@@ -513,8 +525,6 @@ export const ProfileOrderDetailsView = ({
             </section>
           </div>
         ) : null}
-
-
       </Container>
     </main>
   );
@@ -530,7 +540,7 @@ const OrderItemRow = ({ item }: OrderItemRowProps) => {
   return (
     <div className="grid gap-4 p-5 sm:grid-cols-[64px_1fr_auto] sm:items-center md:p-7">
       <Link
-        className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs hover:opacity-90 transition group/img"
+        className="group/img relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs transition hover:opacity-90"
         href={ROUTES.PRODUCT(item.product_slug)}
       >
         {item.preview_image_url && !hasError ? (
@@ -544,7 +554,7 @@ const OrderItemRow = ({ item }: OrderItemRowProps) => {
             onError={() => setHasError(true)}
           />
         ) : (
-          <span className="text-sm font-bold text-emerald-800 bg-emerald-50 size-full grid place-items-center">
+          <span className="grid size-full place-items-center bg-emerald-50 text-sm font-bold text-emerald-800">
             {getProductMark(item.product_name)}
           </span>
         )}
@@ -674,7 +684,15 @@ const getAccessToken = (): string | null => {
 };
 
 const isOrderCancelable = (status: string): boolean => {
-  return ["new", "created", "pending", "processing", "confirmed"].includes(status.toLowerCase());
+  return [
+    "new",
+    "created",
+    "pending",
+    "pending_payment",
+    "processing",
+    "confirmed",
+    "awaiting_confirmation",
+  ].includes(status.toLowerCase());
 };
 
 const isPaymentCancelable = (status: string): boolean => {

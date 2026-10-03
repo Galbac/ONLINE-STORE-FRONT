@@ -32,15 +32,27 @@ export const LoginForm = () => {
   const [status, setStatus] = useState<LoginStatus>("idle");
 
   const [isAlreadyAuth, setIsAlreadyAuth] = useState(false);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
+  const nextPath = getSafeNextPath(searchParams.get("next"));
+  const hasNextPath = searchParams.has("next");
 
   useEffect(() => {
     const token = getStoredAccessToken();
     if (token) {
+      if (hasNextPath) {
+        window.location.replace(nextPath);
+        return;
+      }
       setIsAlreadyAuth(true);
     }
-  }, []);
+    setAuthCheckComplete(true);
+  }, [hasNextPath, nextPath]);
 
   const isLoading = status === "submitting" || status === "success";
+
+  if (hasNextPath && !authCheckComplete) {
+    return <p className="rounded-2xl bg-white p-6 text-center text-sm font-semibold text-slate-600">Открываем нужную страницу…</p>;
+  }
 
   const handleChange = (field: keyof LoginFormValues, value: string | boolean): void => {
     setValues((currentValues) => ({
@@ -111,8 +123,8 @@ export const LoginForm = () => {
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <span>Вход выполнен на этом устройстве.</span>
           <div className="flex items-center shrink-0">
-            <Link href={ROUTES.PROFILE} className="font-extrabold text-emerald-700 underline hover:text-emerald-900">
-              В профиль →
+            <Link href={nextPath} className="font-extrabold text-emerald-700 underline hover:text-emerald-900">
+              {nextPath === ROUTES.PROFILE ? "В профиль →" : "Продолжить →"}
             </Link>
           </div>
         </div>

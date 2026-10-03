@@ -205,7 +205,44 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
         setStatusMessage(`${response.message}${warningText} Товары добавлены в корзину.`);
       } catch (err: unknown) {
         setStatusMessage(null);
-        setErrorMessage(extractErrorMessage(err, "Не удалось повторить заказ. Возможно, товары недоступны."));
+        setErrorMessage(
+          extractErrorMessage(err, "Не удалось повторить заказ. Возможно, товары недоступны."),
+        );
+      } finally {
+        setPendingOrderId(null);
+      }
+    });
+  };
+
+  const handleCancelOrder = (order: OrderShortResponse): void => {
+    if (!canCustomerCancelOrder(order) || !window.confirm(`Отменить заказ ${order.order_number}?`))
+      return;
+
+    startTransition(async () => {
+      try {
+        setPendingOrderId(order.id);
+        setErrorMessage(null);
+        setStatusMessage(null);
+        const response = await orderApi.cancel(
+          order.id,
+          { reason: "Отмена покупателем из личного кабинета" },
+          getStoredAccessToken(),
+        );
+        setOrders((currentOrders) =>
+          currentOrders.map((currentOrder) =>
+            currentOrder.id === order.id
+              ? { ...currentOrder, status: response.order.status }
+              : currentOrder,
+          ),
+        );
+        setStatusMessage(response.message);
+      } catch (err: unknown) {
+        setErrorMessage(
+          extractErrorMessage(
+            err,
+            "Не удалось отменить заказ. Возможно, его статус уже изменился.",
+          ),
+        );
       } finally {
         setPendingOrderId(null);
       }
@@ -244,7 +281,7 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
         </section>
 
         {/* 1. Табы статусов располагаются НАД строкой поиска */}
-        <div className="mb-5 flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mb-5 flex [scrollbar-width:none] gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {filterOptions.map((option) => {
             const count = counts[option.value];
             const isActive = activeFilter === option.value;
@@ -252,14 +289,14 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
             return (
               <button
                 className={cn(
-                  "flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  "flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-all",
                   isActive
                     ? isPendingPaymentTab
                       ? "bg-amber-600 text-white shadow-sm shadow-amber-600/20"
                       : "bg-emerald-700 text-white shadow-sm shadow-emerald-700/20"
                     : isPendingPaymentTab && count > 0
-                    ? "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900",
+                      ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900",
                 )}
                 key={option.value}
                 type="button"
@@ -272,8 +309,8 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
                     isActive
                       ? "bg-white/20 text-white"
                       : isPendingPaymentTab && count > 0
-                      ? "bg-amber-200 text-amber-900"
-                      : "bg-slate-200 text-slate-700",
+                        ? "bg-amber-200 text-amber-900"
+                        : "bg-slate-200 text-slate-700",
                   )}
                 >
                   {count}
@@ -284,21 +321,24 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
         </div>
 
         {/* 2. Сгруппированный flex-тулбар: Поиск с кнопкой очистки и выбор периода */}
-        <div className="mb-8 flex flex-wrap sm:flex-nowrap items-center gap-3">
-          <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+        <div className="mb-8 flex flex-wrap items-center gap-3 sm:flex-nowrap">
+          <div className="relative min-w-[220px] flex-1">
+            <Search
+              className="absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400"
+              size={16}
+            />
             <input
               type="text"
               placeholder="Поиск по номеру заказа (#123)..."
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value)}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 shadow-2xs"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pr-9 pl-10 text-xs font-semibold text-slate-800 shadow-2xs outline-none placeholder:text-slate-400 focus:border-emerald-500"
             />
             {searchNumber ? (
               <button
                 type="button"
                 onClick={() => setSearchNumber("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer p-0.5 text-slate-400 hover:text-slate-600"
                 title="Очистить поиск"
               >
                 <X size={14} />
@@ -306,12 +346,12 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
             ) : null}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Период:</span>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-xs font-semibold whitespace-nowrap text-slate-500">Период:</span>
             <select
               value={datePeriod}
               onChange={(e) => setDatePeriod(e.target.value)}
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
+              className="h-11 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs outline-none focus:border-emerald-500"
             >
               <option value="all">За всё время</option>
               <option value="month">За последний месяц</option>
@@ -337,6 +377,7 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
                 isPending={isPending && pendingOrderId === order.id}
                 key={order.id}
                 order={order}
+                onCancel={handleCancelOrder}
                 onRepeat={handleRepeatOrder}
               />
             ))
@@ -354,14 +395,16 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
               <Headphones size={18} />
             </span>
             <div>
-              <p className="text-xs font-bold text-slate-800">Не нашли нужный заказ или возникли вопросы?</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-xs font-bold text-slate-800">
+                Не нашли нужный заказ или возникли вопросы?
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500">
                 Наша служба заботы о клиентах всегда на связи и готова оперативно помочь
               </p>
             </div>
           </div>
           <Link
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200/80 px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-200 active:scale-95 transition"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-slate-100 px-4 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-200 active:scale-95"
             href={ROUTES.FEEDBACK}
           >
             <span>Связаться с поддержкой</span>
@@ -374,10 +417,13 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
 
 const OrdersLoadingSkeleton = () => {
   return (
-    <div className="space-y-5 animate-pulse">
+    <div className="animate-pulse space-y-5">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
-          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div
+          key={i}
+          className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs md:p-6"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div className="space-y-2">
               <div className="h-5 w-32 rounded-lg bg-slate-200" />
               <div className="h-3 w-40 rounded-md bg-slate-100" />
@@ -400,6 +446,7 @@ const OrdersLoadingSkeleton = () => {
 
 interface OrderCardProps {
   isPending: boolean;
+  onCancel: (order: OrderShortResponse) => void;
   onRepeat: (order: OrderShortResponse) => void;
   order: OrderShortResponse;
 }
@@ -427,9 +474,9 @@ const OrderStatusStepper = ({ order }: { order: OrderShortResponse }) => {
 
   if (normalized === "pending_payment") {
     return (
-      <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50/80 border border-amber-200/80 px-3.5 py-2.5 text-xs text-amber-900">
-        <span className="font-bold flex items-center gap-1.5">
-          <CreditCard size={15} className="text-amber-600 shrink-0" />
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-t border-amber-200/80 border-slate-100 bg-amber-50/80 px-3.5 py-2.5 pt-3 text-xs text-amber-900">
+        <span className="flex items-center gap-1.5 font-bold">
+          <CreditCard size={15} className="shrink-0 text-amber-600" />
           Заказ ожидает оплаты онлайн
         </span>
         <Link
@@ -445,7 +492,7 @@ const OrderStatusStepper = ({ order }: { order: OrderShortResponse }) => {
 
   if (isCancelled) {
     return (
-      <div className="mt-3 rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-2 text-xs font-bold text-rose-700">
+      <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700">
         Заказ отменен
       </div>
     );
@@ -454,11 +501,11 @@ const OrderStatusStepper = ({ order }: { order: OrderShortResponse }) => {
   const currentIdx = getStatusStepIndex(order.status);
 
   return (
-    <div className="mt-4 pt-4 border-t border-slate-100">
+    <div className="mt-4 border-t border-slate-100 pt-4">
       <div className="relative flex items-center justify-between">
-        <div className="absolute left-3 right-3 top-1/2 h-0.5 -translate-y-1/2 bg-slate-200 -z-0" />
+        <div className="absolute top-1/2 right-3 left-3 -z-0 h-0.5 -translate-y-1/2 bg-slate-200" />
         <div
-          className="absolute left-3 top-1/2 h-0.5 -translate-y-1/2 bg-emerald-600 transition-all duration-300 -z-0"
+          className="absolute top-1/2 left-3 -z-0 h-0.5 -translate-y-1/2 bg-emerald-600 transition-all duration-300"
           style={{ width: `${(currentIdx / (ORDER_STATUS_STEPS.length - 1)) * 100}%` }}
         />
         {ORDER_STATUS_STEPS.map((step, idx) => {
@@ -471,7 +518,7 @@ const OrderStatusStepper = ({ order }: { order: OrderShortResponse }) => {
                   "flex size-6 items-center justify-center rounded-full text-[10px] font-bold transition",
                   isPassed
                     ? "bg-emerald-600 text-white shadow-xs"
-                    : "bg-white text-slate-400 border-2 border-slate-200",
+                    : "border-2 border-slate-200 bg-white text-slate-400",
                   isCurrent && "ring-3 ring-emerald-500/20",
                 )}
               >
@@ -490,14 +537,14 @@ const OrderStatusStepper = ({ order }: { order: OrderShortResponse }) => {
         })}
       </div>
       <div className="mt-2.5 flex items-center justify-between text-[11px]">
-        <span className="text-slate-500 font-medium">
+        <span className="font-medium text-slate-500">
           {currentIdx === 4
             ? "✅ Заказ успешно доставлен"
             : currentIdx === 3
-            ? "🚴 Курьер выехал: доставка ожидается в ближайшее время"
-            : currentIdx >= 1
-            ? "📦 Заказ собирается и проверяется на свежесть"
-            : "⏳ Заказ принят магазином"}
+              ? "🚴 Курьер выехал: доставка ожидается в ближайшее время"
+              : currentIdx >= 1
+                ? "📦 Заказ собирается и проверяется на свежесть"
+                : "⏳ Заказ принят магазином"}
         </span>
         <span className="font-bold text-emerald-700">
           {currentIdx < 4 ? `Шаг ${currentIdx + 1} из 5` : "Завершен"}
@@ -507,9 +554,12 @@ const OrderStatusStepper = ({ order }: { order: OrderShortResponse }) => {
   );
 };
 
-const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
+const OrderCard = ({ isPending, onCancel, onRepeat, order }: OrderCardProps) => {
   const DeliveryIcon = order.delivery_type === "pickup" ? Store : Truck;
-  const PaymentIcon = order.payment_method === "cash" || order.payment_method === "on_delivery" ? Banknote : CreditCard;
+  const PaymentIcon =
+    order.payment_method === "cash" || order.payment_method === "on_delivery"
+      ? Banknote
+      : CreditCard;
   const status = getStatusMeta(order.status);
   const isPendingPayment = order.status === "pending_payment";
 
@@ -517,17 +567,21 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
     <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-slate-300 md:p-6">
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.7fr_0.55fr_1fr_1fr_190px] xl:items-center">
         <div>
-          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">№ заказа</p>
+          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+            № заказа
+          </p>
           <p className="text-text-primary mt-1.5 text-lg font-black break-words">
             {order.order_number}
           </p>
-          <time className="text-slate-400 mt-1.5 text-xs block" suppressHydrationWarning>
+          <time className="mt-1.5 block text-xs text-slate-400" suppressHydrationWarning>
             {formatDateTime(order.created_at)}
           </time>
         </div>
 
         <div>
-          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Статус</p>
+          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+            Статус
+          </p>
           <span
             className={cn(
               "mt-2 inline-flex rounded-xl px-3 py-1 text-xs font-bold",
@@ -539,36 +593,40 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
         </div>
 
         <div>
-          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Сумма</p>
-          <p className="text-slate-900 mt-1.5 text-lg font-black">
+          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+            Сумма
+          </p>
+          <p className="mt-1.5 text-lg font-black text-slate-900">
             {toPriceFormat(order.final_price)}
           </p>
         </div>
 
         <div>
-          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Получение</p>
+          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+            Получение
+          </p>
           <div className="mt-2 flex items-start gap-2.5">
-            <DeliveryIcon className="text-emerald-600 mt-0.5 shrink-0" size={18} />
+            <DeliveryIcon className="mt-0.5 shrink-0 text-emerald-600" size={18} />
             <div>
               <p className="text-xs font-bold text-slate-800">
                 {formatDeliveryType(order.delivery_type)}
               </p>
-              <p className="text-slate-400 mt-0.5 text-xs">
-                {formatItemsCount(order.items_count)}
-              </p>
+              <p className="mt-0.5 text-xs text-slate-400">{formatItemsCount(order.items_count)}</p>
             </div>
           </div>
         </div>
 
         <div>
-          <p className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Оплата</p>
+          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+            Оплата
+          </p>
           <div className="mt-2 flex items-start gap-2.5">
-            <PaymentIcon className="text-emerald-600 mt-0.5 shrink-0" size={18} />
+            <PaymentIcon className="mt-0.5 shrink-0 text-emerald-600" size={18} />
             <div>
               <p className="text-xs font-bold text-slate-800">
                 {formatPaymentMethod(order.payment_method)}
               </p>
-              <p className="text-slate-400 mt-0.5 text-xs">
+              <p className="mt-0.5 text-xs text-slate-400">
                 {formatPaymentStatus(order.payment_status)}
               </p>
             </div>
@@ -579,7 +637,7 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
           {isPendingPayment ? (
             <Link
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 px-4 text-xs font-bold text-white shadow-xs active:scale-95 transition"
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-amber-600 active:scale-95"
               href={ROUTES.PROFILE_ORDER(order.id)}
             >
               <CreditCard size={14} />
@@ -588,7 +646,7 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
           ) : (
             <button
               type="button"
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 active:scale-95 transition disabled:opacity-60 cursor-pointer"
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-800 active:scale-95 disabled:opacity-60"
               disabled={isPending}
               onClick={() => onRepeat(order)}
             >
@@ -596,8 +654,19 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
               <span>{isPending ? "Повторяем..." : "Повторить заказ"}</span>
             </button>
           )}
+          {canCustomerCancelOrder(order) ? (
+            <button
+              type="button"
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 text-xs font-bold text-rose-700 shadow-2xs transition hover:bg-rose-50 disabled:opacity-60"
+              disabled={isPending}
+              onClick={() => onCancel(order)}
+            >
+              <X size={14} />
+              {isPending ? "Отменяем..." : "Отменить заказ"}
+            </button>
+          ) : null}
           <Link
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200/80 px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-200 active:scale-95 transition"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-slate-100 px-4 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-200 active:scale-95"
             href={ROUTES.PROFILE_ORDER(order.id)}
           >
             <span>Подробнее</span>
@@ -607,6 +676,15 @@ const OrderCard = ({ isPending, onRepeat, order }: OrderCardProps) => {
       </div>
       <OrderStatusStepper order={order} />
     </article>
+  );
+};
+
+const canCustomerCancelOrder = (order: OrderShortResponse): boolean => {
+  const allowedStatuses = ["new", "pending_payment", "confirmed", "awaiting_confirmation"];
+  const unpaidStatuses = ["paid", "succeeded", "success"];
+  return (
+    allowedStatuses.includes(order.status.toLowerCase()) &&
+    !unpaidStatuses.includes((order.payment_status ?? "").toLowerCase())
   );
 };
 
@@ -620,8 +698,8 @@ const StatusPanel = ({ text, tone }: StatusPanelProps) => {
     <div
       className={cn(
         "mb-5 rounded-2xl border px-4.5 py-3.5 text-xs font-bold shadow-2xs",
-        tone === "error" && "text-rose-700 border-rose-200 bg-rose-50",
-        tone === "success" && "text-emerald-800 border-emerald-200 bg-emerald-50",
+        tone === "error" && "border-rose-200 bg-rose-50 text-rose-700",
+        tone === "success" && "border-emerald-200 bg-emerald-50 text-emerald-800",
       )}
     >
       {text}
@@ -639,21 +717,24 @@ const EmptyOrdersFirstTime = () => {
         <ShoppingBag size={34} />
       </span>
       <h2 className="mt-6 text-2xl font-bold text-slate-900">У вас пока нет заказов</h2>
-      <p className="mx-auto mt-2.5 max-w-md text-sm text-slate-500 leading-relaxed">
-        Свежие фермерские продукты, натуральное мясо Халяль и отборные овощи ждут вас в нашем каталоге.
+      <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-slate-500">
+        Свежие фермерские продукты, натуральное мясо Халяль и отборные овощи ждут вас в нашем
+        каталоге.
       </p>
 
       {/* Промокод на первый заказ */}
       <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-2.5 text-xs text-emerald-900 shadow-2xs">
-        <Sparkles size={16} className="text-emerald-700 shrink-0" />
+        <Sparkles size={16} className="shrink-0 text-emerald-700" />
         <span>
-          Промокод на первый заказ: <strong className="font-black text-emerald-800 tracking-wider">ПЕРВЫЙ</strong> (-10% от 1 000 ₽)
+          Промокод на первый заказ:{" "}
+          <strong className="font-black tracking-wider text-emerald-800">ПЕРВЫЙ</strong> (-10% от 1
+          000 ₽)
         </span>
       </div>
 
       <div className="mt-7">
         <Link
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-700 px-6 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-800 active:scale-95 transition"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-700 px-6 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 transition hover:bg-emerald-800 active:scale-95"
           href={ROUTES.CATALOG}
         >
           Перейти в каталог
@@ -677,14 +758,15 @@ const EmptyOrdersFiltered = ({ onReset }: EmptyOrdersFilteredProps) => {
         <SearchX size={30} />
       </span>
       <h2 className="mt-5 text-xl font-bold text-slate-900">Заказы не найдены</h2>
-      <p className="mx-auto mt-2 max-w-md text-xs text-slate-500 leading-relaxed">
-        В выбранном статусе или за указанный период заказов не обнаружено. Измените параметры поиска или сбросьте фильтры.
+      <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+        В выбранном статусе или за указанный период заказов не обнаружено. Измените параметры поиска
+        или сбросьте фильтры.
       </p>
       <div className="mt-7">
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-100 px-6 text-sm font-bold text-slate-700 border border-slate-200/70 hover:bg-slate-200 shadow-2xs active:scale-95 transition cursor-pointer"
+          className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200/70 bg-slate-100 px-6 text-sm font-bold text-slate-700 shadow-2xs transition hover:bg-slate-200 active:scale-95"
         >
           <RotateCcw size={16} />
           <span>Сбросить фильтры</span>

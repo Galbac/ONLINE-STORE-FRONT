@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
-import { openCartDrawer } from "@/widgets/cart-drawer";
 import { cartApi } from "@/entities/cart";
 import { ROUTES } from "@/shared/config";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
@@ -57,18 +56,10 @@ export const HeaderCartLink = () => {
 
   const isAuth = hasValidStoredAccessToken();
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (isAuth) {
-      e.preventDefault();
-      openCartDrawer();
-    }
-  };
-
   const hasItems = itemsCount > 0;
 
   return (
     <Link
-      onClick={handleClick}
       className={`group relative hidden lg:inline-flex items-center gap-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] ${
         hasItems
           ? "border border-emerald-500/30 bg-emerald-50/80 px-3 py-2 text-emerald-900 hover:border-emerald-500 hover:bg-emerald-100/90 shadow-2xs"

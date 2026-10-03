@@ -70,6 +70,36 @@ export const ProfileOrderDetailsView = ({
         setPendingAction("create-payment");
         setErrorMessage(null);
         const response = await paymentApi.create({ order_id: order.id });
+        if (response.status === "paid" || response.status === "succeeded") {
+          const paidAt = new Date().toISOString();
+          setPayment((currentPayment) =>
+            currentPayment
+              ? { ...currentPayment, status: "paid", paid_at: paidAt }
+              : {
+                  id: response.id,
+                  order_id: response.order_id,
+                  order_number: response.order_number,
+                  amount: response.amount,
+                  currency: response.currency,
+                  status: "paid",
+                  provider: response.provider,
+                  payment_url: null,
+                  paid_at: paidAt,
+                  created_at: response.created_at,
+                  updated_at: paidAt,
+                },
+          );
+          setOrder((currentOrder) => ({ ...currentOrder, payment_status: "paid", status: "new" }));
+          setOrderStatus((currentStatus) => ({
+            ...currentStatus,
+            payment_status: "paid",
+            status: "new",
+            status_label: getStatusMeta("new").label,
+            updated_at: paidAt,
+          }));
+          setMessage("Оплата успешно проведена.");
+          return;
+        }
         if (!response.payment_url) {
           throw new Error("Платёжная система не вернула ссылку для оплаты. Попробуйте позже.");
         }

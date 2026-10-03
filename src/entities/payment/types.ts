@@ -10,7 +10,7 @@ export interface PaymentCreateResponse {
   currency: string;
   status: string;
   provider: string;
-  payment_url: string;
+  payment_url?: string | null;
   created_at: string;
 }
 

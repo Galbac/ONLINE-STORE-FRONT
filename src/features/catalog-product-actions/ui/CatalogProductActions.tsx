@@ -9,7 +9,7 @@ import { cartApi } from "@/entities/cart";
 import { useFavoritesStore, useFavoritesHydrated } from "@/entities/favorite";
 import { cn } from "@/shared/config";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
-import { isAccessTokenValid } from "@/shared/lib/auth-token";
+import { getStoredAccessToken, getStoredRefreshToken } from "@/shared/ui";
 
 interface CatalogCartButtonProps {
   productId: number;
@@ -39,10 +39,8 @@ export const CatalogCartButton = ({
   const [isPending, startTransition] = useTransition();
 
   const checkAuth = (): boolean => {
-    const token = typeof window !== "undefined"
-      ? (window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token"))
-      : null;
-    if (!token || !isAccessTokenValid(token)) {
+    const hasSession = Boolean(getStoredAccessToken() || getStoredRefreshToken());
+    if (!hasSession) {
       if (typeof window !== "undefined") {
         window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       }

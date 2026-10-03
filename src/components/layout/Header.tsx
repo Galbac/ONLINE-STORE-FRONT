@@ -17,7 +17,7 @@ export const Header = () => {
   const { city, phone, phoneHref } = useDynamicStoreInfo();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 shadow-xs backdrop-blur-none sm:backdrop-blur-md">
       {/* 1. Верхний микро-бар (стабильно зафиксирован, без прыжков) */}
       <div className="hidden sm:block border-b border-slate-100 bg-slate-50/70 text-xs text-slate-500 py-1.5">
         <Container className="flex items-center justify-between gap-4">

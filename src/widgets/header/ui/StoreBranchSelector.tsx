@@ -84,19 +84,19 @@ export const StoreBranchSelector = () => {
     : "Выбрать магазин";
 
   return (
-    <div className="relative inline-block text-left" ref={containerRef}>
+    <div className="relative inline-block min-w-0 max-w-full text-left" ref={containerRef}>
       {/* Кнопка открытия списка филиалов */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 hover:text-emerald-700 transition-all cursor-pointer border border-slate-200/90 shadow-2xs"
+        className="group inline-flex max-w-full items-center gap-1 px-2 py-1 rounded-full bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 hover:text-emerald-700 transition-all cursor-pointer border border-slate-200/90 shadow-2xs sm:gap-1.5 sm:px-3"
         title="Выбрать филиал магазина"
         aria-expanded={isOpen}
       >
         <span className="flex size-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 group-hover:scale-105 transition-transform">
           <Store size={12} />
         </span>
-        <span className="max-w-[140px] sm:max-w-[190px] truncate">{displayText}</span>
+        <span className="max-w-[88px] truncate sm:max-w-[190px]">{displayText}</span>
         <ChevronDown
           size={13}
           className={`text-slate-400 group-hover:text-emerald-600 transition-transform duration-200 ${
@@ -114,7 +114,7 @@ export const StoreBranchSelector = () => {
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="fixed inset-x-3 bottom-4 z-50 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 w-auto sm:w-[380px] max-h-[80vh] sm:max-h-[500px] flex flex-col rounded-2xl border border-slate-200/90 bg-white/98 backdrop-blur-md p-4 shadow-2xl shadow-slate-900/15 animate-in fade-in-0 zoom-in-95 duration-150">
+          <div className="fixed inset-x-3 bottom-4 z-50 flex max-h-[80vh] min-h-0 w-auto flex-col rounded-2xl border border-slate-200/90 bg-white/98 p-4 shadow-2xl shadow-slate-900/15 animate-in fade-in-0 zoom-in-95 duration-150 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[500px] sm:w-[380px]">
             {/* Шапка выпадающего списка */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export const StoreBranchSelector = () => {
             )}
 
             {/* Список адресов филиалов */}
-            <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-0.5 mt-1">
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain py-2 pr-0.5 mt-1">
               {isLoading && stores.length === 0 ? (
                 <div className="py-6 text-center text-xs text-slate-400">Загрузка списка адресов...</div>
               ) : filteredStores.length === 0 ? (

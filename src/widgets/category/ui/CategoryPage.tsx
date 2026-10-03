@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,10 +12,9 @@ import {
 } from "@/entities/category";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import { productApi, type ProductListParams } from "@/entities/product";
-import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
 import { fallbackOnUnauthorized } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
-import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shared/ui";
+import { AutoSubmitSelect, Container, ViewModeToggle } from "@/shared/ui";
 import type { ProductViewMode } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
@@ -23,6 +22,7 @@ import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
 import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
 import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
 import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
+import { CatalogProductFeed } from "@/widgets/catalog/ui/CatalogProductFeed";
 
 interface CategoryPageProps {
   slug: string;
@@ -174,6 +174,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
             <section className="min-w-0">
               <CategoryToolbar
                 category={category}
+                pageSize={pageSize}
                 productsTotal={products.total}
                 searchParams={searchParams}
                 sort={sort}
@@ -203,50 +204,14 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
               ) : null}
 
               {products.items.length > 0 ? (
-                <>
-                  <div
-                    className={cn(
-                      "mt-4 grid gap-4",
-                      viewMode === "grid"
-                        ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
-                        : "grid-cols-1",
-                    )}
-                  >
-                    {products.items.map((product) => (
-                      <ProductCard
-                        initialInCart={cartProductIds.has(product.id)}
-                        cartControl={
-                          <CatalogCartButton
-                            initialInCart={cartProductIds.has(product.id)}
-                            productId={product.id}
-                            productName={product.name}
-                            minQuantity={product.min_quantity}
-                            quantityStep={product.quantity_step}
-                            unit={product.unit}
-                          />
-                        }
-                        favoriteControl={
-                          <CatalogFavoriteButton
-                            initialFavorite={favoriteProductIds.has(product.id)}
-                            productId={product.id}
-                            productName={product.name}
-                          />
-                        }
-                        key={product.id}
-                        product={product}
-                        variant={viewMode}
-                      />
-                    ))}
-                  </div>
-
-                  <CategoryPagination
-                    currentPage={page}
-                    pageSize={pageSize}
-                    searchParams={searchParams}
-                    slug={category.slug}
-                    totalPages={products.pages}
-                  />
-                </>
+                <CatalogProductFeed
+                  key={`${JSON.stringify(productParams)}:${viewMode}`}
+                  initialProducts={products}
+                  params={productParams}
+                  viewMode={viewMode}
+                  cartProductIds={[...cartProductIds]}
+                  favoriteProductIds={[...favoriteProductIds]}
+                />
               ) : (
                 <div className="border-border rounded-lg border bg-white p-8 text-center shadow-xs">
                   <h3 className="text-lg font-bold text-slate-800">В этой категории нет подходящих товаров</h3>
@@ -523,6 +488,7 @@ const SubcategoryCard = ({ subcategory }: SubcategoryCardProps) => {
 
 interface CategoryToolbarProps {
   category: CategoryDetailResponse;
+  pageSize: number;
   productsTotal: number;
   searchParams: CategorySearchParams;
   sort: NonNullable<ProductListParams["sort"]>;
@@ -531,6 +497,7 @@ interface CategoryToolbarProps {
 
 const CategoryToolbar = ({
   category,
+  pageSize,
   productsTotal,
   searchParams,
   sort,
@@ -556,6 +523,23 @@ const CategoryToolbar = ({
           name="sort"
           options={sortOptions}
         />
+        <AutoSubmitSelect
+          action={ROUTES.CATEGORY(category.slug)}
+          defaultValue={String(pageSize)}
+          hiddenFields={getCategoryHiddenFields({
+            in_stock: searchParams.in_stock,
+            has_discount: searchParams.has_discount,
+            min_price: searchParams.min_price,
+            max_price: searchParams.max_price,
+            product_type: searchParams.product_type,
+            tag: searchParams.tag,
+            sort: searchParams.sort,
+            view: viewMode === "list" ? viewMode : undefined,
+          })}
+          label="Товаров за загрузку:"
+          name="limit"
+          options={pageSizeOptions}
+        />
         <ViewModeToggle
           gridHref={buildCategoryHref(category.slug, {
             ...searchParams,
@@ -571,116 +555,6 @@ const CategoryToolbar = ({
         />
       </div>
     </div>
-  );
-};
-
-interface CategoryPaginationProps {
-  currentPage: number;
-  pageSize: number;
-  totalPages: number;
-  slug: string;
-  searchParams: CategorySearchParams;
-}
-
-const CategoryPagination = ({
-  currentPage,
-  pageSize,
-  searchParams,
-  slug,
-  totalPages,
-}: CategoryPaginationProps) => {
-  const pages = Array.from({ length: Math.min(totalPages, 5) }, (_, index) => index + 1);
-
-  return (
-    <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <PageLink
-          disabled={currentPage <= 1}
-          page={currentPage - 1}
-          searchParams={searchParams}
-          slug={slug}
-        >
-          ‹
-        </PageLink>
-        {pages.map((page) => (
-          <PageLink
-            active={page === currentPage}
-            key={page}
-            page={page}
-            searchParams={searchParams}
-            slug={slug}
-          >
-            {page}
-          </PageLink>
-        ))}
-        {totalPages > 6 ? <span className="text-text-muted px-2">...</span> : null}
-        {totalPages > 5 ? (
-          <PageLink page={totalPages} searchParams={searchParams} slug={slug}>
-            {totalPages}
-          </PageLink>
-        ) : null}
-        <PageLink
-          disabled={currentPage >= totalPages}
-          page={currentPage + 1}
-          searchParams={searchParams}
-          slug={slug}
-        >
-          ›
-        </PageLink>
-      </div>
-      <div className="text-text-secondary flex items-center gap-3 text-sm">
-        <AutoSubmitSelect
-          action={ROUTES.CATEGORY(slug)}
-          defaultValue={String(pageSize)}
-          hiddenFields={getCategoryHiddenFields({
-            in_stock: searchParams.in_stock,
-            has_discount: searchParams.has_discount,
-            min_price: searchParams.min_price,
-            max_price: searchParams.max_price,
-            product_type: searchParams.product_type,
-            sort: searchParams.sort,
-            view: searchParams.view,
-          })}
-          label="Показать по:"
-          name="limit"
-          options={pageSizeOptions}
-        />
-      </div>
-    </div>
-  );
-};
-
-interface PageLinkProps {
-  active?: boolean;
-  disabled?: boolean;
-  page: number;
-  slug: string;
-  searchParams: CategorySearchParams;
-  children: ReactNode;
-}
-
-const PageLink = ({ active, children, disabled, page, searchParams, slug }: PageLinkProps) => {
-  if (disabled) {
-    return (
-      <span className="border-border text-text-muted grid size-10 place-items-center rounded-lg border">
-        {children}
-      </span>
-    );
-  }
-
-  return (
-    <Link
-      className={cn(
-        "border-border grid size-10 place-items-center rounded-lg border text-sm font-semibold transition",
-        active
-          ? "border-accent-primary bg-accent-primary text-white"
-          : "bg-bg-primary hover:bg-bg-hover",
-      )}
-      scroll={false}
-      href={buildCategoryHref(slug, { ...searchParams, page: String(page) })}
-    >
-      {children}
-    </Link>
   );
 };
 

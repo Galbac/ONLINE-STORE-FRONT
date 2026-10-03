@@ -114,7 +114,7 @@ export const StoreBranchSelector = () => {
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="fixed inset-x-3 bottom-4 z-50 flex max-h-[80vh] min-h-0 w-auto flex-col rounded-2xl border border-slate-200/90 bg-white/98 p-4 shadow-2xl shadow-slate-900/15 animate-in fade-in-0 zoom-in-95 duration-150 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[500px] sm:w-[380px]">
+          <div className="fixed inset-x-3 bottom-[calc(80px+var(--sab,0px))] z-50 flex max-h-[calc(100dvh-100px-var(--sab,0px))] min-h-0 w-auto flex-col rounded-2xl border border-slate-200/90 bg-white/98 p-4 shadow-2xl shadow-slate-900/15 animate-in fade-in-0 zoom-in-95 duration-150 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:max-h-[500px] sm:w-[380px]">
             {/* Шапка выпадающего списка */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">

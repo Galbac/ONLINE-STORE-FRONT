@@ -67,7 +67,7 @@ const highlightMatch = (text: string, query: string): React.ReactNode => {
 
 export const HeaderSearch = ({
   defaultValue,
-  placeholder = "Найти свежие продукты, мясо, молоко...",
+  placeholder = "Поиск товаров...",
   className,
 }: HeaderSearchProps) => {
   const router = useRouter();
@@ -226,7 +226,7 @@ export const HeaderSearch = ({
           <input
             ref={inputRef}
             autoComplete="off"
-            className="h-11 w-full bg-transparent pl-10 pr-20 text-sm text-slate-800 placeholder:text-slate-400 outline-none"
+            className="h-11 w-full bg-transparent pl-10 pr-10 text-sm text-slate-800 placeholder:text-slate-500 outline-none"
             id="header-site-search"
             name="q"
             placeholder={placeholder}

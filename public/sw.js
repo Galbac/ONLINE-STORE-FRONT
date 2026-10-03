@@ -1,7 +1,6 @@
 // Service Worker for GroceryStore PWA & Web Push
-const CACHE_NAME = "grocery-store-cache-v2";
+const CACHE_NAME = "grocery-store-cache-v3";
 const STATIC_ASSETS = [
-  "/",
   "/favicon.svg",
   "/apple-touch-icon.png",
   "/icons/icon-192x192.png",
@@ -9,73 +8,10 @@ const STATIC_ASSETS = [
   "/icons/badge-72x72.png"
 ];
 
-// Offline fallback HTML
-const OFFLINE_HTML = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Нет интернета — Grocery Store</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 0;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background: #f8fafc;
-      color: #0f172a;
-      text-align: center;
-      box-sizing: border-box;
-    }
-    .card {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 24px;
-      padding: 32px 24px;
-      max-width: 380px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    }
-    .icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-    h1 { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
-    p { font-size: 14px; color: #64748b; line-height: 1.5; margin: 0 0 24px; }
-    button {
-      background: #059669;
-      color: white;
-      border: none;
-      border-radius: 14px;
-      padding: 12px 24px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      width: 100%;
-    }
-    button:active { transform: scale(0.98); }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="icon">📡</div>
-    <h1>Нет подключения к сети</h1>
-    <p>Проверьте интернет-соединение. Ваши выбранные товары сохранены в корзине.</p>
-    <button onclick="window.location.reload()">Повторить попытку</button>
-  </div>
-</body>
-</html>`;
-
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      cache.put("/offline-fallback", new Response(OFFLINE_HTML, {
-        headers: { "Content-Type": "text/html; charset=utf-8" }
-      }));
       return cache.addAll(STATIC_ASSETS).catch((err) => {
         console.warn("Failed caching some static assets:", err);
       });
@@ -87,55 +23,40 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     Promise.all([
       self.clients.claim(),
+      // Purge ALL caches on localhost or version update
       caches.keys().then((keys) =>
         Promise.all(
-          keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+          keys.map((key) => caches.delete(key))
         )
       )
     ])
   );
 });
 
-// Network-First стратегия с Fallback для навигации
+// Fetch handler: DO NOT intercept on localhost or for Next.js internal chunks
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Не кэшируем запросы к API, админке и не-GET
+  // 1. Never cache or intercept on localhost or 127.0.0.1
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+    return;
+  }
+
+  // 2. Never cache API, admin, or Next.js static/chunk bundles
   if (
     request.method !== "GET" ||
     url.pathname.startsWith("/api") ||
     url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/_next") ||
     url.pathname.includes("/sw.js")
   ) {
     return;
   }
 
-  // Навигация (переход по страницам)
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.status === 200) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          const fallback = await caches.match("/offline-fallback");
-          return fallback || new Response("Офлайн режим", { status: 503 });
-        })
-    );
-    return;
-  }
-
-  // Статические ресурсы (иконки, стили)
+  // 3. Static image assets only (icons, png, svg)
   if (
     url.pathname.startsWith("/icons/") ||
-    url.pathname.startsWith("/_next/static/") ||
     url.pathname.endsWith(".png") ||
     url.pathname.endsWith(".svg")
   ) {
@@ -154,7 +75,7 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-// Обработка входящего Push-уведомления
+// Push notification listener
 self.addEventListener("push", (event) => {
   let data = {};
   if (event.data) {
@@ -188,7 +109,6 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// Обработка нажатия на Push-уведомление
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 

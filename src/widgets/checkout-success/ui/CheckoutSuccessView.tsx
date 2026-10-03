@@ -13,7 +13,7 @@ import { toPriceFormat } from "@/shared/lib/format";
 
 interface CheckoutSuccessViewProps {
   order: OrderDetailResponse;
-  payment: PaymentDetailResponse;
+  payment?: PaymentDetailResponse | null;
   status: OrderStatusResponse;
 }
 

@@ -4,17 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { UserRound } from "lucide-react";
 import { ROUTES } from "@/shared/config";
-import { isAccessTokenValid } from "@/shared/lib/auth-token";
+import { getStoredAccessToken } from "@/shared/ui";
 
 export const HeaderUserLink = () => {
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
-      const token =
-        window.localStorage.getItem("access_token") ??
-        window.sessionStorage.getItem("access_token");
-      setIsAuth(Boolean(token && isAccessTokenValid(token)));
+      const token = getStoredAccessToken();
+      setIsAuth(Boolean(token));
     };
 
     checkAuth();

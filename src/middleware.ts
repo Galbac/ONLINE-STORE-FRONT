@@ -2,37 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
 const protectedPathPrefixes = ["/profile", "/cart", "/checkout"] as const;
-const guestOnlyPathPrefixes = ["/login", "/register"] as const;
 const protectedAdminPathPrefix = "/admin";
 const adminLoginPath = "/admin/login";
 
 export const middleware = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
-
-  const isGuestOnlyPath = guestOnlyPathPrefixes.some((prefix) => {
-    return pathname === prefix || pathname.startsWith(`${prefix}/`);
-  });
-
-  if (isGuestOnlyPath) {
-    const accessToken = request.cookies.get("access_token")?.value;
-    const refreshToken = request.cookies.get("refresh_token")?.value;
-
-    if (accessToken && isAccessTokenValid(accessToken)) {
-      const homeUrl = request.nextUrl.clone();
-      homeUrl.pathname = "/";
-      homeUrl.search = "";
-      return NextResponse.redirect(homeUrl);
-    }
-
-    if (refreshToken) {
-      const homeUrl = request.nextUrl.clone();
-      homeUrl.pathname = "/";
-      homeUrl.search = "";
-      return NextResponse.redirect(homeUrl);
-    }
-
-    return NextResponse.next();
-  }
 
   const isProtectedPath = protectedPathPrefixes.some((prefix) => {
     return pathname === prefix || pathname.startsWith(`${prefix}/`);
@@ -71,7 +45,6 @@ export const middleware = (request: NextRequest) => {
   }
 
   if (refreshToken) {
-    // User has a persistent refresh token, let client-side AuthGuard / apiClient refresh access_token
     return NextResponse.next();
   }
 
@@ -92,9 +65,5 @@ export const config = {
     "/cart/:path*",
     "/checkout/:path*",
     "/admin/:path*",
-    "/login",
-    "/login/:path*",
-    "/register",
-    "/register/:path*",
   ],
 };

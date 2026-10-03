@@ -80,12 +80,7 @@ if (publicApiUrl) {
 const nextConfig: NextConfig = {
   output: "standalone",
   devIndicators: false,
-  webpack: (config, { dev }) => {
-    if (dev) {
-      config.cache = { type: "memory" };
-    }
-    return config;
-  },
+
 
   images: {
     unoptimized: true,

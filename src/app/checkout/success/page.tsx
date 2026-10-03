@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { CheckoutSuccessPage } from "@/widgets/checkout-success";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +14,12 @@ export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
 
   return (
-    <CheckoutSuccessPage
-      orderId={toOptionalNumber(params.order_id)}
-      paymentId={toOptionalNumber(params.payment_id)}
-    />
+    <Suspense>
+      <CheckoutSuccessPage
+        orderId={toOptionalNumber(params.order_id)}
+        paymentId={toOptionalNumber(params.payment_id)}
+      />
+    </Suspense>
   );
 }
 

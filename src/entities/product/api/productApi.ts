@@ -30,6 +30,7 @@ export const productApi = {
       max_price: params.max_price,
       has_discount: params.has_discount,
       product_type: params.product_type,
+      store_id: params.store_id,
       sort: params.sort ?? "popular",
     });
   },
@@ -70,6 +71,7 @@ export const productApi = {
       max_price: params.max_price,
       has_discount: params.has_discount,
       product_type: params.product_type,
+      store_id: params.store_id,
       tag: params.tag,
       sort: params.sort ?? "relevance",
     });

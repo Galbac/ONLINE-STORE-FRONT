@@ -147,6 +147,22 @@ export const AdminDashboardView = ({
     };
   }, [filters.preset, filters.dateFrom, filters.dateTo, filters.filterParams]);
 
+  const handleStartDateChange = (val: string) => {
+    setCustomStartDate(val);
+    if (val && customEndDate) {
+      filters.setCustomRange(val, customEndDate);
+      setIsDatePickerOpen(false);
+    }
+  };
+
+  const handleEndDateChange = (val: string) => {
+    setCustomEndDate(val);
+    if (customStartDate && val) {
+      filters.setCustomRange(customStartDate, val);
+      setIsDatePickerOpen(false);
+    }
+  };
+
   const handleApplyCustomRange = (e: React.FormEvent) => {
     e.preventDefault();
     if (customStartDate && customEndDate) {
@@ -243,7 +259,7 @@ export const AdminDashboardView = ({
                     <input
                       type="date"
                       value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      onChange={(e) => handleStartDateChange(e.target.value)}
                       className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-emerald-500"
                     />
                   </div>
@@ -252,24 +268,19 @@ export const AdminDashboardView = ({
                     <input
                       type="date"
                       value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      onChange={(e) => handleEndDateChange(e.target.value)}
                       className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                  <span className="text-[10px] text-slate-400">Применится автоматически</span>
                   <button
                     type="button"
                     onClick={() => setIsDatePickerOpen(false)}
-                    className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800"
+                    className="px-3 py-1 text-xs text-slate-500 hover:text-slate-800"
                   >
-                    Отмена
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700"
-                  >
-                    Применить
+                    Закрыть
                   </button>
                 </div>
               </form>

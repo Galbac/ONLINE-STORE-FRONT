@@ -57,12 +57,14 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const sort = toCatalogSort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
+  const storeId = await getSelectedStoreId();
 
   const productParams: ProductListParams = {
     page,
     limit: pageSize,
     sort,
     in_stock: true,
+    ...(storeId !== undefined ? { store_id: storeId } : {}),
   };
 
   if (maxPrice !== undefined) {
@@ -98,6 +100,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     page: 1,
     sort: "price_desc",
     in_stock: true,
+    ...(storeId !== undefined ? { store_id: storeId } : {}),
   };
 
   if (categoryId !== undefined) {
@@ -485,4 +488,10 @@ const getAccessToken = async (): Promise<string | undefined> => {
   const cookieStore = await cookies();
 
   return cookieStore.get("access_token")?.value;
+};
+
+const getSelectedStoreId = async (): Promise<number | undefined> => {
+  const cookieStore = await cookies();
+  const storeId = Number(cookieStore.get("current_store_id")?.value);
+  return Number.isInteger(storeId) && storeId > 0 ? storeId : undefined;
 };

@@ -1,3 +1,4 @@
+import { AdminAutoFiltersForm } from "@/shared/ui";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Download, Eye, Search } from "lucide-react";
@@ -116,7 +117,7 @@ const SummaryCard = ({ label, value }: { label: string; value: string }) => {
 
 const OrdersFilters = ({ filters }: { filters: AdminOrderFilters }) => {
   return (
-    <form className="border-border bg-bg-primary shadow-soft rounded-lg border p-4" method="get">
+    <AdminAutoFiltersForm action={ROUTES.ADMIN_ORDERS} resetHref={ROUTES.ADMIN_ORDERS}>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-8">
         <label className="md:col-span-2">
           <span className="mb-2 block text-sm font-bold">Поиск</span>
@@ -164,24 +165,7 @@ const OrdersFilters = ({ filters }: { filters: AdminOrderFilters }) => {
         />
         <FilterInput defaultValue={filters.date_to} label="Дата до" name="date_to" type="date" />
       </div>
-
-      <input name="page" type="hidden" value="1" />
-
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          className="bg-accent-primary text-accent-contrast hover:bg-accent-hover h-11 rounded-lg px-4 text-sm font-bold transition"
-          type="submit"
-        >
-          Применить
-        </button>
-        <Link
-          className="border-border hover:bg-bg-hover inline-flex h-11 items-center justify-center rounded-lg border px-4 text-sm font-bold transition"
-          href={ROUTES.ADMIN_ORDERS}
-        >
-          Сбросить
-        </Link>
-      </div>
-    </form>
+    </AdminAutoFiltersForm>
   );
 };
 

@@ -1,3 +1,4 @@
+import { AdminAutoFiltersForm } from "@/shared/ui";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Eye, Plus, Search } from "lucide-react";
@@ -93,7 +94,7 @@ export const AdminPromoCodesView = ({ filters, promoCodes }: AdminPromoCodesView
 
 const PromoCodeFilters = ({ filters }: { filters: AdminPromoCodeFilters }) => {
   return (
-    <form className="border-border bg-bg-primary shadow-soft rounded-lg border p-4" method="get">
+    <AdminAutoFiltersForm action={ROUTES.ADMIN_PROMO_CODES} resetHref={ROUTES.ADMIN_PROMO_CODES}>
       <div className="grid gap-3 md:grid-cols-3">
         <label className="md:col-span-2">
           <span className="mb-2 block text-sm font-bold">Поиск</span>
@@ -115,24 +116,7 @@ const PromoCodeFilters = ({ filters }: { filters: AdminPromoCodeFilters }) => {
           <option value="false">Неактивные</option>
         </FilterSelect>
       </div>
-
-      <input name="page" type="hidden" value="1" />
-
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          className="bg-accent-primary text-accent-contrast hover:bg-accent-hover h-11 rounded-lg px-4 text-sm font-bold transition"
-          type="submit"
-        >
-          Применить
-        </button>
-        <Link
-          className="border-border hover:bg-bg-hover inline-flex h-11 items-center justify-center rounded-lg border px-4 text-sm font-bold transition"
-          href={ROUTES.ADMIN_PROMO_CODES}
-        >
-          Сбросить
-        </Link>
-      </div>
-    </form>
+    </AdminAutoFiltersForm>
   );
 };
 

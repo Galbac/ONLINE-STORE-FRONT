@@ -50,6 +50,8 @@ export interface ProductShortResponse {
   is_halal?: boolean | null;
   is_available: boolean;
   stock_display: string;
+  store_stock_quantity?: string | number | null;
+  store_is_available?: boolean | null;
   category?: ProductCategoryShortResponse | null;
   created_at?: string | null;
 }
@@ -84,6 +86,7 @@ export interface ProductListParams {
   product_type?: "piece" | "weight";
   tag?: string;
   article?: string;
+  store_id?: number;
   sort?: "price_asc" | "price_desc" | "newest" | "popular" | "name_asc" | "name_desc";
 }
 
@@ -107,6 +110,7 @@ export interface ProductSearchParams {
   product_type?: "piece" | "weight";
   tag?: string;
   article?: string;
+  store_id?: number;
   sort?: "relevance" | "price_asc" | "price_desc" | "newest" | "popular";
 }
 

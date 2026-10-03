@@ -1,3 +1,4 @@
+import { AdminAutoFiltersForm } from "@/shared/ui";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
@@ -123,7 +124,7 @@ export const AdminOneCLogsView = ({ filters, logs }: AdminOneCLogsViewProps) => 
 };
 
 const LogsFilters = ({ filters }: { filters: AdminOneCLogFilters }) => (
-  <form className="border-border bg-bg-primary shadow-soft rounded-lg border p-4" method="get">
+  <AdminAutoFiltersForm action={ROUTES.ADMIN_INTEGRATION_1C_LOGS} resetHref={ROUTES.ADMIN_INTEGRATION_1C_LOGS}>
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
       <label className="md:col-span-2">
         <span className="mb-2 block text-sm font-bold">Поиск</span>
@@ -163,24 +164,7 @@ const LogsFilters = ({ filters }: { filters: AdminOneCLogFilters }) => (
       <FilterInput defaultValue={filters.date_from} label="Дата от" name="date_from" />
       <FilterInput defaultValue={filters.date_to} label="Дата до" name="date_to" />
     </div>
-
-    <input name="page" type="hidden" value="1" />
-
-    <div className="mt-4 flex flex-wrap gap-3">
-      <button
-        className="bg-accent-primary text-accent-contrast hover:bg-accent-hover h-11 rounded-lg px-4 text-sm font-bold transition"
-        type="submit"
-      >
-        Применить
-      </button>
-      <Link
-        className="border-border hover:bg-bg-hover inline-flex h-11 items-center justify-center rounded-lg border px-4 text-sm font-bold transition"
-        href={ROUTES.ADMIN_INTEGRATION_1C_LOGS}
-      >
-        Сбросить
-      </Link>
-    </div>
-  </form>
+  </AdminAutoFiltersForm>
 );
 
 const LogRow = ({ log }: { log: AdminOneCLogItemResponse }) => (

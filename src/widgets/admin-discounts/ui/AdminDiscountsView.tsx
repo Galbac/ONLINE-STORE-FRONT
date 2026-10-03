@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminAutoFiltersForm } from "@/shared/ui";
+
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Eye, Plus, Search, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
@@ -163,7 +165,7 @@ export const AdminDiscountsView = ({ discounts, filters }: AdminDiscountsViewPro
 
 const DiscountFilters = ({ filters }: { filters: AdminDiscountFilters }) => {
   return (
-    <form className="border-border bg-bg-primary shadow-soft rounded-lg border p-4" method="get">
+    <AdminAutoFiltersForm action={ROUTES.ADMIN_DISCOUNTS} resetHref={ROUTES.ADMIN_DISCOUNTS}>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <label className="xl:col-span-2">
           <span className="mb-2 block text-sm font-bold">Поиск</span>
@@ -192,24 +194,7 @@ const DiscountFilters = ({ filters }: { filters: AdminDiscountFilters }) => {
           <option value="false">Неактивные</option>
         </FilterSelect>
       </div>
-
-      <input name="page" type="hidden" value="1" />
-
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          className="bg-accent-primary text-accent-contrast hover:bg-accent-hover h-11 rounded-lg px-4 text-sm font-bold transition"
-          type="submit"
-        >
-          Применить
-        </button>
-        <Link
-          className="border-border hover:bg-bg-hover inline-flex h-11 items-center justify-center rounded-lg border px-4 text-sm font-bold transition"
-          href={ROUTES.ADMIN_DISCOUNTS}
-        >
-          Сбросить
-        </Link>
-      </div>
-    </form>
+    </AdminAutoFiltersForm>
   );
 };
 

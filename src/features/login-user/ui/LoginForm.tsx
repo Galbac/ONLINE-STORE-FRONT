@@ -8,7 +8,7 @@ import { authApi } from "@/entities/auth";
 import { extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
-import { clearStoredAuth, getStoredAccessToken, storeAuthTokens } from "@/shared/ui";
+import { getStoredAccessToken, storeAuthTokens } from "@/shared/ui";
 
 interface LoginFormValues {
   login: string;
@@ -109,22 +109,11 @@ export const LoginForm = () => {
 
       {isAlreadyAuth && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <span>Вы уже выполнили вход в аккаунт на этом устройстве.</span>
-          <div className="flex items-center gap-3 shrink-0">
+          <span>Вход выполнен на этом устройстве.</span>
+          <div className="flex items-center shrink-0">
             <Link href={ROUTES.PROFILE} className="font-extrabold text-emerald-700 underline hover:text-emerald-900">
               В профиль →
             </Link>
-            <button
-              type="button"
-              onClick={() => {
-                clearStoredAuth();
-                setIsAlreadyAuth(false);
-                window.location.reload();
-              }}
-              className="font-bold text-rose-600 hover:text-rose-700 underline cursor-pointer"
-            >
-              Сменить аккаунт
-            </button>
           </div>
         </div>
       )}

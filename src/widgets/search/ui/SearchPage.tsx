@@ -102,12 +102,14 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const sort = toSearchSort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
+  const storeId = await getSelectedStoreId();
 
   const searchPayload: ProductSearchParams = {
     limit: pageSize,
     page,
     q: query,
     sort,
+    ...(storeId !== undefined ? { store_id: storeId } : {}),
   };
   if (categoryId !== undefined) {
     searchPayload.category_id = categoryId;
@@ -756,6 +758,12 @@ const toViewMode = (value: ProductViewMode | undefined): ProductViewMode => {
 const getAccessToken = async (): Promise<string | undefined> => {
   const cookieStore = await cookies();
   return cookieStore.get("access_token")?.value;
+};
+
+const getSelectedStoreId = async (): Promise<number | undefined> => {
+  const cookieStore = await cookies();
+  const storeId = Number(cookieStore.get("current_store_id")?.value);
+  return Number.isInteger(storeId) && storeId > 0 ? storeId : undefined;
 };
 
 const toSearchUrlParams = (searchParams: SearchPageParams): SearchUrlParams => {

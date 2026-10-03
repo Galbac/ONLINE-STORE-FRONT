@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Clock, MapPin, Phone, Search, Store, X } from "lucide-react";
 import { deliveryApi, useStoreBranch, type PickupPointResponse } from "@/entities/delivery";
 import { formatPhoneMask } from "@/shared/lib/format/phone";
 
 export const StoreBranchSelector = () => {
+  const router = useRouter();
   const { selectedStore, setSelectedStore } = useStoreBranch();
   const [isOpen, setIsOpen] = useState(false);
   const [stores, setStores] = useState<PickupPointResponse[]>([]);
@@ -23,6 +25,7 @@ export const StoreBranchSelector = () => {
           setStores(res.items);
           if (!selectedStore && res.items[0]) {
             setSelectedStore(res.items[0]);
+            router.refresh();
           }
         }
       } catch (err) {
@@ -35,7 +38,7 @@ export const StoreBranchSelector = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedStore, setSelectedStore]);
+  }, [selectedStore, setSelectedStore, router]);
 
   // Закрытие по клику вне контейнера
   useEffect(() => {
@@ -73,6 +76,7 @@ export const StoreBranchSelector = () => {
   const handleSelectStore = (store: PickupPointResponse) => {
     setSelectedStore(store);
     setIsOpen(false);
+    router.refresh();
   };
 
   const displayText = selectedStore
@@ -121,7 +125,7 @@ export const StoreBranchSelector = () => {
                   <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
                     Филиалы магазина
                   </h4>
-                  <p className="text-[11px] text-slate-400">Цены и остатки зависят от адреса</p>
+                  <p className="text-[11px] text-slate-400">Остатки зависят от филиала, цены единые</p>
                 </div>
               </div>
               <button

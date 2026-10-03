@@ -1,3 +1,4 @@
+import { AdminAutoFiltersForm } from "@/shared/ui";
 import Link from "next/link";
 import { Download, Edit, PackagePlus, Search } from "lucide-react";
 import type { AdminCategoryListResponse } from "@/entities/admin-category";
@@ -149,7 +150,7 @@ const ProductsFilters = ({
   filters: AdminProductFilters;
 }) => {
   return (
-    <form className="border-border bg-bg-primary rounded-lg border p-4 shadow-soft" method="get">
+    <AdminAutoFiltersForm action={ROUTES.ADMIN_PRODUCTS} resetHref={ROUTES.ADMIN_PRODUCTS}>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
         <label className="xl:col-span-2">
           <span className="mb-2 block text-sm font-bold">Поиск</span>
@@ -193,24 +194,7 @@ const ProductsFilters = ({
           <option value="error">Ошибка</option>
         </FilterSelect>
       </div>
-
-      <input name="page" type="hidden" value="1" />
-
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          className="bg-accent-primary text-accent-contrast hover:bg-accent-hover h-11 rounded-lg px-4 text-sm font-bold transition"
-          type="submit"
-        >
-          Применить
-        </button>
-        <Link
-          className="border-border hover:bg-bg-hover inline-flex h-11 items-center justify-center rounded-lg border px-4 text-sm font-bold transition"
-          href={ROUTES.ADMIN_PRODUCTS}
-        >
-          Сбросить
-        </Link>
-      </div>
-    </form>
+    </AdminAutoFiltersForm>
   );
 };
 

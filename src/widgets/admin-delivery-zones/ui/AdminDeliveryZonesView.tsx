@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminAutoFiltersForm } from "@/shared/ui";
+
 import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Edit2, Save, Trash2, X } from "lucide-react";
@@ -291,28 +293,14 @@ const ZoneForm = ({
 );
 
 export const Filters = ({ filters, route }: { filters: AdminDeliveryFilters; route: string }) => (
-  <form className="border-border bg-bg-primary shadow-soft rounded-lg border p-4" method="get">
+  <AdminAutoFiltersForm action={route} resetHref={route}>
     <div className="grid gap-3 md:grid-cols-4">
       <Input defaultValue={filters.q} label="Поиск" name="q" />
       <Input defaultValue={filters.city} label="Город" name="city" />
       <SelectString defaultValue={filters.is_active} label="Активность" name="is_active" />
       <input name="page" type="hidden" value="1" />
     </div>
-    <div className="mt-4 flex gap-3">
-      <button
-        className="bg-accent-primary text-accent-contrast h-11 rounded-lg px-4 text-sm font-bold"
-        type="submit"
-      >
-        Применить
-      </button>
-      <Link
-        className="border-border hover:bg-bg-hover inline-flex h-11 items-center rounded-lg border px-4 text-sm font-bold"
-        href={route}
-      >
-        Сбросить
-      </Link>
-    </div>
-  </form>
+  </AdminAutoFiltersForm>
 );
 
 export const Pagination = ({

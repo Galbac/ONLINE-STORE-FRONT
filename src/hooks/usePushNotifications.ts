@@ -48,8 +48,12 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     const currentPermission = Notification.permission as PushPermissionStatus;
     setPermission(currentPermission);
 
-    const dismissed = localStorage.getItem(STORAGE_BANNER_KEY) === "true";
-    setIsBannerDismissed(dismissed);
+    const storedDismissal = localStorage.getItem(STORAGE_BANNER_KEY);
+    const dismissedAt = storedDismissal === "true" ? Date.now() : Number(storedDismissal);
+    if (storedDismissal === "true") localStorage.setItem(STORAGE_BANNER_KEY, String(dismissedAt));
+    setIsBannerDismissed(
+      Number.isFinite(dismissedAt) && dismissedAt > 0 && Date.now() - dismissedAt < 3 * 24 * 60 * 60 * 1000,
+    );
 
     void (async () => {
       try {
@@ -64,7 +68,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const dismissBanner = useCallback(() => {
     setIsBannerDismissed(true);
     if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_BANNER_KEY, "true");
+      localStorage.setItem(STORAGE_BANNER_KEY, String(Date.now()));
     }
   }, []);
 

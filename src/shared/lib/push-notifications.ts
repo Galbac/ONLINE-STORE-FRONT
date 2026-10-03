@@ -65,12 +65,18 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
   }
 
   try {
-    const permission = await Notification.requestPermission();
+    const permission = Notification.permission === "granted"
+      ? "granted"
+      : await Notification.requestPermission();
     if (permission !== "granted") {
       return { success: false, error: "Доступ к уведомлениям отклонен пользователем" };
     }
 
-    const reg = await navigator.serviceWorker.ready;
+    const registration = await registerServiceWorker();
+    if (!registration) {
+      throw new Error("Не удалось зарегистрировать Service Worker для push-уведомлений");
+    }
+    const reg = registration;
     let subscription = await reg.pushManager.getSubscription();
 
     if (!subscription) {
@@ -93,10 +99,14 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
     // 3. Отправляем ключи на наш сервер
     const subJson = subscription.toJSON();
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    const token = window.localStorage.getItem("access_token") ??
+      window.sessionStorage.getItem("access_token") ??
+      document.cookie.split("; ").find((part) => part.startsWith("access_token="))?.split("=").slice(1).join("=");
     const saveRes = await fetch(`${apiUrl}/api/notifications/push/subscribe`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${decodeURIComponent(token)}` } : {}),
       },
       body: JSON.stringify({
         endpoint: subscription.endpoint,

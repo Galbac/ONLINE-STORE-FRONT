@@ -30,20 +30,7 @@ export const PwaInstallPrompt = () => {
     const ios = isIosDevice();
     setIsIos(ios);
 
-    if (standalone) {
-      // Если уже установлено как приложение, проверяем статус Push
-      if (typeof window !== "undefined" && "Notification" in window) {
-        if (Notification.permission === "default") {
-          const pushDismissed = localStorage.getItem("push_prompt_dismissed");
-          if (!pushDismissed || Date.now() - Number(pushDismissed) > 3 * 24 * 60 * 60 * 1000) {
-            setMode("push");
-            const timer = setTimeout(() => setShowPrompt(true), 2500);
-            return () => clearTimeout(timer);
-          }
-        }
-      }
-      return;
-    }
+    if (standalone) return;
 
     // Проверяем, закрывал ли пользователь баннер установки недавно
     const dismissedAt = localStorage.getItem("pwa_dismissed");

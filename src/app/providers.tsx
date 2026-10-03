@@ -10,6 +10,7 @@ import { CartDrawer } from "@/widgets/cart-drawer";
 import { CookieBanner } from "@/shared/ui/cookie-banner";
 import { PwaInstallPrompt, PwaInstallModal } from "@/shared/ui/pwa-install";
 import { OfflineIndicator } from "@/shared/ui/offline-indicator";
+import { PushPermissionPrompt } from "@/shared/ui/push-permission-prompt";
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -56,6 +57,7 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
       <ScrollRestorationKeeper />
       <CartDrawer />
       <CookieBanner />
+      <PushPermissionPrompt />
       {mounted && (
         <>
           <PwaInstallPrompt />

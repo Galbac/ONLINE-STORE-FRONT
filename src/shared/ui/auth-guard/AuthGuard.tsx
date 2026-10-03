@@ -63,6 +63,7 @@ export const clearStoredAuth = (): void => {
   window.sessionStorage.removeItem("refresh_token");
   document.cookie = "access_token=; path=/; max-age=0; samesite=lax";
   document.cookie = "refresh_token=; path=/; max-age=0; samesite=lax";
+  window.dispatchEvent(new Event("grocery-auth-changed"));
 };
 
 export const storeAuthTokens = ({ accessToken, refreshToken }: AuthTokens): void => {
@@ -76,6 +77,7 @@ export const storeAuthTokens = ({ accessToken, refreshToken }: AuthTokens): void
 
   document.cookie = `access_token=${encodeURIComponent(accessToken)}; path=/; samesite=lax${cookieMaxAge}`;
   document.cookie = `refresh_token=${encodeURIComponent(refreshToken)}; path=/; samesite=lax${cookieMaxAge}`;
+  window.dispatchEvent(new Event("grocery-auth-changed"));
 };
 
 const getCookieValue = (name: string): string | null => {

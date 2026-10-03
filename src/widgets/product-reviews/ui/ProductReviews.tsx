@@ -32,6 +32,8 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [total, setTotal] = useState(0);
   const [average, setAverage] = useState(5.0);
+  const [canReview, setCanReview] = useState(false);
+  const [eligibilityLoaded, setEligibilityLoaded] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   // Form states
@@ -70,16 +72,44 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
           if (parsed.text) setText(parsed.text);
           if (parsed.pros) setPros(parsed.pros);
           if (parsed.cons) setCons(parsed.cons);
-          setShowForm(true);
           const token = getStoredAccessToken();
           if (token) {
-            setSuccessMsg("Ваш черновик отзыва восстановлен. Вы можете отправить его прямо сейчас.");
+            setSuccessMsg("Ваш черновик отзыва восстановлен.");
           }
         } else {
           localStorage.removeItem(`pending_review_${productId}`);
         }
       }
     } catch (_) {}
+  }, [productId]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const token = getStoredAccessToken();
+    if (!token) {
+      setCanReview(false);
+      setEligibilityLoaded(true);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setEligibilityLoaded(false);
+    apiClient
+      .get<{ can_review: boolean }>(API_ENDPOINTS.REVIEW.ELIGIBILITY(productId))
+      .then((result) => {
+        if (isMounted) setCanReview(result.can_review);
+      })
+      .catch(() => {
+        if (isMounted) setCanReview(false);
+      })
+      .finally(() => {
+        if (isMounted) setEligibilityLoaded(true);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [productId]);
 
   useEffect(() => {
@@ -102,15 +132,11 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
     e.preventDefault();
     const token = getStoredAccessToken();
     if (!token) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem(
-          `pending_review_${productId}`,
-          JSON.stringify({ rating, text, pros, cons, savedAt: Date.now() })
-        );
-      }
-      setErrorMsg(
-        "Для отправки отзыва необходимо войти в аккаунт. Мы сохранили ваш черновик на 10 минут!"
-      );
+      setErrorMsg("Войдите в аккаунт и приобретите этот товар, чтобы оставить отзыв.");
+      return;
+    }
+    if (!canReview) {
+      setErrorMsg("Оставить отзыв можно после получения заказа с этим товаром.");
       return;
     }
     if (text.trim().length < 3) {
@@ -151,16 +177,31 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
             </span>
             <div>
               <p className="text-sm font-bold text-slate-800">★ Отзывы покупателей · Пока нет оценок</p>
-              <p className="text-xs text-slate-400">Будьте первым, кто оставит отзыв и поделится впечатлениями о вкусе!</p>
+              <p className="text-xs text-slate-400">Отзывы могут оставлять покупатели этого товара.</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition active:scale-95 cursor-pointer"
-          >
-            <Plus size={15} /> Написать первый отзыв
-          </button>
+          {getStoredAccessToken() ? (
+            eligibilityLoaded && canReview ? (
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition active:scale-95 cursor-pointer"
+              >
+                <Plus size={15} /> Написать первый отзыв
+              </button>
+            ) : (
+              <span className="text-xs font-medium text-slate-500">
+                {eligibilityLoaded ? "Отзыв доступен после покупки товара" : "Проверяем возможность оставить отзыв…"}
+              </span>
+            )
+          ) : (
+            <Link
+              href={`/login?next=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`}
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+            >
+              Войти, чтобы оставить отзыв
+            </Link>
+          )}
         </div>
       </section>
     );
@@ -197,18 +238,23 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
           </div>
         </div>
 
-        <Button
-          className="gap-2"
-          onClick={() => setShowForm(!showForm)}
-          variant={showForm ? "secondary" : "primary"}
-        >
-          {showForm ? "Скрыть форму" : (
-            <>
-              <Plus size={16} />
-              Оставить отзыв
-            </>
-          )}
-        </Button>
+        {showForm ? (
+          <Button className="gap-2" onClick={() => setShowForm(false)} variant="secondary">
+            Скрыть форму
+          </Button>
+        ) : canReview ? (
+          <Button className="gap-2" onClick={() => setShowForm(true)}>
+            <Plus size={16} /> Оставить отзыв
+          </Button>
+        ) : getStoredAccessToken() ? (
+          <span className="text-xs font-medium text-slate-500">
+            {eligibilityLoaded ? "Отзыв доступен после покупки товара" : "Проверяем возможность оставить отзыв…"}
+          </span>
+        ) : (
+          <Link href={`/login?next=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`} className="text-sm font-bold text-emerald-700">
+            Войдите, чтобы оставить отзыв
+          </Link>
+        )}
       </div>
 
       {successMsg ? (
@@ -349,13 +395,15 @@ export const ProductReviews = ({ productId }: ProductReviewsProps) => {
                 <p className="text-[11px] text-slate-400">Поделитесь своими впечатлениями о вкусе и качестве</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowForm(!showForm)}
-              className="text-xs font-bold text-emerald-700 bg-emerald-100/70 hover:bg-emerald-100 px-3.5 py-1.5 rounded-xl transition cursor-pointer"
-            >
-              {showForm ? "Скрыть форму" : "Написать первый отзыв"}
-            </button>
+            {!showForm && canReview ? (
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="text-xs font-bold text-emerald-700 bg-emerald-100/70 hover:bg-emerald-100 px-3.5 py-1.5 rounded-xl transition cursor-pointer"
+              >
+                Написать первый отзыв
+              </button>
+            ) : null}
           </div>
         )}
       </div>

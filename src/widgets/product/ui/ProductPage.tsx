@@ -1,10 +1,14 @@
-import { ProductStoresStock } from "./ProductStoresStock";
-import { ProductReviews } from "@/widgets/product-reviews";
-import { ProductGallery } from "./ProductGallery";
-import { ProductArticleCopy } from "./ProductArticleCopy";
-import { KizlyarDeliveryZonesModal } from "./KizlyarDeliveryZonesModal";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import {
+  MapPin,
+  RotateCcw,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  ThermometerSnowflake,
+  Truck,
+} from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
 import {
@@ -18,8 +22,12 @@ import { fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { Container, ProductCard, BackButton } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { MapPin, RotateCcw, ShieldCheck, Sparkles, Store, ThermometerSnowflake, Truck } from "lucide-react";
 import { Header } from "@/widgets/header";
+import { ProductReviews } from "@/widgets/product-reviews";
+import { KizlyarDeliveryZonesModal } from "./KizlyarDeliveryZonesModal";
+import { ProductArticleCopy } from "./ProductArticleCopy";
+import { ProductGallery } from "./ProductGallery";
+import { ProductStoresStock } from "./ProductStoresStock";
 
 interface ProductPageProps {
   slug: string;
@@ -37,11 +45,13 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
       limit: 6,
       in_stock: true,
     }),
-    productApi.getList({
-      limit: 4,
-      category_slug: "sousy-i-specii",
-      in_stock: true,
-    }).catch(() => ({ items: [] as any[] })),
+    productApi
+      .getList({
+        limit: 4,
+        category_slug: "sousy-i-specii",
+        in_stock: true,
+      })
+      .catch(() => ({ items: [] as any[] })),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
@@ -65,9 +75,13 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
     nameLower.includes("bacon") ||
     nameLower.includes("lard");
 
-  const displayTitle = product.product_type === "weight"
-    ? product.name.replace(/,\s*\d+\s*(?:г|кг)\b/gi, "").trim()
-    : product.name;
+  const displayTitle =
+    product.product_type === "weight"
+      ? product.name.replace(/,\s*\d+\s*(?:г|кг)\b/gi, "").trim()
+      : product.name;
+  const stockQuantity = Number(product.stock_quantity);
+  const hasStock = product.is_available && Number.isFinite(stockQuantity) && stockQuantity > 0;
+  const hasLowStock = hasStock && isLowStock(product.stock_quantity);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -86,15 +100,21 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
         : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
     },
-    ...(reviewSummary && reviewSummary.total > 0 && Number.isFinite(reviewSummary.average_rating) && reviewSummary.average_rating >= 1 && reviewSummary.average_rating <= 5 ? {
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: reviewSummary.average_rating,
-        reviewCount: reviewSummary.total,
-        bestRating: 5,
-        worstRating: 1,
-      },
-    } : {}),
+    ...(reviewSummary &&
+    reviewSummary.total > 0 &&
+    Number.isFinite(reviewSummary.average_rating) &&
+    reviewSummary.average_rating >= 1 &&
+    reviewSummary.average_rating <= 5
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: reviewSummary.average_rating,
+            reviewCount: reviewSummary.total,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
   };
 
   const breadcrumbJsonLd = {
@@ -105,7 +125,9 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
         "@type": "ListItem",
         position: 1,
         name: "Главная",
-        item: (process.env.NEXT_PUBLIC_SITE_URL || "https://eda-pobeda.ru").replace(/\/$/, "") || ROUTES.HOME,
+        item:
+          (process.env.NEXT_PUBLIC_SITE_URL || "https://eda-pobeda.ru").replace(/\/$/, "") ||
+          ROUTES.HOME,
       },
       {
         "@type": "ListItem",
@@ -121,8 +143,6 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
       },
     ],
   };
-
-
 
   return (
     <>
@@ -140,7 +160,11 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
       <main className="pb-20 md:pb-8">
         <Container className="py-6">
           <div className="mb-4 flex items-center justify-between gap-4">
-            <BackButton fallbackHref={product.category?.slug ? `/catalog/${product.category.slug}` : ROUTES.CATALOG} />
+            <BackButton
+              fallbackHref={
+                product.category?.slug ? `/catalog/${product.category.slug}` : ROUTES.CATALOG
+              }
+            />
             <ProductBreadcrumbs breadcrumbs={product.breadcrumbs} product={product} />
           </div>
 
@@ -160,32 +184,49 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
 
               <div className="mt-6 flex items-center justify-between gap-4">
                 <span className="text-success flex items-center gap-2 text-sm font-semibold">
-                  <span className="bg-success size-2 rounded-full" />
+                  <span
+                    className={`${hasLowStock ? "bg-error" : "bg-success"} size-2 rounded-full`}
+                  />
                   {product.stock_display}
                 </span>
-                {isLowStock(product.stock_quantity) ? (
-                  <span className="text-error text-sm font-semibold">
+                {hasStock ? (
+                  <span
+                    className={`${hasLowStock ? "text-error" : "text-success"} text-sm font-semibold`}
+                  >
                     Осталось {formatQuantity(product.stock_quantity)} {unitLabel(product.unit)}
                   </span>
                 ) : null}
               </div>
 
               <ProductUnitInfo product={product} />
-              <ProductStoresStock storesStock={product.stores_stock} unit={unitLabel(product.unit)} />
+              <ProductStoresStock
+                storesStock={product.stores_stock}
+                unit={unitLabel(product.unit)}
+              />
 
               {/* Halal Certified Badge for Meat */}
-              {!isPork && (product.is_halal === true || (product.category?.slug === "myaso-i-ptitsa" && (nameLower.includes("кури") || nameLower.includes("говяд") || nameLower.includes("индейк") || nameLower.includes("баран") || nameLower.includes("цыплен")))) ? (
+              {!isPork &&
+              (product.is_halal === true ||
+                (product.category?.slug === "myaso-i-ptitsa" &&
+                  (nameLower.includes("кури") ||
+                    nameLower.includes("говяд") ||
+                    nameLower.includes("индейк") ||
+                    nameLower.includes("баран") ||
+                    nameLower.includes("цыплен")))) ? (
                 <div className="my-3 flex items-center gap-3 rounded-2xl border border-emerald-300/80 bg-emerald-50/80 p-3.5 shadow-2xs">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white font-black text-xs shadow-xs tracking-wider">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-xs font-black tracking-wider text-white shadow-xs">
                     حلال
                   </span>
                   <div className="text-xs">
-                    <p className="font-extrabold text-emerald-950 flex items-center gap-1.5">
+                    <p className="flex items-center gap-1.5 font-extrabold text-emerald-950">
                       Сертифицировано Халяль
-                      <span className="rounded-md bg-emerald-700 px-1.5 py-0.2 text-[9px] font-black text-white">100%</span>
+                      <span className="py-0.2 rounded-md bg-emerald-700 px-1.5 text-[9px] font-black text-white">
+                        100%
+                      </span>
                     </p>
-                    <p className="text-emerald-800/80 text-[11px] mt-0.5 leading-relaxed">
-                      Строгий контроль халяльного убоя и фермерского происхождения (Республика Дагестан).
+                    <p className="mt-0.5 text-[11px] leading-relaxed text-emerald-800/80">
+                      Строгий контроль халяльного убоя и фермерского происхождения (Республика
+                      Дагестан).
                     </p>
                   </div>
                 </div>
@@ -198,14 +239,15 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
                 </span>
                 <div className="text-xs">
                   <p className="font-bold text-slate-900">Гарантия 100% свежести</p>
-                  <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                    Отбираем вручную каждый продукт перед сборкой. Доставим в термосумках с соблюдением температурного режима.
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                    Отбираем вручную каждый продукт перед сборкой. Доставим в термосумках с
+                    соблюдением температурного режима.
                   </p>
                 </div>
               </div>
 
               <ProductPurchaseActions
-                                discountPercent={product.discount_percent}
+                discountPercent={product.discount_percent}
                 initialFavorite={favoriteProductIds.has(product.id)}
                 isAvailable={product.is_available}
                 minQuantity={product.min_quantity}
@@ -256,8 +298,12 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
             <section className="mt-14">
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">С этим товаром также покупают</h2>
-                  <p className="text-slate-500 text-sm mt-0.5">Специи, соусы и маринады для кулинарных шедевров</p>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    С этим товаром также покупают
+                  </h2>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    Специи, соусы и маринады для кулинарных шедевров
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -343,17 +389,21 @@ const ProductUnitInfo = ({ product }: ProductUnitInfoProps) => {
   return (
     <div className="my-5 grid grid-cols-3 gap-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 shadow-2xs">
       <div className="min-w-0 text-center">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Единица</p>
+        <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Единица</p>
         <p className="mt-1 text-sm font-extrabold text-slate-800">{product.unit}</p>
       </div>
       <div className="min-w-0 border-x border-slate-200/80 px-2 text-center">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Мин. заказ</p>
+        <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+          Мин. заказ
+        </p>
         <p className="mt-1 text-sm font-extrabold text-slate-800">
           {formatQuantity(product.min_quantity)} {unitLabel(product.unit)}
         </p>
       </div>
       <div className="min-w-0 text-center">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Шаг заказа</p>
+        <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+          Шаг заказа
+        </p>
         <p className="mt-1 text-sm font-extrabold text-slate-800">
           {formatQuantity(product.quantity_step)} {unitLabel(product.unit)}
         </p>
@@ -382,32 +432,42 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
         const nutrition = getProductNutrition(product.category?.slug, product.slug, product.name);
         return (
           <section className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4.5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">Пищевая ценность (на 100 г)</h3>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-xs font-bold tracking-wider text-slate-600 uppercase">
+                Пищевая ценность (на 100 г)
+              </h3>
+              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100/70 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
                 <Sparkles size={12} /> {nutrition.badge}
               </span>
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+              <div className="rounded-xl border border-slate-200/60 bg-white p-2.5 shadow-2xs">
                 <span className="block text-[11px] font-medium text-slate-400">Калории</span>
-                <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">{nutrition.calories}</span>
+                <span className="mt-0.5 block text-xs font-black text-slate-900 sm:text-sm">
+                  {nutrition.calories}
+                </span>
               </div>
-              <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+              <div className="rounded-xl border border-slate-200/60 bg-white p-2.5 shadow-2xs">
                 <span className="block text-[11px] font-medium text-slate-400">Белки</span>
-                <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">{nutrition.proteins}</span>
+                <span className="mt-0.5 block text-xs font-black text-slate-900 sm:text-sm">
+                  {nutrition.proteins}
+                </span>
               </div>
-              <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+              <div className="rounded-xl border border-slate-200/60 bg-white p-2.5 shadow-2xs">
                 <span className="block text-[11px] font-medium text-slate-400">Жиры</span>
-                <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">{nutrition.fats}</span>
+                <span className="mt-0.5 block text-xs font-black text-slate-900 sm:text-sm">
+                  {nutrition.fats}
+                </span>
               </div>
-              <div className="rounded-xl bg-white border border-slate-200/60 p-2.5 shadow-2xs">
+              <div className="rounded-xl border border-slate-200/60 bg-white p-2.5 shadow-2xs">
                 <span className="block text-[11px] font-medium text-slate-400">Углеводы</span>
-                <span className="block text-xs sm:text-sm font-black text-slate-900 mt-0.5">{nutrition.carbs}</span>
+                <span className="mt-0.5 block text-xs font-black text-slate-900 sm:text-sm">
+                  {nutrition.carbs}
+                </span>
               </div>
             </div>
-            <div className="mt-3.5 pt-3 border-t border-slate-200/60 flex items-center gap-2 text-xs text-slate-500">
-              <ThermometerSnowflake size={14} className="text-cyan-600 shrink-0" />
+            <div className="mt-3.5 flex items-center gap-2 border-t border-slate-200/60 pt-3 text-xs text-slate-500">
+              <ThermometerSnowflake size={14} className="shrink-0 text-cyan-600" />
               <span>{nutrition.storage}</span>
             </div>
           </section>
@@ -420,7 +480,9 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
           <Characteristic label="Категория" value={product.category?.name ?? "Каталог"} />
           <Characteristic
             label="Тип товара"
-            value={product.product_type === "weight" ? "Весовой (на развес)" : "Штучный (фасованный)"}
+            value={
+              product.product_type === "weight" ? "Весовой (на развес)" : "Штучный (фасованный)"
+            }
           />
           <Characteristic
             label="Производитель"
@@ -446,48 +508,49 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
       </section>
 
       {/* Delivery in City Widget */}
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs space-y-3.5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-            <MapPin size={18} className="text-emerald-600 shrink-0" />
+      <section className="space-y-3.5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+            <MapPin size={18} className="shrink-0 text-emerald-600" />
             <span>Доставка в г. Кизляр</span>
           </div>
-          <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+          <span className="rounded-full border border-emerald-200/60 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
             от 45 минут
           </span>
         </div>
 
         <div className="space-y-3 text-xs">
           <div className="flex items-start gap-3">
-            <Truck size={17} className="text-emerald-600 shrink-0 mt-0.5" />
+            <Truck size={17} className="mt-0.5 shrink-0 text-emerald-600" />
             <div>
               <p className="font-bold text-slate-800">Быстрая курьерская доставка</p>
-              <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
                 Сегодня, ближайший интервал 14:00 – 16:00. Бесплатно при заказе от 1 500 ₽.
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <Store size={17} className="text-slate-500 shrink-0 mt-0.5" />
+            <Store size={17} className="mt-0.5 shrink-0 text-slate-500" />
             <div>
               <p className="font-bold text-slate-800">Самовывоз из супермаркета</p>
-              <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
                 ул. Ленина, 14. Готов к выдаче через 15 минут после оформления, бесплатно.
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <RotateCcw size={17} className="text-slate-500 shrink-0 mt-0.5" />
+            <RotateCcw size={17} className="mt-0.5 shrink-0 text-slate-500" />
             <div>
               <p className="font-bold text-slate-800">Гарантия 100% свежести и возврата</p>
-              <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                Если качество или свежесть продукта вас не устроит — заменим товар или вернем деньги в пределах срока годности товара (до 48 часов).
+              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                Если качество или свежесть продукта вас не устроит — заменим товар или вернем деньги
+                в пределах срока годности товара (до 48 часов).
               </p>
             </div>
           </div>
         </div>
 
-        <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+        <div className="flex items-center justify-between border-t border-slate-100 pt-1">
           <KizlyarDeliveryZonesModal />
         </div>
       </section>
@@ -576,7 +639,14 @@ const getProductNutrition = (catSlug?: string | null, prodSlug?: string, prodNam
   }
 
   // 3. Beef (Говядина и фарш)
-  if (cat.includes("myaso") || cat.includes("мясо") || slug.includes("govyad") || slug.includes("говяд") || slug.includes("farsh") || slug.includes("steik")) {
+  if (
+    cat.includes("myaso") ||
+    cat.includes("мясо") ||
+    slug.includes("govyad") ||
+    slug.includes("говяд") ||
+    slug.includes("farsh") ||
+    slug.includes("steik")
+  ) {
     return {
       badge: "🥩 Натуральная говядина",
       calories: "~254 ккал",
@@ -598,7 +668,13 @@ const getProductNutrition = (catSlug?: string | null, prodSlug?: string, prodNam
     };
   }
 
-  if (cat.includes("molochnye") || cat.includes("молоч") || slug.includes("milk") || slug.includes("tvorog") || slug.includes("cheese")) {
+  if (
+    cat.includes("molochnye") ||
+    cat.includes("молоч") ||
+    slug.includes("milk") ||
+    slug.includes("tvorog") ||
+    slug.includes("cheese")
+  ) {
     return {
       badge: "🥛 Натуральное молоко",
       calories: "~64 ккал",
@@ -609,7 +685,13 @@ const getProductNutrition = (catSlug?: string | null, prodSlug?: string, prodNam
     };
   }
 
-  if (cat.includes("khleb") || cat.includes("хлеб") || cat.includes("vypechka") || slug.includes("baget") || slug.includes("croissant")) {
+  if (
+    cat.includes("khleb") ||
+    cat.includes("хлеб") ||
+    cat.includes("vypechka") ||
+    slug.includes("baget") ||
+    slug.includes("croissant")
+  ) {
     return {
       badge: "🥖 Свежая выпечка",
       calories: "~265 ккал",

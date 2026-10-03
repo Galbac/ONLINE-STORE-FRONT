@@ -173,6 +173,7 @@ export const API_ENDPOINTS = {
   },
   REVIEW: {
     BY_PRODUCT: (productId: number): string => `/api/products/${productId}/reviews`,
+    ELIGIBILITY: (productId: number): string => `/api/products/${productId}/reviews/eligibility`,
     MODERATE: (reviewId: number): string => `/api/admin/reviews/${reviewId}/moderate`,
   },
   FEEDBACK: {

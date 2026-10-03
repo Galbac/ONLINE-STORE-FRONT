@@ -94,7 +94,7 @@ export const HomePage = async () => {
         </Container>
 
         {/* Блок 3 ключевых преимуществ сразу под Hero-баннером */}
-        <Container className="pt-2 sm:pt-4">
+        <Container className="hidden pt-2 sm:pt-4 md:block">
           <BenefitsSection />
         </Container>
 
@@ -183,7 +183,7 @@ const getSelectedStoreId = async (): Promise<number | undefined> => {
 
 const Hero = ({ totalProducts }: { totalProducts: number }) => {
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-950 p-8 text-white shadow-2xl sm:p-12 lg:p-16">
+    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-950 p-5 text-white shadow-2xl sm:p-12 lg:p-16">
       {/* Glow shapes */}
       <div className="pointer-events-none absolute -top-24 -right-24 size-96 rounded-full bg-emerald-500/15 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -left-24 size-96 rounded-full bg-teal-500/10 blur-3xl" />
@@ -196,28 +196,27 @@ const Hero = ({ totalProducts }: { totalProducts: number }) => {
           <span>100% свежесть</span>
         </div>
 
-        <h1 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.15]">
+        <h1 className="mt-4 text-3xl font-extrabold tracking-tight leading-[1.15] sm:mt-6 sm:text-5xl lg:text-6xl">
           Свежие продукты{" "}
           <span className="bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
             прямо к вашему столу
           </span>
         </h1>
 
-        <p className="mt-5 text-base sm:text-lg leading-relaxed text-slate-300">
-          Спелые фрукты, фермерские молочные продукты, свежая выпечка и готовые решения для
-          всей семьи с быстрой и бережной доставкой.
+        <p className="mt-3 text-sm leading-relaxed text-slate-300 sm:mt-5 sm:text-lg">
+          Свежие продукты на каждый день — с быстрой доставкой к вашему столу.
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center gap-4">
+        <div className="mt-5 flex flex-wrap items-center gap-2 sm:mt-8 sm:gap-4">
           <Link
-            className="inline-flex h-12 items-center gap-2.5 rounded-xl bg-emerald-500 px-7 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:scale-105 hover:bg-emerald-400 active:scale-95"
+            className="inline-flex h-12 items-center gap-2.5 rounded-xl bg-emerald-500 px-5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:scale-105 hover:bg-emerald-400 active:scale-95 sm:px-7"
             href={ROUTES.CATALOG}
           >
             Перейти в каталог
             <ArrowRight size={18} />
           </Link>
           <Link
-            className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/10 active:scale-95"
+            className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-emerald-100 transition-all duration-200 hover:text-white active:scale-95 sm:h-12 sm:border sm:border-white/20 sm:bg-white/5 sm:px-6 sm:text-sm sm:text-white sm:backdrop-blur-md sm:hover:bg-white/10"
             href="/catalog?has_discount=true"
           >
             <Percent size={16} className="text-emerald-400" />
@@ -225,7 +224,7 @@ const Hero = ({ totalProducts }: { totalProducts: number }) => {
           </Link>
         </div>
 
-        <div className="mt-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-8 sm:gap-6">
+        <div className="mt-10 hidden grid-cols-3 gap-4 border-t border-white/10 pt-8 sm:grid sm:gap-6">
           <div>
             <span className="block text-2xl font-black text-emerald-400 sm:text-3xl">
               {totalProducts > 0 ? `${totalProducts}+` : "120+"}
@@ -260,12 +259,12 @@ const CategorySection = ({ categories }: CategorySectionProps) => {
   return (
     <Section href={ROUTES.CATALOG} title="Популярные категории">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
-        {categories.map((category) => {
+        {categories.map((category, index) => {
           const { Icon, colorClass } = getCategoryMeta(category.name);
 
           return (
             <Link
-              className="group relative flex flex-col items-center justify-center rounded-2xl border border-slate-200/70 bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-950/5"
+              className={`group relative flex flex-col items-center justify-center rounded-2xl border border-slate-200/70 bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-950/5 ${index >= 4 ? "hidden md:flex" : ""}`}
               href={ROUTES.CATEGORY(category.slug)}
               key={category.id}
             >
@@ -278,7 +277,7 @@ const CategorySection = ({ categories }: CategorySectionProps) => {
                 {(category.name ?? "").trim()}
               </span>
               {category.products_count ? (
-                <span className="mt-1 text-[11px] font-medium text-slate-400">
+                <span className="mt-1 hidden text-[11px] font-medium text-slate-400 md:block">
                   {category.products_count} {formatProductsCount(category.products_count)}
                 </span>
               ) : null}

@@ -290,7 +290,9 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                 isBusy={isBusy}
                 freeDeliveryThreshold={freeDeliveryThreshold}
               />
-              <BenefitsPanel />
+              <div className="hidden xl:block">
+                <BenefitsPanel />
+              </div>
             </aside>
 
             {/* Мобильная плавающая плашка оформления заказа */}
@@ -635,7 +637,7 @@ const OrderSummaryCard = ({
       <Link
         href={ROUTES.CHECKOUT}
         className={cn(
-          "mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-base font-extrabold text-white shadow-md shadow-emerald-700/20 hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.98] transition-all",
+          "mt-6 hidden min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-base font-extrabold text-white shadow-md shadow-emerald-700/20 transition-all hover:scale-[1.01] hover:bg-emerald-700 active:scale-[0.98] xl:flex",
           isBusy && "pointer-events-none opacity-50",
         )}
       >

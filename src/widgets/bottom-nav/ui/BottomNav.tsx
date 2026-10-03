@@ -3,27 +3,21 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Heart, Home, LayoutGrid, ReceiptText, ShoppingBag, User } from "lucide-react";
+import { Home, LayoutGrid, ReceiptText, ShoppingBag, User } from "lucide-react";
 
 import { cartApi } from "@/entities/cart";
-import { useFavoritesStore } from "@/entities/favorite";
 import { orderApi } from "@/entities/order";
-import { cn } from "@/shared/config";
 import { ROUTES } from "@/shared/config";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 import { CART_CHANGED_EVENT, type CartChangedDetail } from "@/shared/lib/cart-events";
-import { FAVORITES_CHANGED_EVENT, type FavoritesChangedDetail } from "@/shared/lib/favorite-events";
 import { getStoredAccessToken } from "@/shared/ui";
-import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
 export const BottomNav = () => {
   const rawPathname = usePathname();
   const pathname = rawPathname || "";
   const [cartCount, setCartCount] = useState<number>(0);
   const [isAuth, setIsAuth] = useState<boolean>(false);
-  const [favoritesCount, setFavoritesCount] = useState<number>(0);
   const [ordersCount, setOrdersCount] = useState<number>(0);
-  const notificationsCount = useUnreadNotifications();
 
   useEffect(() => {
     if (pathname.startsWith("/admin")) return;
@@ -96,22 +90,7 @@ export const BottomNav = () => {
       }
     };
 
-    const loadFavorites = async () => {
-      try {
-        const token = getStoredAccessToken();
-        if (token && isAccessTokenValid(token)) {
-          await useFavoritesStore.getState().fetchFavorites();
-          setFavoritesCount(useFavoritesStore.getState().items.length);
-        } else {
-          setFavoritesCount(0);
-        }
-      } catch {
-        setFavoritesCount(0);
-      }
-    };
-
     fetchCartCount();
-    loadFavorites();
 
     const handleCartChanged = (event: Event) => {
       const customEvent = event as CustomEvent<CartChangedDetail>;
@@ -122,22 +101,10 @@ export const BottomNav = () => {
       }
     };
 
-    const handleFavoritesChanged = (event: Event) => {
-      const customEvent = event as CustomEvent<FavoritesChangedDetail>;
-      if (typeof customEvent.detail?.itemsCount === "number") {
-        setFavoritesCount(customEvent.detail.itemsCount);
-      } else {
-        void loadFavorites();
-      }
-      updateAuth();
-    };
-
     window.addEventListener(CART_CHANGED_EVENT, handleCartChanged);
-    window.addEventListener(FAVORITES_CHANGED_EVENT, handleFavoritesChanged);
 
     return () => {
       window.removeEventListener(CART_CHANGED_EVENT, handleCartChanged);
-      window.removeEventListener(FAVORITES_CHANGED_EVENT, handleFavoritesChanged);
     };
   }, [pathname]);
 
@@ -145,18 +112,13 @@ export const BottomNav = () => {
     return null;
   }
 
-  const isFavoritesActive =
-    pathname === ROUTES.PROFILE_FAVORITES ||
-    pathname === "/favorites" ||
-    pathname.startsWith("/profile/favorites");
-
   const isOrdersActive =
     pathname === ROUTES.PROFILE_ORDERS || pathname.startsWith(`${ROUTES.PROFILE_ORDERS}/`);
-  const isNotificationsActive = pathname.startsWith("/profile/notifications");
 
   const isProfileActive =
-    (pathname.startsWith("/profile") && !isFavoritesActive && !isOrdersActive && !isNotificationsActive) ||
-    pathname === ROUTES.LOGIN;
+    (pathname.startsWith("/profile") && !isOrdersActive) ||
+    pathname === ROUTES.LOGIN ||
+    pathname === "/favorites";
 
   const items = [
     {
@@ -179,27 +141,11 @@ export const BottomNav = () => {
       isActive: pathname === ROUTES.CART,
     },
     {
-      href: ROUTES.PROFILE_FAVORITES,
-      label: "Избранное",
-      icon: Heart,
-      badge: favoritesCount > 0 ? (favoritesCount > 99 ? "99+" : String(favoritesCount)) : null,
-      badgeClassName: "bg-rose-500 text-white",
-      isActive: isFavoritesActive,
-    },
-    {
       href: ROUTES.PROFILE_ORDERS,
       label: "Заказы",
       icon: ReceiptText,
       badge: ordersCount > 0 ? (ordersCount > 99 ? "99+" : String(ordersCount)) : null,
       isActive: isOrdersActive,
-    },
-    {
-      href: "/profile/notifications",
-      label: "Уведомления",
-      icon: Bell,
-      badge: notificationsCount > 0 ? (notificationsCount > 99 ? "99+" : String(notificationsCount)) : null,
-      badgeClassName: "bg-rose-500 text-white",
-      isActive: isNotificationsActive,
     },
     {
       href: isAuth ? ROUTES.PROFILE : ROUTES.LOGIN,
@@ -212,10 +158,14 @@ export const BottomNav = () => {
   return (
     <nav
       aria-label="Мобильная навигация"
-      className="border-border/80 bg-bg-primary/95 supports-[backdrop-filter]:bg-bg-primary/80 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-md transition-all lg:hidden"
-      style={{ paddingBottom: "max(var(--sab, 0px), 8px)" }}
+      className="border-border/80 bg-bg-primary/95 supports-[backdrop-filter]:bg-bg-primary/80 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-md lg:hidden"
+      style={{
+        paddingBottom: "max(var(--sab, 0px), 8px)",
+        paddingLeft: "max(var(--sal, 0px), 4px)",
+        paddingRight: "max(var(--sar, 0px), 4px)",
+      }}
     >
-      <div className="grid grid-cols-7 items-center justify-around px-1 pt-2">
+      <div className="grid w-full min-w-0 grid-cols-5 items-center pt-2">
         {items.map((item) => {
           const Icon = item.icon;
           return (
@@ -227,7 +177,7 @@ export const BottomNav = () => {
                   try { navigator.vibrate(12); } catch (_) {}
                 }
               }}
-              className={`relative flex flex-col items-center justify-center py-1 text-center transition active:scale-95 min-w-0 ${
+              className={`relative flex w-full min-w-0 flex-col items-center justify-center py-1 text-center transition active:scale-95 ${
                 item.isActive
                   ? "text-emerald-600 font-bold"
                   : "text-slate-500 hover:text-slate-800 font-medium"
@@ -237,10 +187,7 @@ export const BottomNav = () => {
                 <Icon size={20} className={`sm:w-[22px] sm:h-[22px] ${item.isActive ? "stroke-[2.4]" : "stroke-[1.8]"}`} />
                 {item.badge ? (
                   <span
-                    className={cn(
-                      "absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold shadow-xs",
-                      item.badgeClassName ?? "bg-emerald-600 text-white",
-                    )}
+                    className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[9px] font-bold text-white shadow-xs"
                   >
                     {item.badge}
                   </span>

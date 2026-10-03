@@ -15,10 +15,8 @@ import {
   Eye,
   EyeOff,
   Headphones,
-  Heart,
   KeyRound,
   MapPin,
-  Package,
   Percent,
   ReceiptText,
   ShoppingBag,
@@ -142,24 +140,6 @@ export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) =>
               text="Баланс и кэшбэк"
             />
             <QuickLink
-              href={ROUTES.PROFILE_ADDRESSES}
-              icon={<MapPin size={30} />}
-              title="Адреса"
-              text={pluralizeAddresses(profile.stats.addresses_count)}
-            />
-            <QuickLink
-              href={ROUTES.PROFILE_ORDERS}
-              icon={<Package size={30} />}
-              title="Заказы"
-              text="История и статус заказов"
-            />
-            <QuickLink
-              href={ROUTES.PROFILE_FAVORITES}
-              icon={<Heart size={30} />}
-              title="Избранное"
-              text="Любимые товары"
-            />
-            <QuickLink
               href={ROUTES.PROFILE_NOTIFICATIONS}
               icon={<Bell size={30} />}
               title="Уведомления"
@@ -174,7 +154,7 @@ export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) =>
           </div>
         </section>
 
-        <section className="border-border mt-12 grid gap-5 rounded-lg border bg-white p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)] md:grid-cols-2 xl:grid-cols-4">
+        <section className="border-border mt-12 hidden gap-5 rounded-lg border bg-white p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)] md:grid md:grid-cols-2 xl:grid-cols-4">
           {serviceBenefits.map((benefit) => {
             const Icon = benefit.icon;
 
@@ -194,7 +174,7 @@ export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) =>
 
         {/* Мобильный раздел помощи и документов (вместо тяжелого веб-футера) */}
         <section className="mt-10 lg:hidden">
-          <h2 className="text-text-primary text-xl font-bold mb-4">Помощь и документы</h2>
+          <h2 className="text-text-primary mb-4 text-xl font-bold">Помощь</h2>
           <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden divide-y divide-slate-100 shadow-2xs">
             <Link
               href={ROUTES.FEEDBACK}
@@ -209,57 +189,68 @@ export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) =>
               <ChevronRight size={16} className="text-slate-400" />
             </Link>
 
-            <Link
-              href={ROUTES.OFFER}
-              className="flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                  <FileText size={16} />
-                </span>
-                <span>Публичная оферта</span>
-              </div>
-              <ChevronRight size={16} className="text-slate-400" />
-            </Link>
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                <span>Юридические документы</span>
+                <ChevronRight
+                  className="text-slate-400 transition-transform group-open:rotate-90"
+                  size={16}
+                />
+              </summary>
+              <div className="divide-y divide-slate-100 border-t border-slate-100">
+                <Link
+                  href={ROUTES.OFFER}
+                  className="flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                      <FileText size={16} />
+                    </span>
+                    <span>Публичная оферта</span>
+                  </div>
+                  <ChevronRight className="text-slate-400" size={16} />
+                </Link>
 
-            <Link
-              href={ROUTES.PRIVACY}
-              className="flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                  <ShieldCheck size={16} />
-                </span>
-                <span>Политика конфиденциальности</span>
-              </div>
-              <ChevronRight size={16} className="text-slate-400" />
-            </Link>
+                <Link
+                  href={ROUTES.PRIVACY}
+                  className="flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                      <ShieldCheck size={16} />
+                    </span>
+                    <span>Политика конфиденциальности</span>
+                  </div>
+                  <ChevronRight className="text-slate-400" size={16} />
+                </Link>
 
-            <Link
-              href={ROUTES.PERSONAL_DATA_CONSENT}
-              className="flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                  <FileText size={16} />
-                </span>
-                <span>Обработка персональных данных (152-ФЗ)</span>
-              </div>
-              <ChevronRight size={16} className="text-slate-400" />
-            </Link>
+                <Link
+                  href={ROUTES.PERSONAL_DATA_CONSENT}
+                  className="flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                      <FileText size={16} />
+                    </span>
+                    <span>Обработка персональных данных (152-ФЗ)</span>
+                  </div>
+                  <ChevronRight className="text-slate-400" size={16} />
+                </Link>
 
-            <Link
-              href={ROUTES.COOKIE_POLICY}
-              className="flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                  <Cookie size={16} />
-                </span>
-                <span>Использование файлов cookie</span>
+                <Link
+                  href={ROUTES.COOKIE_POLICY}
+                  className="flex items-center justify-between p-3.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                      <Cookie size={16} />
+                    </span>
+                    <span>Использование файлов cookie</span>
+                  </div>
+                  <ChevronRight className="text-slate-400" size={16} />
+                </Link>
               </div>
-              <ChevronRight size={16} className="text-slate-400" />
-            </Link>
+            </details>
           </div>
 
           <div className="mt-6 text-center text-[11px] text-slate-400 space-y-1 pb-4">
@@ -560,16 +551,6 @@ const maskEmail = (email: string): string => {
   const first = localPart[0];
   const last = localPart[localPart.length - 1];
   return `${first}***${last}@${domain}`;
-};
-
-const pluralizeAddresses = (count: number): string => {
-  if (count === 0) return "Нет сохраненных адресов";
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod100 >= 11 && mod100 <= 19) return `${count} адресов доставки`;
-  if (mod10 === 1) return `${count} адрес доставки`;
-  if (mod10 >= 2 && mod10 <= 4) return `${count} адреса доставки`;
-  return `${count} адресов доставки`;
 };
 
 const formatDateTime = (value: string): string => {

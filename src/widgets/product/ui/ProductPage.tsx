@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import {
+  ChevronRight,
   MapPin,
   RotateCcw,
   ShieldCheck,
@@ -500,15 +501,19 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
                 : "Свежая поставка (см. на упаковке)"
             }
           />
-          <Characteristic
-            label="Остаток на складе"
-            value={`${formatQuantity(product.stock_quantity)} ${unitLabel(product.unit)}`}
-          />
         </dl>
       </section>
 
       {/* Delivery in City Widget */}
-      <section className="space-y-3.5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-4 text-sm font-bold text-slate-900 shadow-2xs">
+          <span>Доставка и возврат</span>
+          <ChevronRight
+            className="text-slate-400 transition-transform group-open:rotate-90"
+            size={18}
+          />
+        </summary>
+        <section className="mt-3 space-y-3.5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
             <MapPin size={18} className="shrink-0 text-emerald-600" />
@@ -553,7 +558,8 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
         <div className="flex items-center justify-between border-t border-slate-100 pt-1">
           <KizlyarDeliveryZonesModal />
         </div>
-      </section>
+        </section>
+      </details>
     </div>
   );
 };

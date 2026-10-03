@@ -137,57 +137,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
   const quickFilterChips = [
     {
-      id: "all",
-      label: "Все товары",
-      active: !categoryId && !hasDiscount && !tag && sort !== "newest",
-      href: buildCatalogHref({
-        ...urlParams,
-        category_id: undefined,
-        has_discount: undefined,
-        tag: undefined,
-        page: undefined,
-      }),
-    },
-  ];
-
-  if (facets.has_halal || tag === "halal") {
-    quickFilterChips.push({
-      id: "halal",
-      label: "🥩 Халяль",
-      active: tag === "halal",
-      href: buildCatalogHref({
-        ...urlParams,
-        tag: tag === "halal" ? undefined : "halal",
-        page: undefined,
-      }),
-    });
-  }
-
-  if (facets.has_discounts || hasDiscount) {
-    quickFilterChips.push({
-      id: "discount",
-      label: "🔥 Акции %",
-      active: hasDiscount,
-      href: buildCatalogHref({
-        ...urlParams,
-        has_discount: hasDiscount ? undefined : "true",
-        page: undefined,
-      }),
-    });
-  }
-
-  quickFilterChips.push(
-    {
-      id: "newest",
-      label: "✨ Новинки",
-      active: sort === "newest",
-      href: buildCatalogHref({
-        ...urlParams,
-        sort: sort === "newest" ? undefined : "newest",
-        page: undefined,
-      }),
-    },
-    {
       id: "farm",
       label: "🌿 Фермерское",
       active: tag === "farm",
@@ -197,17 +146,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
         page: undefined,
       }),
     },
-    {
-      id: "popular",
-      label: "⭐ Популярное",
-      active: sort === "popular",
-      href: buildCatalogHref({
-        ...urlParams,
-        sort: sort === "popular" ? undefined : "popular",
-        page: undefined,
-      }),
-    },
-  );
+  ];
 
   return (
     <>

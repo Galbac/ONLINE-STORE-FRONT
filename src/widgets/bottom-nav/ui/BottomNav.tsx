@@ -7,6 +7,7 @@ import { Heart, Home, LayoutGrid, ReceiptText, ShoppingBag, User } from "lucide-
 
 import { cartApi } from "@/entities/cart";
 import { useFavoritesStore } from "@/entities/favorite";
+import { orderApi } from "@/entities/order";
 import { cn } from "@/shared/config";
 import { ROUTES } from "@/shared/config";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
@@ -20,6 +21,56 @@ export const BottomNav = () => {
   const [cartCount, setCartCount] = useState<number>(0);
   const [isAuth, setIsAuth] = useState<boolean>(false);
   const [favoritesCount, setFavoritesCount] = useState<number>(0);
+  const [ordersCount, setOrdersCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (pathname.startsWith("/admin")) return;
+
+    let cancelled = false;
+    let loading = false;
+
+    const fetchOrdersCount = async () => {
+      if (loading || document.visibilityState === "hidden") return;
+      const token = getStoredAccessToken();
+      if (!token) {
+        setOrdersCount(0);
+        return;
+      }
+
+      loading = true;
+      try {
+        let count = 0;
+        let offset = 0;
+        while (!cancelled) {
+          const response = await orderApi.getProfileOrders({ limit: 100, offset }, token);
+          count += response.items.filter(
+            (order) => !["delivered", "completed", "done", "cancelled", "canceled"].includes(
+              order.status.toLowerCase(),
+            ),
+          ).length;
+          offset += response.items.length;
+          if (count > 99 || offset >= response.total || response.items.length === 0) break;
+        }
+        if (!cancelled && token === getStoredAccessToken()) setOrdersCount(count);
+      } catch {
+        if (!cancelled) setOrdersCount(0);
+      } finally {
+        loading = false;
+      }
+    };
+
+    void fetchOrdersCount();
+    const interval = window.setInterval(fetchOrdersCount, 60_000);
+    window.addEventListener("focus", fetchOrdersCount);
+    document.addEventListener("visibilitychange", fetchOrdersCount);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", fetchOrdersCount);
+      document.removeEventListener("visibilitychange", fetchOrdersCount);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     const updateAuth = () => {
@@ -136,6 +187,7 @@ export const BottomNav = () => {
       href: ROUTES.PROFILE_ORDERS,
       label: "Заказы",
       icon: ReceiptText,
+      badge: ordersCount > 0 ? (ordersCount > 99 ? "99+" : String(ordersCount)) : null,
       isActive: isOrdersActive,
     },
     {

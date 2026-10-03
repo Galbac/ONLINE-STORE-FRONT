@@ -46,13 +46,36 @@ export const ProfileOrderDetailsView = ({
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<
-    "cancel-order" | "cancel-payment" | "repeat" | null
+    "cancel-order" | "cancel-payment" | "create-payment" | "repeat" | null
   >(null);
   const [isPending, startTransition] = useTransition();
   const statusMeta = getStatusMeta(orderStatus.status || order.status);
   const paymentStatus = payment?.status ?? order.payment_status ?? order.payment?.status ?? null;
   const canCancelOrder = isOrderCancelable(orderStatus.status || order.status);
   const canCancelPayment = payment ? isPaymentCancelable(payment.status) : false;
+  const canPayOrder =
+    ["online", "sbp"].includes((order.payment_method ?? "").toLowerCase()) &&
+    ["pending_payment", "new"].includes((orderStatus.status || order.status).toLowerCase()) &&
+    !["paid", "succeeded", "success"].includes((paymentStatus ?? "").toLowerCase());
+
+  const handlePayOrder = (): void => {
+    startTransition(async () => {
+      try {
+        setPendingAction("create-payment");
+        setErrorMessage(null);
+        const response = await paymentApi.create({ order_id: order.id });
+        if (!response.payment_url) {
+          throw new Error("Платёжная система не вернула ссылку для оплаты. Попробуйте позже.");
+        }
+        window.location.assign(response.payment_url);
+      } catch (err: unknown) {
+        setMessage(null);
+        setErrorMessage(extractErrorMessage(err, "Не удалось создать платёж. Попробуйте позже."));
+      } finally {
+        setPendingAction(null);
+      }
+    });
+  };
 
   const handleRepeatOrder = (): void => {
     const accessToken = getAccessToken();
@@ -304,6 +327,27 @@ export const ProfileOrderDetailsView = ({
                     {formatPaymentStatus(paymentStatus)}
                   </span>
                 </div>
+
+                {canPayOrder ? (
+                  payment?.payment_url ? (
+                    <a
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 text-sm font-bold text-white shadow-xs transition hover:bg-amber-600"
+                      href={payment.payment_url}
+                    >
+                      <CreditCard size={17} />
+                      Перейти к оплате
+                    </a>
+                  ) : (
+                    <Button
+                      className="w-full gap-2 bg-amber-500 text-white hover:bg-amber-600"
+                      disabled={isPending}
+                      onClick={handlePayOrder}
+                    >
+                      <CreditCard size={17} />
+                      {pendingAction === "create-payment" ? "Создаём платёж..." : "Оплатить заказ"}
+                    </Button>
+                  )
+                ) : null}
 
                 <div className="border-border space-y-3 border-t pt-4">
                   <DetailRow label="Сумма заказа" value={toPriceFormat(order.subtotal)} />

@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, MapPin, Phone, QrCode, Sparkles } from "lucide-react";
+import { Mail, MapPin, Phone, Sparkles } from "lucide-react";
 import { ROUTES, STORE_INFO } from "@/shared/config";
 import { useDynamicStoreInfo } from "@/entities/settings";
-import { Container, PwaInstallButton } from "@/shared/ui";
+import { Container } from "@/shared/ui";
 import { StoreScheduleBadge } from "@/widgets/footer/ui/StoreScheduleBadge";
 
 interface FooterLink {
@@ -39,8 +39,8 @@ export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) =>
   return (
     <footer className="hidden lg:block mt-16 border-t border-slate-200 bg-white text-slate-600">
       <Container className="py-12">
-        {/* Строгая 4-колоночная сетка */}
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Сетка колонок футера */}
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
           {/* Колонка 1: Логотип, описание сервиса, статус работы магазина */}
           <div className="flex flex-col">
             <Link className="flex items-center gap-2.5" href={ROUTES.HOME}>
@@ -66,27 +66,6 @@ export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) =>
           {/* Колонка 3: Помощь и документы (ссылки) */}
           <FooterColumn links={helpAndDocLinks} title="Помощь и документы" />
 
-          {/* Колонка 4: QR-код / блок установки приложения с кликабельными бейджами */}
-          <div className="flex flex-col">
-            <h3 className="mb-3.5 text-xs font-bold tracking-wider text-slate-900 uppercase">
-              Мобильное приложение
-            </h3>
-            <p className="text-xs text-slate-500 leading-relaxed mb-3">
-              Установите веб-приложение для быстрых заказов и уведомлений об акциях.
-            </p>
-            <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 shadow-2xs">
-              <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200 text-emerald-700 shadow-2xs">
-                <QrCode size={36} />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-bold text-slate-800">Заказывайте в приложении</span>
-                <span className="text-[11px] text-slate-400 mt-0.5">Всегда под рукой</span>
-              </div>
-            </div>
-            <div className="mt-3">
-              <PwaInstallButton variant="footer" />
-            </div>
-          </div>
         </div>
 
         {/* Нижняя часть футера: реквизиты, контакты, платежные системы */}

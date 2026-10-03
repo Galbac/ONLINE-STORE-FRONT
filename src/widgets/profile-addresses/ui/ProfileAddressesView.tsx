@@ -11,7 +11,7 @@ import {
   type AddressUpdateRequest,
 } from "@/entities/profile";
 import { ROUTES } from "@/shared/config";
-import { Container } from "@/shared/ui";
+import { Container, getStoredAccessToken } from "@/shared/ui";
 import { ProfileSidebar } from "@/widgets/profile-sidebar";
 import type { Address } from "../types";
 import { AddressCard } from "./AddressCard";
@@ -71,11 +71,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
   useEffect(() => {
     setIsMounted(true);
 
-    const token =
-      typeof window !== "undefined"
-        ? window.localStorage.getItem("access_token") ??
-          window.sessionStorage.getItem("access_token")
-        : null;
+    const token = getStoredAccessToken();
 
     let isSubscribed = true;
 
@@ -155,11 +151,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
 
   const handleSaveAddress = async (formData: Omit<Address, "id">, addressId?: string) => {
     setIsSubmitting(true);
-    const token =
-      typeof window !== "undefined"
-        ? window.localStorage.getItem("access_token") ??
-          window.sessionStorage.getItem("access_token")
-        : null;
+    const token = getStoredAccessToken();
 
     try {
       if (addressId) {
@@ -261,11 +253,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
     if (address.isDefault || isPending) return;
 
     startTransition(async () => {
-      const token =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem("access_token") ??
-            window.sessionStorage.getItem("access_token")
-          : null;
+      const token = getStoredAccessToken();
 
       if (token && !isNaN(Number(address.id))) {
         try {
@@ -291,11 +279,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
 
   const handleDelete = (address: Address) => {
     startTransition(async () => {
-      const token =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem("access_token") ??
-            window.sessionStorage.getItem("access_token")
-          : null;
+      const token = getStoredAccessToken();
 
       if (token && !isNaN(Number(address.id))) {
         try {

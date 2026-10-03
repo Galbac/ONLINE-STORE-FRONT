@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import { cartApi } from "@/entities/cart";
 import { ROUTES } from "@/shared/config";
-import { isAccessTokenValid } from "@/shared/lib/auth-token";
 import { CART_CHANGED_EVENT } from "@/shared/lib/cart-events";
 import { toPriceFormat } from "@/shared/lib/format";
+import { getStoredAccessToken, getStoredRefreshToken } from "@/shared/ui";
 
 export const HeaderCartLink = () => {
+  const pathname = usePathname() || "";
+  const isActive = pathname === ROUTES.CART;
   const [itemsCount, setItemsCount] = useState(0);
   const [cartTotal, setCartTotal] = useState<string | number>("0");
 
@@ -57,12 +60,14 @@ export const HeaderCartLink = () => {
   const isAuth = hasValidStoredAccessToken();
 
   const hasItems = itemsCount > 0;
+  const shouldHighlight = isActive;
 
   return (
     <Link
+      aria-current={shouldHighlight ? "page" : undefined}
       className={`group relative hidden lg:inline-flex items-center gap-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] ${
-        hasItems
-          ? "border border-emerald-500/30 bg-emerald-50/80 px-3 py-2 text-emerald-900 hover:border-emerald-500 hover:bg-emerald-100/90 shadow-2xs"
+        shouldHighlight
+          ? "border border-emerald-500/30 bg-emerald-50/80 px-3 py-2 text-emerald-900 shadow-2xs"
           : "p-2 text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
       }`}
       href={isAuth ? ROUTES.CART : `${ROUTES.LOGIN}?next=${encodeURIComponent(ROUTES.CART)}`}
@@ -71,9 +76,7 @@ export const HeaderCartLink = () => {
       <span className="relative flex shrink-0 items-center justify-center">
         <ShoppingBag
           size={20}
-          className={`transition-transform duration-200 group-hover:scale-110 ${
-            hasItems ? "text-emerald-700" : "text-slate-700 group-hover:text-emerald-700"
-          }`}
+          className="text-slate-700 transition-transform duration-200 group-hover:scale-110 group-hover:text-emerald-700"
         />
         {hasItems ? (
           <span className="absolute -top-2 -right-2 flex size-4.5 min-w-4.5 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-black leading-none text-white shadow-sm ring-2 ring-white">
@@ -98,16 +101,8 @@ export const HeaderCartLink = () => {
   );
 };
 
-const hasValidStoredAccessToken = (): boolean => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  const accessToken =
-    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
-
-  return accessToken ? isAccessTokenValid(accessToken) : false;
-};
+const hasValidStoredAccessToken = (): boolean =>
+  Boolean(getStoredAccessToken() || getStoredRefreshToken());
 
 const formatCartCount = (count: number): string => {
   if (count > 99) {

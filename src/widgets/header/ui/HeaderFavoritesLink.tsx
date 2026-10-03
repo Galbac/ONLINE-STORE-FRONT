@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Heart } from "lucide-react";
 
 import { useFavoritesStore } from "@/entities/favorite";
@@ -13,6 +14,8 @@ import {
 } from "@/shared/lib/favorite-events";
 
 export const HeaderFavoritesLink = () => {
+  const pathname = usePathname() || "";
+  const isActive = pathname === ROUTES.FAVORITES || pathname.startsWith(`${ROUTES.FAVORITES}/`);
   const [itemsCount, setItemsCount] = useState(0);
 
   useEffect(() => {
@@ -63,7 +66,10 @@ export const HeaderFavoritesLink = () => {
 
   return (
     <Link
-      className="group relative hidden lg:flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-rose-50 hover:text-rose-600 active:scale-95"
+      aria-current={isActive ? "page" : undefined}
+      className={`group relative hidden lg:flex flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold transition active:scale-95 ${
+        isActive ? "bg-rose-50 text-rose-600" : "text-slate-700 hover:bg-rose-50 hover:text-rose-600"
+      }`}
       href={ROUTES.FAVORITES}
     >
       <span className="relative mb-0.5 block">

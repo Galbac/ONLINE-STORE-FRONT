@@ -29,6 +29,7 @@ import { toPriceFormat } from "@/shared/lib/format";
 import { Button, Container } from "@/shared/ui";
 import { OrderTrackingTimeline } from "@/widgets/order-tracking";
 import { OrderCourierTips } from "./OrderCourierTips";
+import { CancelOrderModal } from "./CancelOrderModal";
 
 interface ProfileOrderDetailsViewProps {
   initialOrder: OrderDetailResponse;
@@ -47,6 +48,7 @@ export const ProfileOrderDetailsView = ({
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<OrderReceiptResponse | null>(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<
     "cancel-order" | "cancel-payment" | "create-payment" | "receipt" | "repeat" | null
   >(null);
@@ -123,7 +125,6 @@ export const ProfileOrderDetailsView = ({
   };
 
   const handleCancelOrder = (): void => {
-    if (!window.confirm(`Отменить заказ ${order.order_number}?`)) return;
     const accessToken = getAccessToken();
 
     startTransition(async () => {
@@ -151,6 +152,7 @@ export const ProfileOrderDetailsView = ({
           updated_at: response.order.cancelled_at ?? currentStatus.updated_at,
         }));
         setMessage(response.message);
+        setIsCancelModalOpen(false);
       } catch (err: unknown) {
         setMessage(null);
         setErrorMessage(
@@ -252,7 +254,7 @@ export const ProfileOrderDetailsView = ({
                 className="gap-2 border-red-200 bg-white text-red-600 hover:bg-red-50"
                 disabled={isPending}
                 variant="secondary"
-                onClick={handleCancelOrder}
+                onClick={() => setIsCancelModalOpen(true)}
               >
                 <Trash2 size={18} />
                 {pendingAction === "cancel-order" ? "Отменяем..." : "Отменить заказ"}
@@ -524,6 +526,14 @@ export const ProfileOrderDetailsView = ({
               )}
             </section>
           </div>
+        ) : null}
+        {isCancelModalOpen ? (
+          <CancelOrderModal
+            orderNumber={order.order_number}
+            isPending={pendingAction === "cancel-order"}
+            onClose={() => setIsCancelModalOpen(false)}
+            onConfirm={handleCancelOrder}
+          />
         ) : null}
       </Container>
     </main>

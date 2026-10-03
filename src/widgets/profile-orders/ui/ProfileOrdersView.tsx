@@ -30,6 +30,7 @@ import {
   getStoredRefreshToken,
   storeAuthTokens,
 } from "@/shared/ui";
+import { CancelOrderModal } from "./CancelOrderModal";
 
 interface ProfileOrdersViewProps {
   initialOrders: {
@@ -62,6 +63,7 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<OrderShortResponse | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -215,9 +217,13 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
   };
 
   const handleCancelOrder = (order: OrderShortResponse): void => {
-    if (!canCustomerCancelOrder(order) || !window.confirm(`Отменить заказ ${order.order_number}?`))
-      return;
+    if (!canCustomerCancelOrder(order)) return;
+    setOrderToCancel(order);
+  };
 
+  const confirmCancelOrder = (): void => {
+    if (!orderToCancel) return;
+    const order = orderToCancel;
     startTransition(async () => {
       try {
         setPendingOrderId(order.id);
@@ -236,6 +242,7 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
           ),
         );
         setStatusMessage(response.message);
+        setOrderToCancel(null);
       } catch (err: unknown) {
         setErrorMessage(
           extractErrorMessage(
@@ -243,6 +250,7 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
             "Не удалось отменить заказ. Возможно, его статус уже изменился.",
           ),
         );
+        setOrderToCancel(null);
       } finally {
         setPendingOrderId(null);
       }
@@ -410,6 +418,14 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
             <span>Связаться с поддержкой</span>
           </Link>
         </div>
+        {orderToCancel ? (
+          <CancelOrderModal
+            orderNumber={orderToCancel.order_number}
+            isPending={isPending && pendingOrderId === orderToCancel.id}
+            onClose={() => setOrderToCancel(null)}
+            onConfirm={confirmCancelOrder}
+          />
+        ) : null}
       </Container>
     </main>
   );

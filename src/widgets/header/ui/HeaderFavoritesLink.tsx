@@ -7,11 +7,11 @@ import { Heart } from "lucide-react";
 
 import { useFavoritesStore } from "@/entities/favorite";
 import { ROUTES } from "@/shared/config";
-import { isAccessTokenValid } from "@/shared/lib/auth-token";
 import {
   FAVORITES_CHANGED_EVENT,
   type FavoritesChangedDetail,
 } from "@/shared/lib/favorite-events";
+import { getStoredAccessToken, getStoredRefreshToken } from "@/shared/ui";
 
 export const HeaderFavoritesLink = () => {
   const pathname = usePathname() || "";
@@ -86,14 +86,7 @@ export const HeaderFavoritesLink = () => {
 };
 
 const hasValidStoredAccessToken = (): boolean => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  const accessToken =
-    window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
-
-  return accessToken ? isAccessTokenValid(accessToken) : false;
+  return Boolean(getStoredAccessToken() || getStoredRefreshToken());
 };
 
 const formatFavoritesCount = (count: number): string => {

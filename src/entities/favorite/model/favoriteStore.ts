@@ -32,14 +32,6 @@ export interface FavoriteState {
   setItems: (items: FavoriteProductResponse[]) => void;
 }
 
-const getAccessToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-  return (
-    window.localStorage.getItem("access_token") ??
-    window.sessionStorage.getItem("access_token")
-  );
-};
-
 export const useFavoritesStore = create<FavoriteState>()(
   persist(
     (set, get) => ({
@@ -65,14 +57,9 @@ export const useFavoritesStore = create<FavoriteState>()(
       },
 
       fetchFavorites: async () => {
-        const token = getAccessToken();
-        if (!token) {
-          return;
-        }
-
         set({ isLoading: true, errorMessage: null });
         try {
-          const response = await favoriteApi.getList({ page: 1, limit: 100 }, token);
+          const response = await favoriteApi.getList({ page: 1, limit: 100 });
           set({ items: response.items, isLoading: false });
           notifyFavoritesChanged({ itemsCount: response.items.length });
         } catch {
@@ -81,7 +68,6 @@ export const useFavoritesStore = create<FavoriteState>()(
       },
 
       addFavorite: async (product: FavoriteProductResponse) => {
-        const token = getAccessToken();
         const prevItems = get().items;
         if (prevItems.some((it) => it.id === product.id)) {
           return true;
@@ -93,8 +79,9 @@ export const useFavoritesStore = create<FavoriteState>()(
         notifyFavoritesChanged({ itemsCount: nextItems.length });
 
         try {
-          await favoriteApi.add(product.id, token);
+          await favoriteApi.add(product.id);
           set({ pendingProductId: null });
+          await get().fetchFavorites();
           return true;
         } catch {
           // If 409 already exists, keep it
@@ -104,7 +91,6 @@ export const useFavoritesStore = create<FavoriteState>()(
       },
 
       removeFavorite: async (productId: number, _productName?: string) => {
-        const token = getAccessToken();
         const prevItems = get().items;
                 
         // Optimistic removal
@@ -113,7 +99,7 @@ export const useFavoritesStore = create<FavoriteState>()(
         notifyFavoritesChanged({ itemsCount: nextItems.length });
 
         try {
-          await favoriteApi.remove(productId, token);
+          await favoriteApi.remove(productId);
           set({ pendingProductId: null });
           return true;
         } catch (error: unknown) {
@@ -150,7 +136,6 @@ export const useFavoritesStore = create<FavoriteState>()(
       },
 
       clearFavorites: async () => {
-        const token = getAccessToken();
         const prevItems = get().items;
         if (prevItems.length === 0) return;
 
@@ -159,7 +144,7 @@ export const useFavoritesStore = create<FavoriteState>()(
 
         try {
           await Promise.all(
-            prevItems.map((prod) => favoriteApi.remove(prod.id, token).catch(() => null)),
+            prevItems.map((prod) => favoriteApi.remove(prod.id).catch(() => null)),
           );
           set({ isClearing: false });
         } catch {

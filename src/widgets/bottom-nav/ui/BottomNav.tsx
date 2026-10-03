@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, Home, LayoutGrid, ShoppingBag, User } from "lucide-react";
+import { Heart, Home, LayoutGrid, ReceiptText, ShoppingBag, User } from "lucide-react";
 
 import { cartApi } from "@/entities/cart";
 import { useFavoritesStore } from "@/entities/favorite";
@@ -97,8 +97,12 @@ export const BottomNav = () => {
     pathname === "/favorites" ||
     pathname.startsWith("/profile/favorites");
 
+  const isOrdersActive =
+    pathname === ROUTES.PROFILE_ORDERS || pathname.startsWith(`${ROUTES.PROFILE_ORDERS}/`);
+
   const isProfileActive =
-    (pathname.startsWith("/profile") && !isFavoritesActive) || pathname === ROUTES.LOGIN;
+    (pathname.startsWith("/profile") && !isFavoritesActive && !isOrdersActive) ||
+    pathname === ROUTES.LOGIN;
 
   const items = [
     {
@@ -129,6 +133,12 @@ export const BottomNav = () => {
       isActive: isFavoritesActive,
     },
     {
+      href: ROUTES.PROFILE_ORDERS,
+      label: "Заказы",
+      icon: ReceiptText,
+      isActive: isOrdersActive,
+    },
+    {
       href: isAuth ? ROUTES.PROFILE : ROUTES.LOGIN,
       label: isAuth ? "Профиль" : "Войти",
       icon: User,
@@ -142,7 +152,7 @@ export const BottomNav = () => {
       className="border-border/80 bg-bg-primary/95 supports-[backdrop-filter]:bg-bg-primary/80 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-md transition-all lg:hidden"
       style={{ paddingBottom: "max(var(--sab, 0px), 8px)" }}
     >
-      <div className="grid grid-cols-5 items-center justify-around px-2 pt-2">
+      <div className="grid grid-cols-6 items-center justify-around px-2 pt-2">
         {items.map((item) => {
           const Icon = item.icon;
           return (

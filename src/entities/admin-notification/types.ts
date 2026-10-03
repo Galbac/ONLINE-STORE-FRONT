@@ -2,6 +2,8 @@ export interface AdminNotificationSettingsResponse {
   email_enabled: boolean;
   email_from?: string | null;
   email_sender_name: string;
+  admin_order_sound_enabled: boolean;
+  admin_order_sound_volume: number;
   notify_admin_1c_error: boolean;
   notify_admin_new_order: boolean;
   notify_admin_payment_error: boolean;
@@ -14,7 +16,7 @@ export interface AdminNotificationSettingsResponse {
   updated_at: string;
 }
 
-export type AdminNotificationSettingsPayloadValue = boolean | string | null;
+export type AdminNotificationSettingsPayloadValue = boolean | number | string | null;
 
 export type AdminNotificationSettingsPayload = Record<
   string,

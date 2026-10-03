@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, Menu, Store, X } from "lucide-react";
 
 import type { AdminMeResponse, AdminRoleResponse } from "@/entities/admin-auth";
+import { AdminOrderSoundMonitor } from "@/widgets/admin-order-sound";
 import { AdminLogoutButton } from "@/features/logout-admin";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { adminNavigationGroups, adminNavigationItems } from "../config/navigation";
@@ -73,9 +74,20 @@ export const AdminShell = ({ children, currentUser, roles }: AdminShellProps) =>
   })();
 
   const isDashboardActive = pathname === ROUTES.ADMIN_DASHBOARD;
+  const orderNavigationItem = adminNavigationItems.find((item) => item.href === ROUTES.ADMIN_ORDERS);
+  const notificationNavigationItem = adminNavigationItems.find(
+    (item) => item.href === ROUTES.ADMIN_NOTIFICATIONS,
+  );
+  const canMonitorNewOrders = Boolean(
+    orderNavigationItem &&
+      notificationNavigationItem &&
+      canAccessAdminItem(orderNavigationItem, currentUser, permissions) &&
+      canAccessAdminItem(notificationNavigationItem, currentUser, permissions),
+  );
 
   return (
     <div className="bg-bg-secondary text-text-primary min-h-screen">
+      {canMonitorNewOrders ? <AdminOrderSoundMonitor /> : null}
       {/* Mobile Sticky Header (всегда зафиксирован на планшетах и смартфонах) */}
       <div className="lg:hidden sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-md px-3.5 py-2.5 shadow-2xs flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">

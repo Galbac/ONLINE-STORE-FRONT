@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Mail, MessageCircle, Save, Send } from "lucide-react";
+import { Mail, MessageCircle, Play, Save, Send, Volume2 } from "lucide-react";
 import {
   adminNotificationApi,
   type AdminNotificationSettingsResponse,
 } from "@/entities/admin-notification";
 import { getAdminErrorMessage } from "@/shared/api";
+import {
+  ADMIN_ORDER_SOUND_SETTINGS_CHANGED_EVENT,
+  playAdminOrderSound,
+} from "@/shared/lib/admin-order-sound";
 
 interface AdminNotificationSettingsViewProps {
   settings: AdminNotificationSettingsResponse;
@@ -16,6 +20,7 @@ export const AdminNotificationSettingsView = ({
   settings: initialSettings,
 }: AdminNotificationSettingsViewProps) => {
   const [settings, setSettings] = useState(initialSettings);
+  const [soundVolume, setSoundVolume] = useState(initialSettings.admin_order_sound_volume);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,6 +39,8 @@ export const AdminNotificationSettingsView = ({
         email_enabled: getBooleanFormValue(formData, "email_enabled"),
         email_from: getNullableFormValue(formData, "email_from"),
         email_sender_name: getRequiredFormValue(formData, "email_sender_name"),
+        admin_order_sound_enabled: getBooleanFormValue(formData, "admin_order_sound_enabled"),
+        admin_order_sound_volume: getNumberFormValue(formData, "admin_order_sound_volume"),
         notify_admin_1c_error: getBooleanFormValue(formData, "notify_admin_1c_error"),
         notify_admin_new_order: getBooleanFormValue(formData, "notify_admin_new_order"),
         notify_admin_payment_error: getBooleanFormValue(formData, "notify_admin_payment_error"),
@@ -49,6 +56,15 @@ export const AdminNotificationSettingsView = ({
       })
       .then((response) => {
         setSettings(response);
+        setSoundVolume(response.admin_order_sound_volume);
+        window.dispatchEvent(
+          new CustomEvent(ADMIN_ORDER_SOUND_SETTINGS_CHANGED_EVENT, {
+            detail: {
+              enabled: response.admin_order_sound_enabled,
+              volume: response.admin_order_sound_volume,
+            },
+          }),
+        );
         setMessage("Настройки уведомлений сохранены.");
       })
       .catch((err: unknown) => {
@@ -176,6 +192,37 @@ export const AdminNotificationSettingsView = ({
               label="Новые заказы"
               name="notify_admin_new_order"
             />
+            <SelectBoolean
+              defaultValue={settings.admin_order_sound_enabled}
+              label="Звуковой сигнал о новом заказе"
+              name="admin_order_sound_enabled"
+            />
+            <label className="block">
+              <span className="mb-2 flex items-center justify-between gap-2 text-sm font-bold">
+                <span className="inline-flex items-center gap-1.5"><Volume2 size={15} /> Громкость сигнала</span>
+                <span className="text-text-secondary">{Math.round(soundVolume * 100)}%</span>
+              </span>
+              <input
+                className="accent-accent-primary h-11 w-full cursor-pointer"
+                max="1"
+                min="0"
+                name="admin_order_sound_volume"
+                onChange={(event) => setSoundVolume(Number(event.target.value))}
+                step="0.05"
+                type="range"
+                value={soundVolume}
+              />
+              <span className="text-text-secondary mt-1 block text-xs">
+                Нажмите «Проверить звук», чтобы проверить громкость и разрешить воспроизведение в браузере.
+              </span>
+            </label>
+            <button
+              className="border-border hover:bg-bg-hover inline-flex h-11 items-center justify-center gap-2 self-end rounded-lg border px-4 text-sm font-bold transition"
+              onClick={() => playAdminOrderSound(soundVolume)}
+              type="button"
+            >
+              <Play size={15} /> Проверить звук
+            </button>
             <SelectBoolean
               defaultValue={settings.notify_admin_payment_error}
               label="Ошибки оплаты"
@@ -392,4 +439,9 @@ const getNullableFormValue = (formData: FormData, name: string): string | null =
 
 const getBooleanFormValue = (formData: FormData, name: string): boolean => {
   return formData.get(name) === "true";
+};
+
+const getNumberFormValue = (formData: FormData, name: string): number => {
+  const value = Number(formData.get(name));
+  return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0.5;
 };

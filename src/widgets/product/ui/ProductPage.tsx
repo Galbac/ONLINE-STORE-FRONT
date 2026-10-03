@@ -32,7 +32,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
     with_similar: false,
   });
 
-  const [similarProducts, crossSellProducts, cart, favorites] = await Promise.all([
+  const [similarProducts, crossSellProducts, cart, favorites, reviewSummary] = await Promise.all([
     productApi.getSimilar(product.id, {
       limit: 6,
       in_stock: true,
@@ -47,6 +47,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
       emptyFavoritesResponse,
     ),
+    productApi.getReviewSummary(product.id).catch(() => null),
   ]);
 
   const favoriteProductIds = new Set(favorites.items.map((favoriteProduct) => favoriteProduct.id));
@@ -85,13 +86,15 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
         : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "24",
-      bestRating: "5",
-      worstRating: "1",
-    },
+    ...(reviewSummary && reviewSummary.total > 0 && Number.isFinite(reviewSummary.average_rating) && reviewSummary.average_rating >= 1 && reviewSummary.average_rating <= 5 ? {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: reviewSummary.average_rating,
+        reviewCount: reviewSummary.total,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : {}),
   };
 
   const breadcrumbJsonLd = {
@@ -286,7 +289,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
             </section>
           ) : null}
 
-          <div className="mt-12">
+          <div id="reviews" className="mt-12 scroll-mt-24">
             <ProductReviews productId={product.id} />
           </div>
         </Container>
@@ -637,4 +640,3 @@ const getProductNutrition = (catSlug?: string | null, prodSlug?: string, prodNam
     storage: "Хранить при температуре от +4°C до +8°C в вентилируемом отсеке",
   };
 };
-

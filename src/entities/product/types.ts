@@ -29,6 +29,11 @@ export interface ProductSeoResponse {
   meta_description?: string | null;
 }
 
+export interface ProductReviewSummaryResponse {
+  total: number;
+  average_rating: number;
+}
+
 export interface ProductShortResponse {
   id: number;
   name: string;

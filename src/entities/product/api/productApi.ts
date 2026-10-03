@@ -7,6 +7,7 @@ import type {
   ProductListResponse,
   ProductNewResponse,
   ProductPopularResponse,
+  ProductReviewSummaryResponse,
   ProductSearchParams,
   ProductSearchResponse,
   ProductSimilarParams,
@@ -14,6 +15,10 @@ import type {
 } from "../types";
 
 export const productApi = {
+  getReviewSummary: async (productId: number): Promise<ProductReviewSummaryResponse> => {
+    return apiClient.get<ProductReviewSummaryResponse>(API_ENDPOINTS.REVIEW.BY_PRODUCT(productId));
+  },
+
   getList: async (params: ProductListParams = {}): Promise<ProductListResponse> => {
     return apiClient.get<ProductListResponse>(API_ENDPOINTS.PRODUCT.LIST, {
       page: params.page ?? 1,

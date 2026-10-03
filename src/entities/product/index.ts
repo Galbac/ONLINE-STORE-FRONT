@@ -10,6 +10,7 @@ export type {
   ProductListResponse,
   ProductNewResponse,
   ProductPopularResponse,
+  ProductReviewSummaryResponse,
   ProductSearchParams,
   ProductSearchResponse,
   ProductSeoResponse,

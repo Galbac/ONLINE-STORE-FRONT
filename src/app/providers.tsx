@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
 import { StoreSettingsProvider } from "@/entities/settings/model/StoreSettingsProvider";
 import { PullToRefresh } from "@/shared/ui/pull-to-refresh";
@@ -18,6 +19,13 @@ interface AppProvidersProps {
 
 export const AppProviders = ({ children }: AppProvidersProps) => {
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  const isAuthRoute =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname.startsWith("/register/") ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password";
 
   useEffect(() => {
     setMounted(true);
@@ -51,18 +59,22 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
 
   return (
     <StoreSettingsProvider>
-      <Toaster richColors position="top-center" closeButton />
       <PullToRefresh>{children}</PullToRefresh>
-      <BottomNav />
-      <ScrollRestorationKeeper />
-      <CartDrawer />
-      <CookieBanner />
-      <PushPermissionPrompt />
-      {mounted && (
+      {!isAuthRoute && (
         <>
-          <PwaInstallPrompt />
-          <PwaInstallModal />
-          <OfflineIndicator />
+          <Toaster richColors position="top-center" closeButton />
+          <BottomNav />
+          <ScrollRestorationKeeper />
+          <CartDrawer />
+          <CookieBanner />
+          <PushPermissionPrompt />
+          {mounted && (
+            <>
+              <PwaInstallPrompt />
+              <PwaInstallModal />
+              <OfflineIndicator />
+            </>
+          )}
         </>
       )}
     </StoreSettingsProvider>

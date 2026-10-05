@@ -11,6 +11,12 @@ import { ROUTES } from "@/shared/config";
 import { Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
+import { MobileAuthOptions } from "./MobileAuthOptions";
+
+interface LoginPageProps {
+  isMobile: boolean;
+  showLoginForm: boolean;
+}
 
 const accountBenefits = [
   {
@@ -35,7 +41,21 @@ const accountBenefits = [
   },
 ] as const;
 
-export const LoginPage = () => {
+export const LoginPage = ({ isMobile, showLoginForm }: LoginPageProps) => {
+  if (isMobile && !showLoginForm) {
+    return <MobileAuthOptions />;
+  }
+
+  if (isMobile) {
+    return (
+      <main className="min-h-dvh bg-white px-4 py-6 sm:px-6">
+        <div className="mx-auto w-full max-w-md pt-8">
+          <LoginForm />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
       <Header />

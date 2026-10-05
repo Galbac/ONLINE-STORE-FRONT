@@ -6,7 +6,21 @@ import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { Sparkles, Gift, ShieldCheck } from "lucide-react";
 
-export const RegisterPage = () => {
+interface RegisterPageProps {
+  isMobile: boolean;
+}
+
+export const RegisterPage = ({ isMobile }: RegisterPageProps) => {
+  if (isMobile) {
+    return (
+      <main className="min-h-dvh bg-white px-4 py-6 sm:px-6">
+        <div className="mx-auto w-full max-w-md pt-8">
+          <RegisterForm />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
       <Header />

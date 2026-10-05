@@ -1,9 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
+import { isMobileUserAgent } from "@/shared/lib/device/isMobileUserAgent";
 
 const protectedPathPrefixes = ["/profile", "/cart", "/checkout"] as const;
 const protectedAdminPathPrefix = "/admin";
 const adminLoginPath = "/admin/login";
+const guestAccessiblePaths = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/privacy",
+  "/offer",
+  "/cookies",
+  "/personal-data-consent",
+] as const;
+
+const isGuestAccessiblePath = (pathname: string): boolean => {
+  return guestAccessiblePaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+};
 
 export const middleware = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
@@ -15,10 +30,6 @@ export const middleware = (request: NextRequest) => {
     (pathname === protectedAdminPathPrefix ||
       pathname.startsWith(`${protectedAdminPathPrefix}/`)) &&
     pathname !== adminLoginPath;
-
-  if (!isProtectedPath && !isProtectedAdminPath) {
-    return NextResponse.next();
-  }
 
   if (isProtectedAdminPath) {
     const adminAccessToken = request.cookies.get("admin_access_token")?.value;
@@ -39,6 +50,26 @@ export const middleware = (request: NextRequest) => {
 
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
+  const isMobileDevice = isMobileUserAgent(request.headers.get("user-agent") ?? "");
+  const hasCustomerSession =
+    Boolean(accessToken && isAccessTokenValid(accessToken)) || Boolean(refreshToken);
+
+  if (
+    isMobileDevice &&
+    !pathname.startsWith(`${protectedAdminPathPrefix}/`) &&
+    !isGuestAccessiblePath(pathname) &&
+    !hasCustomerSession
+  ) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (!isProtectedPath) {
+    return NextResponse.next();
+  }
 
   if (accessToken && isAccessTokenValid(accessToken)) {
     return NextResponse.next();
@@ -61,9 +92,6 @@ export const middleware = (request: NextRequest) => {
 
 export const config = {
   matcher: [
-    "/profile/:path*",
-    "/cart/:path*",
-    "/checkout/:path*",
-    "/admin/:path*",
+    "/((?!api|_next/static|_next/image|favicon.ico|icons/|.*\\.(?:svg|png|jpg|jpeg|webp|ico|js|txt|xml|webmanifest)$).*)",
   ],
 };

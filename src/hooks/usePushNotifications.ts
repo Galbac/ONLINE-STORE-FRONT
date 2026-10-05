@@ -19,6 +19,7 @@ export type PushPermissionStatus =
 const STORAGE_BANNER_KEY = "grocery_push_banner_dismissed";
 
 export interface UsePushNotificationsReturn {
+  feedback: string | null;
   permission: PushPermissionStatus;
   isSubscribed: boolean;
   isLoading: boolean;
@@ -31,6 +32,7 @@ export interface UsePushNotificationsReturn {
 }
 
 export function usePushNotifications(): UsePushNotificationsReturn {
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [permission, setPermission] = useState<PushPermissionStatus>("loading");
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -65,6 +67,17 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!isPushSupported()) return;
+    const sync = () => {
+      setPermission(Notification.permission);
+      void getPushSubscription().then((subscription) => setIsSubscribed(Boolean(subscription)));
+    };
+    window.addEventListener("focus", sync);
+    window.addEventListener("grocery-push-changed", sync);
+    return () => { window.removeEventListener("focus", sync); window.removeEventListener("grocery-push-changed", sync); };
+  }, []);
+
   const dismissBanner = useCallback(() => {
     setIsBannerDismissed(true);
     if (typeof window !== "undefined") {
@@ -78,6 +91,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       return false;
     }
 
+    setFeedback(null);
     setIsLoading(true);
     try {
       const res = await subscribeToPush();
@@ -87,14 +101,14 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       if (res.success) {
         setIsSubscribed(true);
         dismissBanner();
-        
+        setFeedback("Уведомления включены на этом устройстве.");
         return true;
       } else {
-        
+        setFeedback(res.error || "Не удалось включить уведомления.");
         return false;
       }
     } catch {
-      
+      setFeedback("Не удалось подключиться. Попробуйте ещё раз.");
       return false;
     } finally {
       setIsLoading(false);
@@ -104,15 +118,16 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const togglePush = useCallback(async () => {
     if (typeof window === "undefined" || !isPushSupported()) return;
 
+    setFeedback(null);
     setIsLoading(true);
     try {
       if (isSubscribed) {
         const ok = await unsubscribeFromPush();
         if (ok) {
           setIsSubscribed(false);
-          
+          setFeedback("Уведомления отключены на этом устройстве.");
         } else {
-          
+          setFeedback("Не удалось изменить подписку. Попробуйте ещё раз.");
         }
       } else {
         const res = await subscribeToPush();
@@ -123,7 +138,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
           dismissBanner();
           
         } else {
-          
+          setFeedback("Не удалось изменить подписку. Попробуйте ещё раз.");
         }
       }
     } finally {
@@ -132,6 +147,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   }, [isSubscribed, dismissBanner]);
 
   const sendTestPush = useCallback(async () => {
+    setFeedback(null);
     setIsTesting(true);
     try {
       const accessToken = getStoredAccessToken();
@@ -150,18 +166,19 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        
+        setFeedback("Проверочное уведомление отправлено. Посмотрите уведомления на устройстве.");
       } else {
-        
+        setFeedback(data.message || "Не удалось отправить уведомление. Подключите уведомления повторно.");
       }
     } catch {
-      
+      setFeedback("Не удалось отправить уведомление. Проверьте подключение.");
     } finally {
       setIsTesting(false);
     }
   }, []);
 
   return {
+    feedback,
     permission,
     isSubscribed,
     isLoading,

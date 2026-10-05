@@ -10,7 +10,8 @@ import {
   type ProductSearchResponse,
 } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
-import { ProductSearch } from "@/features/product-search";
+import { redirect } from "next/navigation";
+import { buildCatalogHref } from "@/widgets/catalog/lib/catalogUrl";
 import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shared/ui";
@@ -104,6 +105,19 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const accessToken = await getAccessToken();
   const storeId = await getSelectedStoreId();
 
+  const categoryListResponse = await categoryApi.getList(storeId);
+  const normalize = (value: string) => value.toLocaleLowerCase("ru").replace(/ё/g, "е").replace(/[^а-яa-z0-9]+/g, " ").trim();
+  const normalizedQuery = normalize(query);
+  const exactCategory = categoryListResponse.items.find((category) => normalize(category.name) === normalizedQuery);
+  const closeCategories = normalizedQuery.length >= 4
+    ? categoryListResponse.items.filter((category) => normalize(category.name).split(" ").some((word) => word.startsWith(normalizedQuery)))
+    : [];
+  const matchedCategory = exactCategory ?? (closeCategories.length === 1 ? closeCategories[0] : undefined);
+  if (matchedCategory && !searchParams.article) {
+    const { q: _query, page: _page, sort: searchSort, ...filters } = searchParams;
+    redirect(buildCatalogHref({ ...filters, category_id: String(matchedCategory.id), sort: searchSort === "relevance" ? undefined : searchSort }));
+  }
+
   const searchPayload: ProductSearchParams = {
     limit: pageSize,
     page,
@@ -138,8 +152,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
     searchPayload.article = article;
   }
 
-  const [categoryListResponse, products, cart, favorites] = await Promise.all([
-    categoryApi.getList(storeId),
+  const [products, cart, favorites] = await Promise.all([
     getSearchProducts(searchPayload, query, page, pageSize),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
@@ -183,9 +196,6 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
               <p className="text-text-secondary mt-2 text-sm">
                 Найдено {products.total} {getProductCountLabel(products.total)}
               </p>
-            </div>
-            <div className="w-full lg:max-w-xl">
-              <ProductSearch defaultValue={query} />
             </div>
           </div>
 

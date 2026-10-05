@@ -328,7 +328,7 @@ export const HeaderSearch = ({
                   {suggestions.categories.map((c) => (
                     <Link
                       key={c.id}
-                      href={ROUTES.CATEGORY(c.slug)}
+                      href={`/catalog?category_id=${c.id}`}
                       onClick={() => setIsOpen(false)}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
                     >

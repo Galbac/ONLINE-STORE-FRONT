@@ -17,25 +17,18 @@ export const HeaderNotificationsLink = () => {
     const update = () => setIsAuth(Boolean(getStoredAccessToken()));
     update();
     window.addEventListener("focus", update);
-    return () => window.removeEventListener("focus", update);
-  }, []);
+    window.addEventListener("grocery-auth-changed", update);
+    return () => { window.removeEventListener("focus", update); window.removeEventListener("grocery-auth-changed", update); };
+  }, [pathname]);
 
   const linkClassName = `relative hidden w-[84px] shrink-0 flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold transition active:scale-95 lg:flex ${
     isActive ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
   }`;
 
-  if (!isAuth) {
-    return (
-      <div aria-hidden="true" className={`${linkClassName} invisible pointer-events-none`}>
-        <Bell size={20} className="mb-0.5" />
-        <span>Уведомления</span>
-      </div>
-    );
-  }
 
   return (
     <Link
-      href={ROUTES.PROFILE_NOTIFICATIONS}
+      href={isAuth ? ROUTES.PROFILE_NOTIFICATIONS : "/login?mode=form&next=/profile/notifications"}
       aria-current={isActive ? "page" : undefined}
       aria-label={unreadCount ? `Уведомления, непрочитанных: ${unreadCount}` : "Уведомления"}
       className={linkClassName}

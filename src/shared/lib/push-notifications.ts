@@ -16,23 +16,6 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     return null;
   }
 
-  // Do not register on localhost/dev to avoid stale Webpack chunk caching
-  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    try {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const reg of registrations) {
-        await reg.unregister();
-      }
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        for (const k of keys) {
-          await caches.delete(k);
-        }
-      }
-    } catch (_) {}
-    return null;
-  }
-
   try {
     const registration = await navigator.serviceWorker.register("/sw.js", {
       scope: "/",
@@ -52,7 +35,8 @@ export function isPushSupported(): boolean {
 export async function getPushSubscription(): Promise<PushSubscription | null> {
   if (!isPushSupported()) return null;
   try {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    if (!reg) return null;
     return await reg.pushManager.getSubscription();
   } catch {
     return null;
@@ -76,7 +60,7 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
     if (!registration) {
       throw new Error("Не удалось зарегистрировать Service Worker для push-уведомлений");
     }
-    const reg = registration;
+    const reg = await navigator.serviceWorker.ready;
     let subscription = await reg.pushManager.getSubscription();
 
     if (!subscription) {
@@ -99,9 +83,8 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
     // 3. Отправляем ключи на наш сервер
     const subJson = subscription.toJSON();
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-    const token = window.localStorage.getItem("access_token") ??
-      window.sessionStorage.getItem("access_token") ??
-      document.cookie.split("; ").find((part) => part.startsWith("access_token="))?.split("=").slice(1).join("=");
+    const { getStoredAccessToken } = await import("@/shared/ui/auth-guard");
+    const token = getStoredAccessToken();
     const saveRes = await fetch(`${apiUrl}/api/notifications/push/subscribe`, {
       method: "POST",
       headers: {
@@ -122,6 +105,7 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
       throw new Error("Не удалось зарегистрировать подписку на сервере");
     }
 
+    window.dispatchEvent(new Event("grocery-push-changed"));
     return { success: true };
   } catch (error: any) {
     console.error("Push subscribe error:", error);
@@ -132,11 +116,13 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
 export async function unsubscribeFromPush(): Promise<boolean> {
   if (!isPushSupported()) return false;
   try {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    if (!reg) return true;
     const subscription = await reg.pushManager.getSubscription();
     if (subscription) {
       const endpoint = subscription.endpoint;
-      await subscription.unsubscribe();
+      const removed = await subscription.unsubscribe();
+      if (!removed) return false;
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
       await fetch(`${apiUrl}/api/notifications/push/unsubscribe`, {
@@ -145,6 +131,7 @@ export async function unsubscribeFromPush(): Promise<boolean> {
         body: JSON.stringify({ endpoint }),
       });
     }
+    window.dispatchEvent(new Event("grocery-push-changed"));
     return true;
   } catch (error) {
     console.error("Unsubscribe error:", error);

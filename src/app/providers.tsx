@@ -50,31 +50,7 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
   useEffect(() => {
     setMounted(true);
 
-    if (
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-    ) {
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .getRegistrations()
-          .then((regs) => {
-            for (const r of regs) {
-              r.unregister();
-            }
-          })
-          .catch(() => {});
-      }
-      if ("caches" in window) {
-        caches
-          .keys()
-          .then((keys) => {
-            for (const k of keys) {
-              caches.delete(k);
-            }
-          })
-          .catch(() => {});
-      }
-    }
+
   }, []);
 
   useEffect(() => {

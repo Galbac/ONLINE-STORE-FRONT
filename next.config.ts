@@ -103,6 +103,8 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      { source: "/:asset(favicon.svg|apple-touch-icon.png|manifest.webmanifest)", headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }] },
+      { source: "/icons/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }] },
       {
         source: "/:path*",
         headers: [

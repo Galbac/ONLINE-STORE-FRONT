@@ -66,6 +66,8 @@ export const ProfileNotificationsView = () => {
   const didAutoReadOnEntry = useRef(false);
 
   const {
+    feedback,
+    togglePush,
     permission,
     isSubscribed,
     isLoading: isPushLoading,
@@ -444,8 +446,15 @@ export const ProfileNotificationsView = () => {
                   Управление уведомлениями
                 </h3>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Вы всегда можете отключить или настроить push-уведомления в настройках вашего браузера в любое время.
+                  {permission === "loading" ? "Проверяем настройки…" : permission === "unsupported" ? "Этот браузер не поддерживает уведомления. На iPhone добавьте сайт на экран «Домой» и откройте его оттуда." : permission === "denied" ? "Уведомления заблокированы. Нажмите значок рядом с адресом сайта, разрешите уведомления и вернитесь сюда." : isSubscribed ? "Включены на этом устройстве. Сообщения о заказе появятся в уведомлениях устройства, даже когда сайт закрыт." : "Отключены на этом устройстве. Включите, чтобы узнавать о заказе и доставке без открытого сайта."}
                 </p>
+                {permission !== "unsupported" && permission !== "loading" && permission !== "denied" && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" disabled={isPushLoading} onClick={() => void togglePush()} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isPushLoading ? "Сохраняем…" : isSubscribed ? "Отключить уведомления" : "Включить уведомления"}</button>
+                    {isSubscribed && <button type="button" disabled={isPushTesting} onClick={() => void sendTestPush()} className="rounded-xl border border-border px-4 py-2 text-sm font-semibold disabled:opacity-50">{isPushTesting ? "Отправляем…" : "Отправить проверочное"}</button>}
+                  </div>
+                )}
+                {feedback && <p role="status" className="mt-3 text-sm text-slate-700">{feedback}</p>}
               </div>
             </div>
           </div>

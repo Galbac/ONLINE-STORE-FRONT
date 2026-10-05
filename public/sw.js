@@ -26,7 +26,7 @@ self.addEventListener("activate", (event) => {
       // Purge ALL caches on localhost or version update
       caches.keys().then((keys) =>
         Promise.all(
-          keys.map((key) => caches.delete(key))
+          keys.filter((key) => key.startsWith("grocery-store-cache-") && key !== CACHE_NAME).map((key) => caches.delete(key))
         )
       )
     ])

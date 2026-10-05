@@ -16,4 +16,4 @@ export default function Page() {
   return <LegalDocLayout document={COOKIES_POLICY_DOC} />;
 }
 
-export const dynamic = "force-static";
+export const revalidate = 2_592_000;

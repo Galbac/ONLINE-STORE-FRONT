@@ -16,4 +16,4 @@ export default function Page() {
   return <LegalDocLayout document={PERSONAL_DATA_CONSENT_DOC} />;
 }
 
-export const dynamic = "force-static";
+export const revalidate = 2_592_000;

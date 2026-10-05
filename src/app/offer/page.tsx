@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 2_592_000;
 
 export default async function Page() {
   let doc = null;

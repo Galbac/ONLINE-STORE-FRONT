@@ -4,7 +4,6 @@ import { ChangePasswordForm } from "@/features/change-password";
 import { ROUTES } from "@/shared/config";
 import { AuthGuard, Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 
 const serviceBenefits = [
   {
@@ -32,7 +31,6 @@ const serviceBenefits = [
 export const ChangePasswordPage = () => {
   return (
     <AuthGuard>
-      <Header />
       <main className="bg-bg-primary min-h-[70vh]">
         <Container className="py-6 md:py-8">
           <nav className="text-text-secondary mb-10 flex flex-wrap items-center gap-2 text-sm">

@@ -8,6 +8,7 @@ import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
 interface AuthGuardProps {
   children: ReactNode;
+  fallback?: ReactNode;
 }
 
 export interface AuthTokens {
@@ -94,7 +95,7 @@ const getCookieValue = (name: string): string | null => {
   return value ? decodeURIComponent(value) : null;
 };
 
-export const AuthGuard = ({ children }: AuthGuardProps) => {
+export const AuthGuard = ({ children, fallback = null }: AuthGuardProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const [isAllowed, setIsAllowed] = useState(false);
@@ -139,7 +140,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     };
   }, [pathname, router]);
 
-  return isAllowed ? children : null;
+  return isAllowed ? children : fallback;
 };
 
 interface GuestGuardProps {

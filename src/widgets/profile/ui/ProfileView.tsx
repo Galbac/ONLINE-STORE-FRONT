@@ -77,7 +77,7 @@ export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) =>
   const displayEmail = currentUser.email ?? profile.user.email ?? "";
 
   return (
-    <main className="bg-bg-primary min-h-[70vh]">
+    <main className="bg-bg-primary min-h-[70vh] animate-in fade-in-0 duration-200">
       <Container className="py-6 md:py-8">
         <nav className="text-text-secondary mb-8 flex items-center gap-2 text-sm">
           <Link className="hover:text-accent-primary" href={ROUTES.HOME}>

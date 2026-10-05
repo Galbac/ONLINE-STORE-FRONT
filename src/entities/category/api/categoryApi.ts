@@ -14,7 +14,7 @@ export const categoryApi = {
     return apiClient.get<CategoryListResponse>(API_ENDPOINTS.CATEGORY.LIST, {
       only_root: true,
       include_empty: false,
-      limit: 12,
+      limit: 100,
       offset: 0,
     });
   },

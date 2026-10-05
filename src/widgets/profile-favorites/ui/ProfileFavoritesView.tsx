@@ -122,7 +122,7 @@ export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewP
   const hasItems = items.length > 0;
 
   return (
-    <main className="min-h-[75vh] bg-slate-50/50 py-6 md:py-10">
+    <main className="min-h-[75vh] animate-in fade-in-0 duration-200 bg-slate-50/50 py-6 md:py-10">
       <Container>
         {/* Хлебные крошки */}
         <nav
@@ -525,7 +525,7 @@ const RecommendedSection = ({
   );
 };
 
-const FavoritesSkeleton = () => {
+export const FavoritesSkeleton = () => {
   return (
     <main className="min-h-[75vh] bg-slate-50/50 py-6 md:py-10">
       <Container>

@@ -128,7 +128,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
   };
 
   return (
-    <main className="min-h-[75vh] bg-slate-50/50 py-6 md:py-10">
+    <main className="min-h-[75vh] animate-in fade-in-0 duration-200 bg-slate-50/50 py-6 md:py-10">
       <Container>
         {/* Хлебные крошки */}
         <nav
@@ -751,7 +751,7 @@ const BenefitsPanel = () => {
   );
 };
 
-const CartSkeleton = () => {
+export const CartSkeleton = () => {
   return (
     <main className="min-h-[75vh] bg-slate-50/50 py-6 md:py-10">
       <Container>

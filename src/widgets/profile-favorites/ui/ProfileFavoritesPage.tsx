@@ -1,15 +1,15 @@
 import { emptyFavoritesResponse } from "@/entities/favorite";
 import { AuthGuard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
-import { ProfileFavoritesView } from "./ProfileFavoritesView";
+import { FavoritesSkeleton, ProfileFavoritesView } from "./ProfileFavoritesView";
 
 export const ProfileFavoritesPage = () => {
   return (
-    <AuthGuard>
-      <Header />
-      <ProfileFavoritesView initialFavorites={emptyFavoritesResponse} />
+    <>
+      <AuthGuard fallback={<FavoritesSkeleton />}>
+        <ProfileFavoritesView initialFavorites={emptyFavoritesResponse} />
+      </AuthGuard>
       <Footer />
-    </AuthGuard>
+    </>
   );
 };

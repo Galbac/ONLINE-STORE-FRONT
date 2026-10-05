@@ -13,7 +13,6 @@ import {
   getStoredAccessToken,
 } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { ProfileOrderDetailsView } from "./ProfileOrderDetailsView";
 
 interface ProfileOrderDetailsPageProps {
@@ -96,7 +95,6 @@ export const ProfileOrderDetailsPage = ({ orderId }: ProfileOrderDetailsPageProp
 
   return (
     <AuthGuard>
-      <Header />
       {content}
       <Footer showAdvantages={false} />
     </AuthGuard>

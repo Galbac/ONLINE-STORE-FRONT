@@ -175,7 +175,7 @@ export const ProfileNotificationsView = () => {
   const showPushBanner = isMounted && permission === "default" && !isBannerDismissed;
 
   return (
-    <main className="bg-bg-primary min-h-[75vh]">
+    <main className="bg-bg-primary min-h-[75vh] animate-in fade-in-0 duration-200">
       <Container className="py-6 md:py-8">
         {/* Хлебные крошки */}
         <nav aria-label="Навигация" className="text-text-secondary mb-6 flex flex-wrap items-center gap-2 text-sm">

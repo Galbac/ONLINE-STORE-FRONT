@@ -94,6 +94,9 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     productParams.article = article;
   }
 
+  const allCategoriesProductParams: ProductListParams = { ...productParams, page: 1, limit: 1 };
+  delete allCategoriesProductParams.category_id;
+
   // Запрос реальной максимальной цены в базе данных среди доступных товаров (сортировка по убыванию цены)
   const priceBoundsParams: ProductListParams = {
     limit: 1,
@@ -111,10 +114,11 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     priceBoundsParams.has_discount = true;
   }
 
-  const [categoryTree, categories, products, cart, favorites, facets] = await Promise.all([
+  const [categoryTree, categories, products, allCategoriesProducts, cart, favorites, facets] = await Promise.all([
     categoryApi.getTree(),
     categoryApi.getList(),
     getCatalogProducts(productParams, page, pageSize),
+    getCatalogProducts(allCategoriesProductParams, 1, 1),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(
       favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
@@ -168,6 +172,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
             <div className="hidden lg:block">
               <CatalogSidebar
                 categories={visibleCategories}
+                allCategoriesTotal={allCategoriesProducts.total}
                 currentCategoryId={categoryId}
                 currentParams={urlParams}
                 hasDiscount={hasDiscount}
@@ -186,6 +191,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
               {/* Мобильная панель фильтров и сортировки (sticky) */}
               <CatalogControls
                 categories={visibleCategories}
+                allCategoriesTotal={allCategoriesProducts.total}
                 currentParams={urlParams}
                 currentSort={sort}
                 hasDiscount={hasDiscount}

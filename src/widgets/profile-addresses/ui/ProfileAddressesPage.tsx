@@ -1,7 +1,6 @@
 import type { AddressListResponse } from "@/entities/profile";
 import { AuthGuard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { ProfileAddressesView } from "./ProfileAddressesView";
 
 const emptyAddresses: AddressListResponse = {
@@ -14,7 +13,6 @@ const emptyAddresses: AddressListResponse = {
 export const ProfileAddressesPage = () => {
   return (
     <AuthGuard>
-      <Header />
       <ProfileAddressesView initialAddresses={emptyAddresses} />
       <Footer showAdvantages={false} />
     </AuthGuard>

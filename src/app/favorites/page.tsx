@@ -1,7 +1,11 @@
 import { ProfileFavoritesPage } from "@/widgets/profile-favorites";
-
-export const dynamic = "force-dynamic";
+import { Header } from "@/widgets/header";
 
 export default function FavoritesPage() {
-  return <ProfileFavoritesPage />;
+  return (
+    <>
+      <Header />
+      <ProfileFavoritesPage />
+    </>
+  );
 }

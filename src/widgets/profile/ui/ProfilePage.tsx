@@ -16,7 +16,6 @@ import {
   storeAuthTokens,
 } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { ProfileView } from "./ProfileView";
 
 interface ProfilePageState {
@@ -120,11 +119,12 @@ export const ProfilePage = () => {
     );
 
   return (
-    <AuthGuard>
-      <Header />
-      {content}
+    <>
+      <AuthGuard fallback={<ProfileStateView status="loading" />}>
+        {content}
+      </AuthGuard>
       <Footer showAdvantages={false} />
-    </AuthGuard>
+    </>
   );
 };
 

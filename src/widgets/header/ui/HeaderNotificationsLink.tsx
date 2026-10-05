@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell } from "lucide-react";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { getStoredAccessToken } from "@/shared/ui";
+import { ROUTES } from "@/shared/config";
 import { useEffect, useState } from "react";
 
 export const HeaderNotificationsLink = () => {
+  const pathname = usePathname() || "";
   const unreadCount = useUnreadNotifications();
+  const isActive = pathname.startsWith(ROUTES.PROFILE_NOTIFICATIONS);
   const [isAuth, setIsAuth] = useState(false);
   useEffect(() => {
     const update = () => setIsAuth(Boolean(getStoredAccessToken()));
@@ -16,12 +20,25 @@ export const HeaderNotificationsLink = () => {
     return () => window.removeEventListener("focus", update);
   }, []);
 
-  if (!isAuth) return null;
+  const linkClassName = `relative hidden w-[84px] shrink-0 flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold transition active:scale-95 lg:flex ${
+    isActive ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
+  }`;
+
+  if (!isAuth) {
+    return (
+      <div aria-hidden="true" className={`${linkClassName} invisible pointer-events-none`}>
+        <Bell size={20} className="mb-0.5" />
+        <span>Уведомления</span>
+      </div>
+    );
+  }
+
   return (
     <Link
-      href="/profile/notifications"
+      href={ROUTES.PROFILE_NOTIFICATIONS}
+      aria-current={isActive ? "page" : undefined}
       aria-label={unreadCount ? `Уведомления, непрочитанных: ${unreadCount}` : "Уведомления"}
-      className="relative hidden flex-col items-center justify-center rounded-xl p-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 lg:flex"
+      className={linkClassName}
     >
       <Bell size={20} className="mb-0.5" />
       <span>Уведомления</span>

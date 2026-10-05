@@ -13,7 +13,7 @@ import { isApiErrorStatus } from "@/shared/api";
 import { AuthGuard, clearStoredAuth, Container, getLoginRedirectHref } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
-import { CartView } from "./CartView";
+import { CartSkeleton, CartView } from "./CartView";
 
 interface CartPageState {
   cart: CartResponse;
@@ -63,15 +63,19 @@ export const CartPage = () => {
   }, [pathname, router]);
 
   return (
-    <AuthGuard>
+    <>
       <Header />
-      {state.status === "ready" ? (
-        <CartView initialCart={state.cart} initialSummary={state.summary} />
-      ) : (
-        <CartPageStateView status={state.status} />
-      )}
+      <AuthGuard fallback={<CartSkeleton />}>
+        {state.status === "ready" ? (
+          <CartView initialCart={state.cart} initialSummary={state.summary} />
+        ) : state.status === "loading" ? (
+          <CartSkeleton />
+        ) : (
+          <CartPageStateView status={state.status} />
+        )}
+      </AuthGuard>
       <Footer />
-    </AuthGuard>
+    </>
   );
 };
 

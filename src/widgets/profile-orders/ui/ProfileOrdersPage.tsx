@@ -3,7 +3,6 @@
 import type { ProfileOrderListResponse } from "@/entities/order";
 import { AuthGuard } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { ProfileOrdersView } from "./ProfileOrdersView";
 
 const emptyOrders: ProfileOrderListResponse = {
@@ -16,7 +15,6 @@ const emptyOrders: ProfileOrderListResponse = {
 export const ProfileOrdersPage = () => {
   return (
     <AuthGuard>
-      <Header />
       <ProfileOrdersView initialOrders={emptyOrders} />
       <Footer showAdvantages={false} />
     </AuthGuard>

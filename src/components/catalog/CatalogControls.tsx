@@ -10,6 +10,7 @@ import { formatProductsCount } from "@/utils/pluralize";
 
 export interface CatalogControlsProps {
   categories: CategoryShortResponse[];
+  allCategoriesTotal: number;
   currentParams: CatalogUrlParams;
   currentSort: string;
   hasDiscount: boolean;
@@ -35,6 +36,7 @@ const SORT_OPTIONS = [
 
 export const CatalogControls = ({
   categories,
+  allCategoriesTotal,
   currentParams,
   currentSort,
   hasDiscount,
@@ -179,6 +181,7 @@ export const CatalogControls = ({
             <div className="flex-1 overflow-y-auto py-4">
               <CatalogSidebar
                 categories={categories}
+                allCategoriesTotal={allCategoriesTotal}
                 initialCategoriesOpen={false}
                 currentCategoryId={currentParams.category_id ? Number(currentParams.category_id) : undefined}
                 currentParams={currentParams}

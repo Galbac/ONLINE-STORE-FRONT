@@ -7,7 +7,6 @@ import { apiClient } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { Button, Container, getStoredAccessToken } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 
 interface LoyaltyTransaction {
   id: number;
@@ -89,7 +88,6 @@ export const ProfileLoyaltyPage = () => {
 
   return (
     <>
-      <Header />
       <main className="min-h-[70vh] py-8 bg-slate-50/50">
         <Container className="max-w-4xl space-y-6">
           <div className="flex items-center gap-4">

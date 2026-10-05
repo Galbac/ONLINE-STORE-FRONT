@@ -21,6 +21,7 @@ import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
 
 export interface CatalogSidebarProps {
   categories: CategoryShortResponse[];
+  allCategoriesTotal?: number;
   initialCategoriesOpen?: boolean;
   currentCategoryId?: number | undefined;
   currentParams: CatalogUrlParams;
@@ -38,6 +39,7 @@ export interface CatalogSidebarProps {
 
 export const CatalogSidebar = ({
   categories,
+  allCategoriesTotal,
   initialCategoriesOpen = true,
   currentCategoryId,
   currentParams,
@@ -98,7 +100,7 @@ export const CatalogSidebar = ({
               >
                 <span>Все категории</span>
                 <span className="text-slate-400">
-                  {categories.reduce((acc, c) => acc + (c.products_count ?? 0), 0)}
+                  {allCategoriesTotal ?? categories.reduce((acc, c) => acc + (c.products_count ?? 0), 0)}
                 </span>
               </Link>
             </li>

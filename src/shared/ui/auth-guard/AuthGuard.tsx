@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { authApi } from "@/entities/auth";
+import { ApiError, ensureAccessToken } from "@/shared/api/client";
 import { ROUTES } from "@/shared/config";
 import { isAccessTokenValid } from "@/shared/lib/auth-token";
 
@@ -20,7 +20,7 @@ export interface AuthTokens {
 const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 export const getLoginRedirectHref = (pathname: string): string => {
-  return `${ROUTES.LOGIN}?next=${encodeURIComponent(pathname)}`;
+  return `${ROUTES.LOGIN}?mode=form&next=${encodeURIComponent(pathname)}`;
 };
 
 export const getStoredAccessToken = (): string | null => {
@@ -52,7 +52,8 @@ export const getStoredRefreshToken = (): string | null => {
   return (
     window.localStorage.getItem("refresh_token") ??
     window.sessionStorage.getItem("refresh_token") ??
-    getCookieValue("refresh_token")
+    getCookieValue("refresh_token") ??
+    (getCookieValue("grocery_session") ? "__cookie__" : null)
   );
 };
 
@@ -64,20 +65,21 @@ export const clearStoredAuth = (): void => {
   window.sessionStorage.removeItem("refresh_token");
   document.cookie = "access_token=; path=/; max-age=0; samesite=lax";
   document.cookie = "refresh_token=; path=/; max-age=0; samesite=lax";
+  document.cookie = "grocery_session=; path=/; max-age=0; samesite=lax";
   window.dispatchEvent(new Event("grocery-auth-changed"));
 };
 
-export const storeAuthTokens = ({ accessToken, refreshToken }: AuthTokens): void => {
+export const storeAuthTokens = ({ accessToken }: AuthTokens): void => {
   if (typeof window === "undefined") return;
-  const cookieMaxAge = `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}`;
+  const cookieMaxAge = `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}${window.location.protocol === "https:" ? "; secure" : ""}`;
 
   window.localStorage.setItem("access_token", accessToken);
-  window.localStorage.setItem("refresh_token", refreshToken);
+  window.localStorage.removeItem("refresh_token");
   window.sessionStorage.removeItem("access_token");
   window.sessionStorage.removeItem("refresh_token");
 
   document.cookie = `access_token=${encodeURIComponent(accessToken)}; path=/; samesite=lax${cookieMaxAge}`;
-  document.cookie = `refresh_token=${encodeURIComponent(refreshToken)}; path=/; samesite=lax${cookieMaxAge}`;
+  document.cookie = "refresh_token=; path=/; max-age=0; samesite=lax";
   window.dispatchEvent(new Event("grocery-auth-changed"));
 };
 
@@ -98,38 +100,28 @@ const getCookieValue = (name: string): string | null => {
 export const AuthGuard = ({ children, fallback = null }: AuthGuardProps) => {
   const pathname = usePathname();
   const router = useRouter();
+  const [connectionError, setConnectionError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [isAllowed, setIsAllowed] = useState(false);
 
   useEffect(() => {
     let isCancelled = false;
 
     const checkAuthOrRefresh = async () => {
-      const accessToken = getStoredAccessToken();
-      if (accessToken) {
-        setIsAllowed(true);
-        return;
-      }
-
-      const refreshToken = getStoredRefreshToken();
-      if (refreshToken) {
-        try {
-          const res = await authApi.refresh({ refresh_token: refreshToken });
-          if (!isCancelled && res.access_token) {
-            storeAuthTokens({
-              accessToken: res.access_token,
-              refreshToken: res.refresh_token,
-            });
-            setIsAllowed(true);
-            return;
-          }
-        } catch {
-          // refresh failed
+      try {
+        const token = await ensureAccessToken();
+        if (!isCancelled && token) {
+          setIsAllowed(true);
+          setConnectionError(false);
         }
-      }
-
-      if (!isCancelled) {
-        clearStoredAuth();
-        router.replace(getLoginRedirectHref(pathname || ROUTES.PROFILE));
+      } catch (error) {
+        if (isCancelled) return;
+        if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
+          clearStoredAuth();
+          router.replace(getLoginRedirectHref(pathname || ROUTES.PROFILE));
+        } else {
+          setConnectionError(true);
+        }
       }
     };
 
@@ -138,8 +130,21 @@ export const AuthGuard = ({ children, fallback = null }: AuthGuardProps) => {
     return () => {
       isCancelled = true;
     };
-  }, [pathname, router]);
+  }, [pathname, router, retry]);
 
+  if (connectionError && !isAllowed)
+    return (
+      <div className="mx-auto my-10 max-w-lg rounded-2xl border bg-white p-6">
+        <p>Сервер временно недоступен. Ваш вход сохранён.</p>
+        <button
+          type="button"
+          className="mt-4 rounded-xl bg-emerald-600 px-4 py-2 text-white"
+          onClick={() => setRetry((value) => value + 1)}
+        >
+          Повторить
+        </button>
+      </div>
+    );
   return isAllowed ? children : fallback;
 };
 

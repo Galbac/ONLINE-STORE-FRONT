@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BellRing, X } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -10,14 +10,8 @@ import { Button } from "@/shared/ui/button/Button";
 export const PushPermissionPrompt = () => {
   const pathname = usePathname() || "";
   const [isAuth, setIsAuth] = useState(false);
-  const lastSyncedToken = useRef<string | null>(null);
-  const {
-    permission,
-    isLoading,
-    isBannerDismissed,
-    requestPermission,
-    dismissBanner,
-  } = usePushNotifications();
+  const { permission, isLoading, isBannerDismissed, requestPermission, dismissBanner } =
+    usePushNotifications();
 
   useEffect(() => {
     const updateAuth = () => setIsAuth(Boolean(getStoredAccessToken()));
@@ -31,13 +25,6 @@ export const PushPermissionPrompt = () => {
       window.removeEventListener("storage", updateAuth);
     };
   }, []);
-
-  useEffect(() => {
-    const token = getStoredAccessToken();
-    if (!isAuth || !token || permission !== "granted" || isLoading || lastSyncedToken.current === token) return;
-    lastSyncedToken.current = token;
-    void requestPermission();
-  }, [isAuth, isLoading, permission, requestPermission]);
 
   if (
     !isAuth ||
@@ -58,7 +45,7 @@ export const PushPermissionPrompt = () => {
         type="button"
         onClick={dismissBanner}
         aria-label="Позже"
-        className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        className="absolute top-2 right-2 flex size-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
       >
         <X size={17} />
       </button>

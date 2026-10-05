@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { RotateCcw, SearchX } from "lucide-react";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
@@ -10,18 +11,17 @@ import {
   type ProductSearchResponse,
 } from "@/entities/product";
 import { CatalogCartButton, CatalogFavoriteButton } from "@/features/catalog-product-actions";
-import { redirect } from "next/navigation";
-import { buildCatalogHref } from "@/widgets/catalog/lib/catalogUrl";
 import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { AutoSubmitSelect, Container, ProductCard, ViewModeToggle } from "@/shared/ui";
 import type { ProductViewMode } from "@/shared/ui";
+import { buildCatalogHref } from "@/widgets/catalog/lib/catalogUrl";
+import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
+import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
+import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
+import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
-import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
-import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
-import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
-import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 
 interface SearchPageProps {
   searchParams: SearchPageParams;
@@ -106,16 +106,59 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const storeId = await getSelectedStoreId();
 
   const categoryListResponse = await categoryApi.getList(storeId);
-  const normalize = (value: string) => value.toLocaleLowerCase("ru").replace(/ё/g, "е").replace(/[^а-яa-z0-9]+/g, " ").trim();
+  const normalize = (value: string) =>
+    value
+      .toLocaleLowerCase("ru")
+      .replace(/ё/g, "е")
+      .replace(/[^а-яa-z0-9]+/g, " ")
+      .trim();
   const normalizedQuery = normalize(query);
-  const exactCategory = categoryListResponse.items.find((category) => normalize(category.name) === normalizedQuery);
-  const closeCategories = normalizedQuery.length >= 4
-    ? categoryListResponse.items.filter((category) => normalize(category.name).split(" ").some((word) => word.startsWith(normalizedQuery)))
-    : [];
-  const matchedCategory = exactCategory ?? (closeCategories.length === 1 ? closeCategories[0] : undefined);
+  const exactCategory = categoryListResponse.items.find(
+    (category) => normalize(category.name) === normalizedQuery,
+  );
+  const stem = (word: string) =>
+    word.replace(/(?:ами|ями|ов|ев|ей|ые|ие|ая|яя|ой|ый|ий|ы|и|а|я|у|ю|е)$/u, "");
+  const oneTypo = (left: string, right: string) => {
+    if (Math.abs(left.length - right.length) > 1) return false;
+    let i = 0,
+      j = 0,
+      differences = 0;
+    while (i < left.length && j < right.length) {
+      if (left[i] === right[j]) {
+        i++;
+        j++;
+        continue;
+      }
+      if (++differences > 1) return false;
+      if (left.length >= right.length) i++;
+      if (right.length >= left.length) j++;
+    }
+    return differences + (left.length - i) + (right.length - j) <= 1;
+  };
+  const closeCategories =
+    normalizedQuery.length >= 4
+      ? categoryListResponse.items.filter((category) =>
+          normalize(category.name)
+            .split(" ")
+            .some(
+              (word) =>
+                word.startsWith(normalizedQuery) ||
+                (stem(normalizedQuery).length >= 4 && stem(word) === stem(normalizedQuery)) ||
+                oneTypo(word, normalizedQuery),
+            ),
+        )
+      : [];
+  const matchedCategory =
+    exactCategory ?? (closeCategories.length === 1 ? closeCategories[0] : undefined);
   if (matchedCategory && !searchParams.article) {
     const { q: _query, page: _page, sort: searchSort, ...filters } = searchParams;
-    redirect(buildCatalogHref({ ...filters, category_id: String(matchedCategory.id), sort: searchSort === "relevance" ? undefined : searchSort }));
+    redirect(
+      buildCatalogHref({
+        ...filters,
+        category_id: String(matchedCategory.id),
+        sort: searchSort === "relevance" ? undefined : searchSort,
+      }),
+    );
   }
 
   const searchPayload: ProductSearchParams = {
@@ -154,9 +197,9 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
 
   const [products, cart, favorites] = await Promise.all([
     getSearchProducts(searchPayload, query, page, pageSize),
-    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    fallbackOnUnauthorized(cartApi.get(accessToken, storeId), emptyCartResponse),
     fallbackOnUnauthorized(
-      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken, storeId),
       emptyFavoritesResponse,
     ),
   ]);
@@ -188,7 +231,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
           <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-text-primary text-3xl md:text-4xl leading-tight font-bold">
+                <h1 className="text-text-primary text-3xl leading-tight font-bold md:text-4xl">
                   Результаты поиска
                 </h1>
                 {query ? <FilterChip label={`«${query}»`} /> : null}
@@ -205,7 +248,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
               currentParams={urlParams}
               currentCategoryId={categoryId}
               hasDiscount={hasDiscount}
-                maxPrice={maxPrice}
+              maxPrice={maxPrice}
               minPrice={minPrice}
               productType={productType}
               query={query}
@@ -225,47 +268,66 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
               />
 
               <div className="my-6">
-              <QuickFilterChips
-                chips={[
-                  {
-                    id: "all",
-                    label: "Все результаты",
-                    active: !hasDiscount && !productType && inStock && sort === "relevance",
-                    href: buildSearchHref({ ...urlParams, has_discount: undefined, product_type: undefined, in_stock: undefined, sort: undefined, page: undefined }),
-                  },
-                  {
-                    id: "discount",
-                    label: "🔥 Скидки",
-                    active: hasDiscount,
-                    href: buildSearchHref({ ...urlParams, has_discount: hasDiscount ? undefined : "true", page: undefined }),
-                  },
-                  {
-                    id: "popular",
-                    label: "⭐ Популярное",
-                    active: sort === "popular",
-                    href: buildSearchHref({ ...urlParams, sort: "popular", page: undefined }),
-                  },
-                  {
-                    id: "newest",
-                    label: "🆕 Новинки",
-                    active: sort === "newest",
-                    href: buildSearchHref({ ...urlParams, sort: "newest", page: undefined }),
-                  },
-                  {
-                    id: "weight",
-                    label: "⚖️ На развес",
-                    active: productType === "weight",
-                    href: buildSearchHref({ ...urlParams, product_type: productType === "weight" ? undefined : "weight", page: undefined }),
-                  },
-                  {
-                    id: "piece",
-                    label: "📦 Штучные",
-                    active: productType === "piece",
-                    href: buildSearchHref({ ...urlParams, product_type: productType === "piece" ? undefined : "piece", page: undefined }),
-                  },
-                ]}
-                className="py-1"
-              />
+                <QuickFilterChips
+                  chips={[
+                    {
+                      id: "all",
+                      label: "Все результаты",
+                      active: !hasDiscount && !productType && inStock && sort === "relevance",
+                      href: buildSearchHref({
+                        ...urlParams,
+                        has_discount: undefined,
+                        product_type: undefined,
+                        in_stock: undefined,
+                        sort: undefined,
+                        page: undefined,
+                      }),
+                    },
+                    {
+                      id: "discount",
+                      label: "🔥 Скидки",
+                      active: hasDiscount,
+                      href: buildSearchHref({
+                        ...urlParams,
+                        has_discount: hasDiscount ? undefined : "true",
+                        page: undefined,
+                      }),
+                    },
+                    {
+                      id: "popular",
+                      label: "⭐ Популярное",
+                      active: sort === "popular",
+                      href: buildSearchHref({ ...urlParams, sort: "popular", page: undefined }),
+                    },
+                    {
+                      id: "newest",
+                      label: "🆕 Новинки",
+                      active: sort === "newest",
+                      href: buildSearchHref({ ...urlParams, sort: "newest", page: undefined }),
+                    },
+                    {
+                      id: "weight",
+                      label: "⚖️ На развес",
+                      active: productType === "weight",
+                      href: buildSearchHref({
+                        ...urlParams,
+                        product_type: productType === "weight" ? undefined : "weight",
+                        page: undefined,
+                      }),
+                    },
+                    {
+                      id: "piece",
+                      label: "📦 Штучные",
+                      active: productType === "piece",
+                      href: buildSearchHref({
+                        ...urlParams,
+                        product_type: productType === "piece" ? undefined : "piece",
+                        page: undefined,
+                      }),
+                    },
+                  ]}
+                  className="py-1"
+                />
               </div>
 
               {products.items.length > 0 ? (
@@ -273,7 +335,9 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
                   <div
                     className={cn(
                       "mt-4 grid gap-4",
-                      viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-4" : "grid-cols-1",
+                      viewMode === "grid"
+                        ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+                        : "grid-cols-1",
                     )}
                   >
                     {products.items.map((product) => (
@@ -529,7 +593,7 @@ const SearchToolbar = ({
           Показано {productsTotal} {getProductCountLabel(productsTotal)}
         </span>
         {selectedCategoryName ? <FilterChip label={selectedCategoryName} /> : null}
-        
+
         {hasDiscount ? <FilterChip label="Со скидкой" /> : null}
       </div>
       <div className="flex max-w-full flex-wrap items-center gap-4">
@@ -550,8 +614,16 @@ const SearchToolbar = ({
           options={sortOptions}
         />
         <ViewModeToggle
-          gridHref={buildSearchHref({ ...toSearchUrlParams(searchParams), page: undefined, view: undefined })}
-          listHref={buildSearchHref({ ...toSearchUrlParams(searchParams), page: undefined, view: "list" })}
+          gridHref={buildSearchHref({
+            ...toSearchUrlParams(searchParams),
+            page: undefined,
+            view: undefined,
+          })}
+          listHref={buildSearchHref({
+            ...toSearchUrlParams(searchParams),
+            page: undefined,
+            view: "list",
+          })}
           viewMode={viewMode}
         />
       </div>
@@ -581,12 +653,12 @@ const EmptySearchState = ({ query }: { query: string }) => {
       <h3 className="mt-4 text-xl font-bold text-slate-800">
         {query ? `Ничего не найдено по запросу «${query}»` : "Начните поиск товаров"}
       </h3>
-      <p className="mt-2 text-xs text-slate-500 max-w-md mx-auto">
+      <p className="mx-auto mt-2 max-w-md text-xs text-slate-500">
         Проверьте правильность написания или попробуйте изменить параметры фильтрации.
       </p>
       <Link
         href={ROUTES.CATALOG}
-        className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white transition hover:bg-emerald-700 shadow-xs"
+        className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
       >
         Перейти в каталог
       </Link>
@@ -617,7 +689,12 @@ const SearchPagination = ({
           ‹
         </PageLink>
         {pages.map((page) => (
-          <PageLink active={page === currentPage} key={page} page={page} searchParams={currentParams}>
+          <PageLink
+            active={page === currentPage}
+            key={page}
+            page={page}
+            searchParams={currentParams}
+          >
             {page}
           </PageLink>
         ))}

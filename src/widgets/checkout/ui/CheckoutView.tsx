@@ -1,14 +1,10 @@
 "use client";
 
-import { useStoreBranch } from "@/entities/delivery";
-import { AlertCircle, Loader2 } from "lucide-react";
-
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiClient, extractErrorMessage } from "@/shared/api";
-import { notifyCartChanged } from "@/shared/lib/cart-events";
+import { AlertCircle, Loader2 } from "lucide-react";
 import {
   Calendar,
   Check,
@@ -25,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import type { CartItemResponse, CartResponse, CartSummaryResponse } from "@/entities/cart";
+import { useStoreBranch } from "@/entities/delivery";
 import {
   deliveryApi,
   type DeliveryCalculateResponse,
@@ -36,11 +33,17 @@ import {
 import { orderApi, type OrderCreateRequest, type OrderCreateResponse } from "@/entities/order";
 import { paymentApi, type PaymentCreateResponse } from "@/entities/payment";
 import type { AddressListResponse, AddressResponse } from "@/entities/profile";
-import { userApi, type UserMeResponse } from "@/entities/user";
-import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@/shared/lib/format/phone";
 import { useDynamicStoreInfo } from "@/entities/settings";
+import { userApi, type UserMeResponse } from "@/entities/user";
+import { apiClient, extractErrorMessage } from "@/shared/api";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
+import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { toPriceFormat } from "@/shared/lib/format";
+import {
+  formatPhoneMask,
+  handlePhoneInputChange,
+  normalizePhoneNumber,
+} from "@/shared/lib/format/phone";
 import { Button, Container } from "@/shared/ui";
 import { PhoneVerificationModal } from "@/widgets/profile/ui/PhoneVerificationModal";
 
@@ -138,14 +141,16 @@ export const CheckoutView = ({
   const [intercom, setIntercom] = useState("");
   const [leaveAtDoor, setLeaveAtDoor] = useState(false);
   const [dontRingDoorbell, setDontRingDoorbell] = useState(false);
-  const [substitutionPolicy, setSubstitutionPolicy] = useState<"call" | "replace" | "remove">("call");
+  const [substitutionPolicy, setSubstitutionPolicy] = useState<"call" | "replace" | "remove">(
+    "call",
+  );
   const [selectedAddressId, setSelectedAddressId] = useState(defaultAddress?.id ?? null);
-  const [activeCalculation, setActiveCalculation] = useState<DeliveryCalculateResponse>(deliveryCalculation);
+  const [activeCalculation, setActiveCalculation] =
+    useState<DeliveryCalculateResponse>(deliveryCalculation);
 
   useEffect(() => {
     setActiveCalculation(deliveryCalculation);
   }, [deliveryCalculation]);
-
 
   const [selectedPickupPointId, setSelectedPickupPointId] = useState(
     defaultPickupPoint?.id ?? null,
@@ -161,14 +166,7 @@ export const CheckoutView = ({
   const [isPending, startTransition] = useTransition();
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
-  const [idempotencyKey] = useState(() => {
-    if (typeof window !== "undefined" && window.crypto?.randomUUID) {
-      return window.crypto.randomUUID();
-    }
-    return `ord_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-  });
-
-
+  const orderRequestRef = useRef<{ key: string; payload: string } | null>(null);
 
   const selectedAddress = useMemo(() => {
     return addresses.items.find((address) => address.id === selectedAddressId) ?? defaultAddress;
@@ -176,7 +174,12 @@ export const CheckoutView = ({
 
   useEffect(() => {
     let isActive = true;
-    if (deliveryType === "delivery" && selectedAddress && !isRepricing && Number(summary.final_price) >= Number(deliveryOptions.delivery.min_order_amount || 0)) {
+    if (
+      deliveryType === "delivery" &&
+      selectedAddress &&
+      !isRepricing &&
+      Number(summary.final_price) >= Number(deliveryOptions.delivery.min_order_amount || 0)
+    ) {
       const cartAmount = summary.final_price || summary.subtotal || 0;
       deliveryApi
         .calculate({
@@ -193,9 +196,17 @@ export const CheckoutView = ({
         })
         .catch(() => {});
     }
-    return () => { isActive = false; };
-  }, [selectedAddress, deliveryType, summary.final_price, summary.subtotal, deliveryOptions.delivery.min_order_amount, isRepricing]);
-
+    return () => {
+      isActive = false;
+    };
+  }, [
+    selectedAddress,
+    deliveryType,
+    summary.final_price,
+    summary.subtotal,
+    deliveryOptions.delivery.min_order_amount,
+    isRepricing,
+  ]);
 
   useEffect(() => {
     if (selectedStore && pickupPoints.items.some((point) => point.id === selectedStore.id)) {
@@ -289,40 +300,51 @@ export const CheckoutView = ({
 
   const itemsCount = cart.items.filter((item) => item.is_available).length;
   const itemsTotal = Number(summary.final_price || summary.subtotal || 0);
-  const freeFrom = Number(activeCalculation?.free_delivery_from ?? deliveryOptions?.delivery?.free_from_amount ?? 3000);
+  const freeFrom = Number(
+    activeCalculation?.free_delivery_from ?? deliveryOptions?.delivery?.free_from_amount ?? 3000,
+  );
   const isFreeDelivery = freeFrom > 0 && itemsTotal >= freeFrom;
 
-  const deliveryPrice = deliveryType === "pickup" ? "0" : (
-    isFreeDelivery ? "0" : (
-      (activeCalculation.delivery_price && activeCalculation.delivery_price !== "0")
-        ? activeCalculation.delivery_price
-        : (deliveryOptions.delivery.base_price ?? "199.00")
-    )
+  const deliveryPrice =
+    deliveryType === "pickup"
+      ? "0"
+      : isFreeDelivery
+        ? "0"
+        : activeCalculation.delivery_price && activeCalculation.delivery_price !== "0"
+          ? activeCalculation.delivery_price
+          : (deliveryOptions.delivery.base_price ?? "199.00");
+  const minOrderAmount = Number(
+    activeCalculation.min_order_amount || deliveryOptions.delivery.min_order_amount || 1000,
   );
-  const minOrderAmount = Number(activeCalculation.min_order_amount || deliveryOptions.delivery.min_order_amount || 1000);
-  const isMinOrderMet = itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
+  const isMinOrderMet =
+    itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
-  const isStep1Done = Boolean(contact.name.trim().length >= 2 && normalizePhoneNumber(contact.phone).length >= 11);
+  const isStep1Done = Boolean(
+    contact.name.trim().length >= 2 && normalizePhoneNumber(contact.phone).length >= 11,
+  );
   const isStep2Done = Boolean(deliveryType === "delivery" || deliveryType === "pickup");
-  const isStep3Done = deliveryType === "pickup" ? Boolean(selectedPickupPointId) : Boolean(selectedAddressId);
+  const isStep3Done =
+    deliveryType === "pickup" ? Boolean(selectedPickupPointId) : Boolean(selectedAddressId);
   const isStep4Done = Boolean(
-    selectedDate && (
-      timeMode === "asap" ||
+    selectedDate &&
+    (timeMode === "asap" ||
       (timeMode === "custom" && customTime.trim().length >= 2) ||
-      (timeMode === "slot" && selectedSlotId && selectedSlot?.available)
-    )
+      (timeMode === "slot" && selectedSlotId && selectedSlot?.available)),
   );
   const isStep5Done = Boolean(paymentMethod);
   const isStep6Done = Boolean(order);
 
-  const completedSteps = useMemo(() => ({
-    1: isStep1Done,
-    2: isStep2Done,
-    3: isStep3Done,
-    4: isStep4Done,
-    5: isStep5Done,
-    6: isStep6Done,
-  }), [isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done, isStep6Done]);
+  const completedSteps = useMemo(
+    () => ({
+      1: isStep1Done,
+      2: isStep2Done,
+      3: isStep3Done,
+      4: isStep4Done,
+      5: isStep5Done,
+      6: isStep6Done,
+    }),
+    [isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done, isStep6Done],
+  );
 
   const currentStep = useMemo(() => {
     if (order) return 6;
@@ -360,7 +382,6 @@ export const CheckoutView = ({
     }
     setErrorMessage(null);
 
-
     if (marketingConsent && !currentUser?.marketing_consent) {
       userApi.updateMarketingConsent(true).catch(() => {});
     }
@@ -374,12 +395,16 @@ export const CheckoutView = ({
 
     const resolvedSlotId =
       timeMode === "slot"
-        ? (selectedSlot?.available ? selectedSlot.id : (firstAvailableSlot?.available ? firstAvailableSlot.id : null))
+        ? selectedSlot?.available
+          ? selectedSlot.id
+          : firstAvailableSlot?.available
+            ? firstAvailableSlot.id
+            : null
         : null;
 
     if (timeMode === "slot" && !resolvedSlotId) {
       setErrorMessage(
-        "Выбранный интервал времени недоступен. Пожалуйста, выберите свободный интервал или переключитесь на режим «Как можно скорее» / «Своё время»."
+        "Выбранный интервал времени недоступен. Пожалуйста, выберите свободный интервал или переключитесь на режим «Как можно скорее» / «Своё время».",
       );
       return;
     }
@@ -411,9 +436,11 @@ export const CheckoutView = ({
       intercom: intercom.trim() || null,
     };
 
-    const minAmount = activeCalculation.min_order_amount 
-      ? Number(activeCalculation.min_order_amount) 
-      : (deliveryOptions.delivery.min_order_amount ? Number(deliveryOptions.delivery.min_order_amount) : 0);
+    const minAmount = activeCalculation.min_order_amount
+      ? Number(activeCalculation.min_order_amount)
+      : deliveryOptions.delivery.min_order_amount
+        ? Number(deliveryOptions.delivery.min_order_amount)
+        : 0;
 
     if (minAmount > 0 && Number(summary.final_price) < minAmount) {
       setErrorMessage(`Минимальная сумма заказа для оформления: ${minAmount} ₽.`);
@@ -442,20 +469,58 @@ export const CheckoutView = ({
     }
 
     if (!isMinOrderMet) {
-      setErrorMessage(`Минимальная сумма заказа для доставки — ${minOrderAmount} ₽. Добавьте товаров еще на ${minOrderAmount - itemsTotal} ₽.`);
+      setErrorMessage(
+        `Минимальная сумма заказа для доставки — ${minOrderAmount} ₽. Добавьте товаров еще на ${minOrderAmount - itemsTotal} ₽.`,
+      );
       return;
     }
 
     if (deliveryType === "delivery" && isOutsideKizlyar) {
-      setErrorMessage("К сожалению, по данному адресу доставка не осуществляется. Доступен только самовывоз в г. Кизляр.");
+      setErrorMessage(
+        "К сожалению, по данному адресу доставка не осуществляется. Доступен только самовывоз в г. Кизляр.",
+      );
       return;
     }
 
-
-
     startTransition(async () => {
       try {
-        const createdOrder = await orderApi.create(request, idempotencyKey);
+        const payload = JSON.stringify({
+          request,
+          items: cart.items.map((item) => ({
+            id: item.product_id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        });
+        const storageKey = `grocery-pending-order:${contact.phone}:${selectedStore?.id ?? selectedPickupPoint?.id ?? "default"}`;
+        let stored = orderRequestRef.current;
+        try {
+          stored = JSON.parse(sessionStorage.getItem(storageKey) || "null") as typeof stored;
+        } catch {
+          /* Storage may be unavailable. */
+        }
+        const pendingRequest =
+          stored?.payload === payload
+            ? stored
+            : {
+                key:
+                  window.crypto?.randomUUID?.() ??
+                  `ord_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                payload,
+              };
+        orderRequestRef.current = pendingRequest;
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify(pendingRequest));
+        } catch {
+          /* Keep the in-memory key. */
+        }
+        const createdOrder = await orderApi.create(request, pendingRequest.key);
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch {
+          /* The order is already persisted. */
+        }
+        orderRequestRef.current = null;
         setOrder(createdOrder);
         notifyCartChanged({ itemsCount: 0 });
 
@@ -482,13 +547,19 @@ export const CheckoutView = ({
           setErrorMessage("Необходимо подтвердить номер телефона по SMS перед созданием заказа.");
         } else if (err?.data?.items && Array.isArray(err.data.items)) {
           const itemErrors = err.data.items
-            .map((i: { name?: string; reason?: string; available_quantity?: number | string }) => 
-              `${i.name || "Товар"}: ${i.reason || "недоступен"}${i.available_quantity !== undefined ? ` (осталось: ${i.available_quantity})` : ""}`
+            .map(
+              (i: { name?: string; reason?: string; available_quantity?: number | string }) =>
+                `${i.name || "Товар"}: ${i.reason || "недоступен"}${i.available_quantity !== undefined ? ` (осталось: ${i.available_quantity})` : ""}`,
             )
             .join(", ");
           setErrorMessage(`Некоторые позиции не могут быть заказаны: ${itemErrors}`);
         } else {
-          setErrorMessage(extractErrorMessage(err, "Не удалось создать заказ. Проверьте данные и попробуйте еще раз."));
+          setErrorMessage(
+            extractErrorMessage(
+              err,
+              "Не удалось создать заказ. Проверьте данные и попробуйте еще раз.",
+            ),
+          );
         }
       }
     });
@@ -512,13 +583,20 @@ export const CheckoutView = ({
         <h1 className="text-text-primary mb-7 text-4xl font-bold md:text-5xl">Оформление заказа</h1>
 
         {isMaintenance ? (
-          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 font-semibold text-amber-900 text-sm flex items-center gap-3">
-            <AlertCircle className="text-amber-600 shrink-0" size={20} />
-            <span>{statusText || "Магазин закрыт на техническое обслуживание"}. Оформление заказов временно приостановлено.</span>
+          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm font-semibold text-amber-900">
+            <AlertCircle className="shrink-0 text-amber-600" size={20} />
+            <span>
+              {statusText || "Магазин закрыт на техническое обслуживание"}. Оформление заказов
+              временно приостановлено.
+            </span>
           </div>
         ) : null}
 
-        <CheckoutSteps currentStep={currentStep} completedSteps={completedSteps} onStepClick={handleScrollToStep} />
+        <CheckoutSteps
+          currentStep={currentStep}
+          completedSteps={completedSteps}
+          onStepClick={handleScrollToStep}
+        />
 
         {errorMessage ? (
           <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -591,152 +669,175 @@ export const CheckoutView = ({
             >
               {deliveryType === "delivery" ? (
                 <>
-                <AddressSelector
-                  addresses={addresses.items}
-                  selectedAddressId={selectedAddressId}
-                  onSelect={setSelectedAddressId}
-                />
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-4">
-                  <h4 className="text-xs font-bold text-slate-800">Пожелания к доставке и сборке</h4>
-                  <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Кв. / Офис</label>
-                      <input
-                        className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
-                        placeholder="12"
-                        value={apartment}
-                        onChange={(e) => setApartment(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Подъезд</label>
-                      <input
-                        className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
-                        placeholder="1"
-                        value={entrance}
-                        onChange={(e) => setEntrance(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Этаж</label>
-                      <input
-                        className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
-                        placeholder="3"
-                        value={floor}
-                        onChange={(e) => setFloor(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Домофон</label>
-                      <input
-                        className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
-                        placeholder="12К"
-                        value={intercom}
-                        onChange={(e) => setIntercom(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-6 pt-4 pb-1">
-                    <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        className="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
-                        checked={leaveAtDoor}
-                        onChange={(e) => setLeaveAtDoor(e.target.checked)}
-                      />
-                      <span>Оставить заказ у двери</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        className="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
-                        checked={dontRingDoorbell}
-                        onChange={(e) => setDontRingDoorbell(e.target.checked)}
-                      />
-                      <span>Не звонить в звонок (спит ребёнок)</span>
-                    </label>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100">
-                    <label className="block text-xs font-bold text-slate-800 mb-3">
-                      Если товара не окажется на складе:
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { value: "call", label: "Позвонить и согласовать" },
-                        { value: "replace", label: "Заменить на свежий" },
-                        { value: "remove", label: "Убрать из заказа" },
-                      ].map((p) => (
-                        <button
-                          key={p.value}
-                          type="button"
-                          onClick={() => setSubstitutionPolicy(p.value as any)}
-                          className={`rounded-xl px-3 py-1.5 text-xs font-bold transition border ${
-                            substitutionPolicy === p.value
-                              ? "bg-emerald-600 text-white border-emerald-600"
-                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Зона и стоимость доставки по Кизляру (Интегрировано в шаг 3) */}
-                <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4.5 shadow-2xs space-y-2">
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex size-8 items-center justify-center rounded-xl bg-emerald-600 text-white shrink-0">
-                        <Truck size={16} />
-                      </span>
+                  <AddressSelector
+                    addresses={addresses.items}
+                    selectedAddressId={selectedAddressId}
+                    onSelect={setSelectedAddressId}
+                  />
+                  <div className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <h4 className="text-xs font-bold text-slate-800">
+                      Пожелания к доставке и сборке
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                       <div>
-                        <p className="text-xs font-bold text-slate-800">
-                          Зона доставки: {isOutsideKizlyar ? "Вне зоны курьерской доставки" : (activeCalculation.zone?.name || "Кизляр — Центральный")}
-                        </p>
-                        <p className="text-[11px] text-slate-500">
-                          {isOutsideKizlyar 
-                            ? "Курьерская доставка действует по г. Кизляр и пригородным поселкам" 
-                            : `Тариф доставки: ${deliveryPrice === "0" ? "Бесплатно" : `${deliveryPrice} ₽`} (бесплатно от ${toPriceFormat(activeCalculation.free_delivery_from || 3000)})`}
-                        </p>
+                        <label className="mb-1 block text-[11px] font-semibold text-slate-600">
+                          Кв. / Офис
+                        </label>
+                        <input
+                          className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
+                          placeholder="12"
+                          value={apartment}
+                          onChange={(e) => setApartment(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-slate-600">
+                          Подъезд
+                        </label>
+                        <input
+                          className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
+                          placeholder="1"
+                          value={entrance}
+                          onChange={(e) => setEntrance(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-slate-600">
+                          Этаж
+                        </label>
+                        <input
+                          className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
+                          placeholder="3"
+                          value={floor}
+                          onChange={(e) => setFloor(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-slate-600">
+                          Домофон
+                        </label>
+                        <input
+                          className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
+                          placeholder="12К"
+                          value={intercom}
+                          onChange={(e) => setIntercom(e.target.value)}
+                        />
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className={cn(
-                        "rounded-lg px-2.5 py-1 text-xs font-black",
-                        isOutsideKizlyar ? "bg-rose-100 text-rose-800" : "bg-emerald-100/80 text-emerald-800"
-                      )}>
-                        {isOutsideKizlyar ? "Курьер недоступен" : deliveryPrice === "0" ? "0 ₽ (Бесплатно)" : `${deliveryPrice} ₽`}
-                      </span>
+
+                    <div className="flex flex-wrap gap-6 pt-4 pb-1">
+                      <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-slate-700 select-none">
+                        <input
+                          type="checkbox"
+                          className="size-4 cursor-pointer rounded border-slate-300 text-emerald-600 accent-emerald-600 focus:ring-emerald-500"
+                          checked={leaveAtDoor}
+                          onChange={(e) => setLeaveAtDoor(e.target.checked)}
+                        />
+                        <span>Оставить заказ у двери</span>
+                      </label>
+                      <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-slate-700 select-none">
+                        <input
+                          type="checkbox"
+                          className="size-4 cursor-pointer rounded border-slate-300 text-emerald-600 accent-emerald-600 focus:ring-emerald-500"
+                          checked={dontRingDoorbell}
+                          onChange={(e) => setDontRingDoorbell(e.target.checked)}
+                        />
+                        <span>Не звонить в звонок (спит ребёнок)</span>
+                      </label>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4">
+                      <label className="mb-3 block text-xs font-bold text-slate-800">
+                        Если товара не окажется на складе:
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "call", label: "Позвонить и согласовать" },
+                          { value: "replace", label: "Заменить на свежий" },
+                          { value: "remove", label: "Убрать из заказа" },
+                        ].map((p) => (
+                          <button
+                            key={p.value}
+                            type="button"
+                            onClick={() => setSubstitutionPolicy(p.value as any)}
+                            className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                              substitutionPolicy === p.value
+                                ? "border-emerald-600 bg-emerald-600 text-white"
+                                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {isOutsideKizlyar ? (
-                    <div className="mt-2 rounded-xl bg-rose-50 border border-rose-200/80 p-3.5 text-xs text-rose-800 font-medium">
-                      <div className="flex items-center gap-1.5 font-bold text-rose-900 mb-0.5">
-                        <AlertCircle size={15} className="shrink-0 text-rose-600" />
-                        <span>Адрес за пределами зоны курьерской доставки</span>
+                  {/* Зона и стоимость доставки по Кизляру (Интегрировано в шаг 3) */}
+                  <div className="mt-4 space-y-2 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4.5 shadow-2xs">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                          <Truck size={16} />
+                        </span>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">
+                            Зона доставки:{" "}
+                            {isOutsideKizlyar
+                              ? "Вне зоны курьерской доставки"
+                              : activeCalculation.zone?.name || "Кизляр — Центральный"}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            {isOutsideKizlyar
+                              ? "Курьерская доставка действует по г. Кизляр и пригородным поселкам"
+                              : `Тариф доставки: ${deliveryPrice === "0" ? "Бесплатно" : `${deliveryPrice} ₽`} (бесплатно от ${toPriceFormat(activeCalculation.free_delivery_from || 3000)})`}
+                          </p>
+                        </div>
                       </div>
-                      <p className="leading-relaxed">
-                        По данному адресу курьерская доставка не осуществляется. Вы можете забрать заказ самовывозом из супермаркета в г. Кизляр.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDeliveryType("pickup");
-                          if (!selectedPickupPointId && pickupPoints.items.length > 0) {
-                            if (pickupPoints.items[0]?.id) setSelectedPickupPointId(pickupPoints.items[0].id);
-                          }
-                        }}
-                        className="mt-2.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs"
-                      >
-                        Перейти на самовывоз (Бесплатно)
-                      </button>
+                      <div className="text-right">
+                        <span
+                          className={cn(
+                            "rounded-lg px-2.5 py-1 text-xs font-black",
+                            isOutsideKizlyar
+                              ? "bg-rose-100 text-rose-800"
+                              : "bg-emerald-100/80 text-emerald-800",
+                          )}
+                        >
+                          {isOutsideKizlyar
+                            ? "Курьер недоступен"
+                            : deliveryPrice === "0"
+                              ? "0 ₽ (Бесплатно)"
+                              : `${deliveryPrice} ₽`}
+                        </span>
+                      </div>
                     </div>
-                  ) : null}
-                </div>
+
+                    {isOutsideKizlyar ? (
+                      <div className="mt-2 rounded-xl border border-rose-200/80 bg-rose-50 p-3.5 text-xs font-medium text-rose-800">
+                        <div className="mb-0.5 flex items-center gap-1.5 font-bold text-rose-900">
+                          <AlertCircle size={15} className="shrink-0 text-rose-600" />
+                          <span>Адрес за пределами зоны курьерской доставки</span>
+                        </div>
+                        <p className="leading-relaxed">
+                          По данному адресу курьерская доставка не осуществляется. Вы можете забрать
+                          заказ самовывозом из супермаркета в г. Кизляр.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeliveryType("pickup");
+                            if (!selectedPickupPointId && pickupPoints.items.length > 0) {
+                              if (pickupPoints.items[0]?.id)
+                                setSelectedPickupPointId(pickupPoints.items[0].id);
+                            }
+                          }}
+                          className="mt-2.5 cursor-pointer rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
+                        >
+                          Перейти на самовывоз (Бесплатно)
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </>
               ) : (
                 <PickupSelector
@@ -751,7 +852,11 @@ export const CheckoutView = ({
               )}
             </CheckoutSection>
 
-            <CheckoutSection icon={<Calendar size={24} />} number={4} title="Дата и время получения">
+            <CheckoutSection
+              icon={<Calendar size={24} />}
+              number={4}
+              title="Дата и время получения"
+            >
               <DateAndSlotPicker
                 selectedDate={selectedDate}
                 selectedSlotId={selectedSlotId}
@@ -790,9 +895,9 @@ export const CheckoutView = ({
               </div>
 
               {/* Блок списания бонусов внутри шага оплаты */}
-              <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4.5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4.5 shadow-xs">
                 <div className="flex items-center gap-3">
-                  <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs shrink-0">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
                     <Sparkles size={18} />
                   </span>
                   <div>
@@ -860,7 +965,11 @@ export const CheckoutView = ({
             />
             <CheckoutBenefits
               itemsTotal={itemsTotal}
-              freeFrom={Number(deliveryCalculation.free_delivery_from || deliveryOptions.delivery.free_from_amount || 3000)}
+              freeFrom={Number(
+                deliveryCalculation.free_delivery_from ||
+                  deliveryOptions.delivery.free_from_amount ||
+                  3000,
+              )}
             />
           </aside>
         </form>
@@ -887,8 +996,8 @@ interface CheckoutStepsProps {
 const CheckoutSteps = ({ currentStep, completedSteps, onStepClick }: CheckoutStepsProps) => {
   return (
     <div className="relative mb-2">
-      <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <ol className="flex min-w-[580px] md:min-w-0 md:grid md:grid-cols-6 gap-3 pr-8 md:pr-0">
+      <div className="[scrollbar-width:none] overflow-x-auto pb-2 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <ol className="flex min-w-[580px] gap-3 pr-8 md:grid md:min-w-0 md:grid-cols-6 md:pr-0">
           {steps.map((step, index) => {
             const stepNumber = index + 1;
             const isStepDone = Boolean(completedSteps[stepNumber]);
@@ -897,18 +1006,21 @@ const CheckoutSteps = ({ currentStep, completedSteps, onStepClick }: CheckoutSte
               completedSteps[2] &&
               completedSteps[3] &&
               completedSteps[4] &&
-              completedSteps[5]
+              completedSteps[5],
             );
 
             // Для шагов 1-5: если данные заполнены — показываем галочку
             // Для шага 6 (Проверка): галочка только если заказ уже отправлен, иначе активен если все 1-5 заполнены
             const isCompleted = stepNumber === 6 ? isStepDone : isStepDone;
-            const isCurrent = stepNumber === 6 ? !isStepDone && allPreviousDone : !isStepDone && stepNumber === currentStep;
+            const isCurrent =
+              stepNumber === 6
+                ? !isStepDone && allPreviousDone
+                : !isStepDone && stepNumber === currentStep;
             const isUpcoming = !isCompleted && !isCurrent;
 
             return (
               <li
-                className="relative flex flex-1 items-center gap-2.5 md:block md:text-center shrink-0 cursor-pointer group"
+                className="group relative flex flex-1 shrink-0 cursor-pointer items-center gap-2.5 md:block md:text-center"
                 key={step}
                 onClick={() => onStepClick?.(stepNumber)}
                 role="button"
@@ -922,28 +1034,30 @@ const CheckoutSteps = ({ currentStep, completedSteps, onStepClick }: CheckoutSte
               >
                 <span
                   className={cn(
-                    "relative z-10 grid size-8 md:size-9 mx-auto shrink-0 place-items-center rounded-full border text-xs md:text-sm font-bold transition-all duration-200",
+                    "relative z-10 mx-auto grid size-8 shrink-0 place-items-center rounded-full border text-xs font-bold transition-all duration-200 md:size-9 md:text-sm",
                     isCompleted && "border-emerald-600 bg-emerald-600 text-white shadow-xs",
-                    isCurrent && "border-2 border-emerald-600 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-100 shadow-sm",
-                    isUpcoming && "border-slate-200 bg-slate-100 text-slate-400 group-hover:border-slate-300",
+                    isCurrent &&
+                      "border-2 border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm ring-4 ring-emerald-100",
+                    isUpcoming &&
+                      "border-slate-200 bg-slate-100 text-slate-400 group-hover:border-slate-300",
                   )}
                 >
-                  {isCompleted ? <Check className="size-4 md:size-4.5 stroke-[2.5]" /> : stepNumber}
+                  {isCompleted ? <Check className="size-4 stroke-[2.5] md:size-4.5" /> : stepNumber}
                 </span>
                 {stepNumber < steps.length ? (
                   <span
                     className={cn(
-                      "absolute top-4 left-1/2 hidden h-0.5 w-full md:block transition-colors duration-200",
+                      "absolute top-4 left-1/2 hidden h-0.5 w-full transition-colors duration-200 md:block",
                       isCompleted ? "bg-emerald-500" : "bg-slate-200",
                     )}
                   />
                 ) : null}
                 <p
                   className={cn(
-                    "text-xs md:text-sm leading-tight md:mt-2 truncate max-w-[85px] md:max-w-none transition-colors",
-                    isCompleted && "text-slate-700 font-medium group-hover:text-emerald-700",
-                    isCurrent && "text-emerald-700 font-bold",
-                    isUpcoming && "text-slate-400 font-normal group-hover:text-slate-600",
+                    "max-w-[85px] truncate text-xs leading-tight transition-colors md:mt-2 md:max-w-none md:text-sm",
+                    isCompleted && "font-medium text-slate-700 group-hover:text-emerald-700",
+                    isCurrent && "font-bold text-emerald-700",
+                    isUpcoming && "font-normal text-slate-400 group-hover:text-slate-600",
                   )}
                 >
                   {step}
@@ -970,7 +1084,10 @@ interface CheckoutSectionProps {
 
 const CheckoutSection = ({ children, icon, number, title }: CheckoutSectionProps) => {
   return (
-    <section id={"checkout-step-" + number} className="scroll-mt-24 border-border bg-bg-primary rounded-lg border p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
+    <section
+      id={"checkout-step-" + number}
+      className="border-border bg-bg-primary scroll-mt-24 rounded-lg border p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)]"
+    >
       <h2 className="mb-5 flex items-center gap-3 text-xl font-bold">
         <span className="text-accent-primary">{icon}</span>
         {number}. {title}
@@ -991,7 +1108,16 @@ interface FieldProps {
   onChange: (value: string) => void;
 }
 
-const Field = ({ label, onChange, onFocus, onBlur, placeholder, maxLength, type = "text", value }: FieldProps) => {
+const Field = ({
+  label,
+  onChange,
+  onFocus,
+  onBlur,
+  placeholder,
+  maxLength,
+  type = "text",
+  value,
+}: FieldProps) => {
   return (
     <label className="block">
       <span className="text-text-secondary mb-2 block text-sm">{label}</span>
@@ -1048,7 +1174,6 @@ const ChoiceCard = ({ checked, disabled = false, onClick, text, title }: ChoiceC
   );
 };
 
-
 interface AddressSuggestionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -1077,9 +1202,7 @@ const AddressAutocompleteModal = ({
   if (!isOpen) return null;
 
   const filtered = query.trim()
-    ? COMMON_ADDRESS_SUGGESTIONS.filter((s) =>
-        s.toLowerCase().includes(query.toLowerCase().trim()),
-      )
+    ? COMMON_ADDRESS_SUGGESTIONS.filter((s) => s.toLowerCase().includes(query.toLowerCase().trim()))
     : COMMON_ADDRESS_SUGGESTIONS.slice(0, 5);
 
   const handleSelect = (s: string) => {
@@ -1097,17 +1220,17 @@ const AddressAutocompleteModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150">
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+    <div className="animate-in fade-in-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs duration-150">
+      <div className="animate-in zoom-in-95 relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl duration-150">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
             <MapPin size={18} className="text-emerald-600" />
             Быстрое добавление адреса
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1"
+            className="p-1 text-slate-400 hover:text-slate-600"
           >
             <X size={18} />
           </button>
@@ -1115,7 +1238,7 @@ const AddressAutocompleteModal = ({
 
         <form onSubmit={handleSave} className="space-y-4">
           <div className="relative">
-            <label className="block text-xs font-bold text-slate-600 mb-1">
+            <label className="mb-1 block text-xs font-bold text-slate-600">
               Улица и номер дома (начните вводить):
             </label>
             <input
@@ -1130,14 +1253,14 @@ const AddressAutocompleteModal = ({
             />
 
             {isFocused && filtered.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-20 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+              <div className="absolute top-full right-0 left-0 z-20 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
                 <div className="p-1">
                   {filtered.map((s) => (
                     <button
                       key={s}
                       type="button"
                       onMouseDown={() => handleSelect(s)}
-                      className="w-full text-left rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition"
+                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-800"
                     >
                       {s}
                     </button>
@@ -1148,7 +1271,7 @@ const AddressAutocompleteModal = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">
+            <label className="mb-1 block text-xs font-bold text-slate-600">
               Квартира / Офис (необязательно):
             </label>
             <input
@@ -1182,11 +1305,16 @@ interface AddressSelectorProps {
 
 const AddressSelector = ({ addresses, onSelect, selectedAddressId }: AddressSelectorProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [customAddresses, setCustomAddresses] = useState<Array<{ id: number; title: string; city: string }>>([]);
+  const [customAddresses, setCustomAddresses] = useState<
+    Array<{ id: number; title: string; city: string }>
+  >([]);
 
   const handleAddCustom = (fullAddress: string) => {
     const newId = Date.now();
-    setCustomAddresses((prev) => [...prev, { id: newId, title: fullAddress, city: STORE_INFO.city }]);
+    setCustomAddresses((prev) => [
+      ...prev,
+      { id: newId, title: fullAddress, city: STORE_INFO.city },
+    ]);
     onSelect(newId);
   };
 
@@ -1214,14 +1342,17 @@ const AddressSelector = ({ addresses, onSelect, selectedAddressId }: AddressSele
       </div>
       <div className="flex flex-col gap-2">
         <Button
-          className="self-start w-full text-xs font-bold"
+          className="w-full self-start text-xs font-bold"
           variant="secondary"
           type="button"
           onClick={() => setIsModalOpen(true)}
         >
           + Быстрый адрес
         </Button>
-        <Link href={ROUTES.PROFILE_ADDRESSES} className="text-[11px] text-slate-400 hover:text-emerald-700 text-center">
+        <Link
+          href={ROUTES.PROFILE_ADDRESSES}
+          className="text-center text-[11px] text-slate-400 hover:text-emerald-700"
+        >
           Управление адресами
         </Link>
       </div>
@@ -1304,20 +1435,13 @@ const DateAndSlotPicker = ({
     return { ...slot, available };
   });
 
-  const quickCustomTimes = [
-    "к 18:30",
-    "к 19:00",
-    "к 19:30",
-    "к 20:00",
-    "после 20:00",
-    "к 21:00",
-  ];
+  const quickCustomTimes = ["к 18:30", "к 19:00", "к 19:30", "к 20:00", "после 20:00", "к 21:00"];
 
   return (
     <div className="space-y-5">
       {/* 1. Выбор дня */}
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-2">
+        <label className="mb-2 block text-xs font-bold text-slate-700">
           1. Дата получения заказа:
         </label>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -1326,9 +1450,9 @@ const DateAndSlotPicker = ({
             return (
               <button
                 className={cn(
-                  "flex h-13 min-w-28 flex-col items-center justify-center rounded-xl border px-4 transition-all active:scale-98 cursor-pointer",
+                  "flex h-13 min-w-28 cursor-pointer flex-col items-center justify-center rounded-xl border px-4 transition-all active:scale-98",
                   isSelected
-                    ? "border-emerald-600 bg-emerald-50 text-emerald-800 font-bold shadow-xs ring-2 ring-emerald-600/20"
+                    ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-800 shadow-xs ring-2 ring-emerald-600/20"
                     : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                 )}
                 type="button"
@@ -1345,22 +1469,22 @@ const DateAndSlotPicker = ({
 
       {/* 2. Формат времени доставки */}
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-2">
+        <label className="mb-2 block text-xs font-bold text-slate-700">
           2. Предпочтение по времени доставки:
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
           {/* Режим: Как можно скорее */}
           <button
             type="button"
             onClick={() => onTimeModeChange("asap")}
             className={cn(
-              "flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98 cursor-pointer",
+              "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98",
               timeMode === "asap"
-                ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20 font-bold shadow-2xs"
+                ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-900 shadow-2xs ring-2 ring-emerald-600/20"
                 : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
             )}
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white text-sm">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-sm text-white">
               ⚡
             </span>
             <div>
@@ -1374,13 +1498,13 @@ const DateAndSlotPicker = ({
             type="button"
             onClick={() => onTimeModeChange("slot")}
             className={cn(
-              "flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98 cursor-pointer",
+              "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98",
               timeMode === "slot"
-                ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20 font-bold shadow-2xs"
+                ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-900 shadow-2xs ring-2 ring-emerald-600/20"
                 : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
             )}
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 text-sm">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-700">
               🕒
             </span>
             <div>
@@ -1394,13 +1518,13 @@ const DateAndSlotPicker = ({
             type="button"
             onClick={() => onTimeModeChange("custom")}
             className={cn(
-              "flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98 cursor-pointer",
+              "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98",
               timeMode === "custom"
-                ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/20 font-bold shadow-2xs"
+                ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-900 shadow-2xs ring-2 ring-emerald-600/20"
                 : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
             )}
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 text-sm">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-700">
               ✏️
             </span>
             <div>
@@ -1414,13 +1538,16 @@ const DateAndSlotPicker = ({
       {/* 3. Детали выбранного режима */}
       {timeMode === "slot" && (
         <div className="pt-1">
-          <label className="block text-xs font-bold text-slate-700 mb-2">
+          <label className="mb-2 block text-xs font-bold text-slate-700">
             Выберите доступный интервал:
           </label>
           {isLoading ? (
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-11 animate-pulse rounded-xl bg-slate-100 border border-slate-200/60" />
+                <div
+                  key={i}
+                  className="h-11 animate-pulse rounded-xl border border-slate-200/60 bg-slate-100"
+                />
               ))}
             </div>
           ) : processedSlots.length === 0 ? (
@@ -1440,8 +1567,8 @@ const DateAndSlotPicker = ({
                       isSelected && slot.available
                         ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
                         : slot.available
-                          ? "border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30 cursor-pointer"
-                          : "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed line-through opacity-60",
+                          ? "cursor-pointer border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30"
+                          : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 line-through opacity-60",
                     )}
                     type="button"
                     disabled={!slot.available}
@@ -1454,16 +1581,21 @@ const DateAndSlotPicker = ({
               })}
             </div>
           )}
-          {!isLoading && isToday && processedSlots.length > 0 && processedSlots.every((s) => !s.available) ? (
-            <p className="mt-2.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/70 rounded-xl p-3">
-              🕒 Все стандартные интервалы на сегодня завершены. Выберите режим <strong>«Как можно скорее»</strong>, укажите <strong>«Своё точное время»</strong> или получение на завтра.
+          {!isLoading &&
+          isToday &&
+          processedSlots.length > 0 &&
+          processedSlots.every((s) => !s.available) ? (
+            <p className="mt-2.5 rounded-xl border border-amber-200/70 bg-amber-50 p-3 text-xs font-semibold text-amber-700">
+              🕒 Все стандартные интервалы на сегодня завершены. Выберите режим{" "}
+              <strong>«Как можно скорее»</strong>, укажите <strong>«Своё точное время»</strong> или
+              получение на завтра.
             </p>
           ) : null}
         </div>
       )}
 
       {timeMode === "custom" && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
           <label className="block text-xs font-bold text-slate-800">
             {deliveryType === "pickup"
               ? "В какое время вам удобно забрать заказ из пункта выдачи?"
@@ -1474,18 +1606,18 @@ const DateAndSlotPicker = ({
             value={customTime}
             onChange={(e) => onCustomTimeChange(e.target.value)}
             placeholder="Например: к 19:30, после 20:00 или с 18:00 до 19:00"
-            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
           />
           <div>
-            <span className="text-[11px] font-semibold text-slate-500 mr-2">Быстрый выбор:</span>
-            <div className="inline-flex flex-wrap gap-1.5 mt-1.5">
+            <span className="mr-2 text-[11px] font-semibold text-slate-500">Быстрый выбор:</span>
+            <div className="mt-1.5 inline-flex flex-wrap gap-1.5">
               {quickCustomTimes.map((t) => (
                 <button
                   type="button"
                   key={t}
                   onClick={() => onCustomTimeChange(t)}
                   className={cn(
-                    "rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer",
+                    "cursor-pointer rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition",
                     customTime === t
                       ? "border-emerald-600 bg-emerald-600 text-white"
                       : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
@@ -1500,10 +1632,11 @@ const DateAndSlotPicker = ({
       )}
 
       {timeMode === "asap" && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs text-emerald-900 flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs text-emerald-900">
           <span className="text-base">🚀</span>
           <p className="leading-relaxed">
-            Курьер доставит заказ <strong>в течение 60–90 минут</strong> после сборки. Наш оператор сразу передаст заказ на сборку в супермаркет.
+            Курьер доставит заказ <strong>в течение 60–90 минут</strong> после сборки. Наш оператор
+            сразу передаст заказ на сборку в супермаркет.
           </p>
         </div>
       )}
@@ -1518,17 +1651,28 @@ interface ReviewListProps {
 const ReviewList = ({ items }: ReviewListProps) => (
   <div className="divide-y divide-slate-100">
     {items.map((item) => (
-      <div key={item.id} className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] items-start gap-3 py-3 first:pt-0 last:pb-0 sm:grid-cols-[56px_minmax(0,1fr)_auto]">
+      <div
+        key={item.id}
+        className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] items-start gap-3 py-3 first:pt-0 last:pb-0 sm:grid-cols-[56px_minmax(0,1fr)_auto]"
+      >
         <ProductThumb item={item} size={48} />
         <div className="min-w-0">
-          <p className="break-words text-sm font-bold leading-snug">{item.name}</p>
+          <p className="text-sm leading-snug font-bold break-words">{item.name}</p>
           <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs text-slate-500">
-            <span>{formatQuantity(item.quantity)} {item.unit} × {toPriceFormat(item.price)}</span>
-            <span className="font-bold text-slate-900 sm:hidden">{item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии"}</span>
+            <span>
+              {formatQuantity(item.quantity)} {item.unit} × {toPriceFormat(item.price)}
+            </span>
+            <span className="font-bold text-slate-900 sm:hidden">
+              {item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии"}
+            </span>
           </div>
-          {!item.is_available && <p className="mt-1 text-xs text-rose-600">Не включён в заказ и сумму оплаты</p>}
+          {!item.is_available && (
+            <p className="mt-1 text-xs text-rose-600">Не включён в заказ и сумму оплаты</p>
+          )}
         </div>
-        <span className="hidden text-right text-sm font-bold sm:block">{item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии"}</span>
+        <span className="hidden text-right text-sm font-bold sm:block">
+          {item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии"}
+        </span>
       </div>
     ))}
   </div>
@@ -1573,33 +1717,40 @@ const OrderSummary = ({
   const finalWithDelivery = Number(summary.final_price) + Number(deliveryPrice);
   const freeFrom = Number(deliveryCalculation.free_delivery_from || 3000);
   const amountLeft = Math.max(0, freeFrom - itemsTotal);
-  const isMinOrderMet = itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
+  const isMinOrderMet =
+    itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
   return (
     <section className="border-border bg-bg-primary rounded-2xl border p-5 shadow-[0_14px_40px_rgb(20_28_18/0.08)]">
       <h2 className="mb-5 text-xl font-bold text-slate-900">Ваш заказ</h2>
 
       {itemsCount === 0 ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-xs font-semibold text-rose-800 space-y-2">
-          <p className="font-bold text-sm">{cart.items.length ? "Нет доступных товаров" : "Корзина пуста"}</p>
-          <p className="text-slate-600 font-normal">{cart.items.length ? "Товары закончились в выбранном магазине и не включены в сумму оплаты." : "Добавьте товары из каталога для оформления заказа."}</p>
+        <div className="space-y-2 rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-xs font-semibold text-rose-800">
+          <p className="text-sm font-bold">
+            {cart.items.length ? "Нет доступных товаров" : "Корзина пуста"}
+          </p>
+          <p className="font-normal text-slate-600">
+            {cart.items.length
+              ? "Товары закончились в выбранном магазине и не включены в сумму оплаты."
+              : "Добавьте товары из каталога для оформления заказа."}
+          </p>
           <Link
             href={ROUTES.CATALOG}
-            className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition cursor-pointer"
+            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
           >
             Перейти в каталог
           </Link>
         </div>
       ) : (
-        <div className="space-y-4 max-h-[280px] overflow-y-auto pr-1">
+        <div className="max-h-[280px] space-y-4 overflow-y-auto pr-1">
           {cart.items.map((item) => (
             <div
-              className="grid grid-cols-[48px_minmax(0,1fr)] sm:grid-cols-[56px_minmax(0,1fr)_75px] items-center gap-3"
+              className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[56px_minmax(0,1fr)_75px]"
               key={item.id}
             >
               <ProductThumb item={item} size={56} />
               <div className="min-w-0">
-                <p className="truncate font-bold text-xs sm:text-sm">{item.name}</p>
+                <p className="truncate text-xs font-bold sm:text-sm">{item.name}</p>
                 <p className="text-text-secondary text-xs">
                   {formatQuantity(item.quantity)} {item.unit}
                 </p>
@@ -1607,7 +1758,9 @@ const OrderSummary = ({
                   {toPriceFormat(item.price)} x {formatQuantity(item.quantity)}
                 </p>
               </div>
-              <span className="col-start-2 text-right font-bold text-xs sm:col-start-auto sm:text-sm">{item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии · не в сумме"}</span>
+              <span className="col-start-2 text-right text-xs font-bold sm:col-start-auto sm:text-sm">
+                {item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии · не в сумме"}
+              </span>
             </div>
           ))}
         </div>
@@ -1632,45 +1785,57 @@ const OrderSummary = ({
             danger
           />
         ) : null}
-        <SummaryLine 
-          label="Доставка" 
-          value={deliveryPrice === "0" ? "Бесплатно" : toPriceFormat(deliveryPrice)} 
+        <SummaryLine
+          label="Доставка"
+          value={deliveryPrice === "0" ? "Бесплатно" : toPriceFormat(deliveryPrice)}
         />
       </div>
 
       <div className="mt-4 flex items-end justify-between gap-4">
         <span className="text-xl font-bold">Итого</span>
-        <span className="text-3xl font-black text-slate-900">{toPriceFormat(finalWithDelivery)}</span>
+        <span className="text-3xl font-black text-slate-900">
+          {toPriceFormat(finalWithDelivery)}
+        </span>
       </div>
 
       {deliveryType === "delivery" && itemsTotal < minOrderAmount ? (
-        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950 font-medium">
-          <div className="flex items-center gap-1.5 font-bold mb-1 text-amber-900">
-            <AlertCircle size={15} className="text-amber-600 shrink-0" />
+        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs font-medium text-amber-950">
+          <div className="mb-1 flex items-center gap-1.5 font-bold text-amber-900">
+            <AlertCircle size={15} className="shrink-0 text-amber-600" />
             <span>Минимальная сумма для доставки — {toPriceFormat(minOrderAmount)}</span>
           </div>
-          <p className="leading-relaxed text-[11px] text-amber-800">
-            В корзине на <strong className="font-bold">{toPriceFormat(itemsTotal)}</strong>. Не хватает{" "}
-            <strong className="font-bold text-emerald-800">{toPriceFormat(minOrderAmount - itemsTotal)}</strong>.
+          <p className="text-[11px] leading-relaxed text-amber-800">
+            В корзине на <strong className="font-bold">{toPriceFormat(itemsTotal)}</strong>. Не
+            хватает{" "}
+            <strong className="font-bold text-emerald-800">
+              {toPriceFormat(minOrderAmount - itemsTotal)}
+            </strong>
+            .
           </p>
-          <Link href={ROUTES.CATALOG} className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline">
+          <Link
+            href={ROUTES.CATALOG}
+            className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
+          >
             Добавить товары из каталога →
           </Link>
         </div>
       ) : null}
 
       <Button
-        className="mt-5 h-14 w-full text-base font-bold shadow-md shadow-emerald-700/20 cursor-pointer"
+        className="mt-5 h-14 w-full cursor-pointer text-base font-bold shadow-md shadow-emerald-700/20"
         type="submit"
         disabled={
-          isRepricing || isPending ||
+          isRepricing ||
+          isPending ||
           isMaintenance ||
-          itemsCount === 0 || 
+          itemsCount === 0 ||
           !isMinOrderMet ||
           Boolean(order)
         }
       >
-        {isRepricing ? "Пересчитываем корзину…" : isPending ? (
+        {isRepricing ? (
+          "Пересчитываем корзину…"
+        ) : isPending ? (
           <span className="flex items-center justify-center gap-2">
             <Loader2 className="animate-spin" size={18} />
             <span>Создание заказа...</span>
@@ -1687,10 +1852,13 @@ const OrderSummary = ({
       </Button>
 
       {order ? (
-        <div className="bg-emerald-50 border border-emerald-200 mt-4 rounded-xl p-3.5 text-xs text-emerald-900">
+        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-900">
           <p className="font-bold">Заказ № {order.order_number} успешно оформлен!</p>
           {payment?.payment_url ? (
-            <a className="text-emerald-700 mt-1.5 block font-bold underline hover:text-emerald-800" href={payment.payment_url}>
+            <a
+              className="mt-1.5 block font-bold text-emerald-700 underline hover:text-emerald-800"
+              href={payment.payment_url}
+            >
               Перейти к оплате онлайн →
             </a>
           ) : null}
@@ -1699,18 +1867,18 @@ const OrderSummary = ({
 
       {/* Прогресс-бар бесплатной доставки */}
       {freeFrom > 0 && deliveryType === "delivery" ? (
-        <div className="bg-emerald-50/60 border border-emerald-100 mt-4 rounded-xl p-3 text-xs">
+        <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 text-xs">
           <div className="mb-1.5 flex items-center justify-between text-slate-700">
-            <span className="font-semibold text-[11px]">
+            <span className="text-[11px] font-semibold">
               {amountLeft === 0 ? "Бесплатная доставка активна! 🎉" : "До бесплатной доставки:"}
             </span>
-            <span className="font-black text-emerald-800 text-[11px]">
+            <span className="text-[11px] font-black text-emerald-800">
               {amountLeft === 0 ? "0 ₽" : toPriceFormat(amountLeft)}
             </span>
           </div>
-          <div className="bg-emerald-200/50 h-1.5 overflow-hidden rounded-full">
+          <div className="h-1.5 overflow-hidden rounded-full bg-emerald-200/50">
             <div
-              className="bg-emerald-600 h-full rounded-full transition-all duration-300"
+              className="h-full rounded-full bg-emerald-600 transition-all duration-300"
               style={{
                 width: `${Math.min(100, Math.max(5, (itemsTotal / freeFrom) * 100))}%`,
               }}
@@ -1722,15 +1890,27 @@ const OrderSummary = ({
       {/* Юридический комплаенс 152-ФЗ без единого принудительного чекбокса */}
       <p className="mt-3.5 text-center text-[11px] leading-relaxed text-slate-500">
         Нажимая «Создать заказ», вы соглашаетесь с условиями{" "}
-        <Link className="text-emerald-700 font-semibold hover:underline" href={ROUTES.OFFER} target="_blank">
+        <Link
+          className="font-semibold text-emerald-700 hover:underline"
+          href={ROUTES.OFFER}
+          target="_blank"
+        >
           Публичной оферты
         </Link>{" "}
         и даете{" "}
-        <Link className="text-emerald-700 font-semibold hover:underline" href={ROUTES.PERSONAL_DATA_CONSENT} target="_blank">
+        <Link
+          className="font-semibold text-emerald-700 hover:underline"
+          href={ROUTES.PERSONAL_DATA_CONSENT}
+          target="_blank"
+        >
           Согласие на обработку персональных данных
         </Link>{" "}
         в соответствии с{" "}
-        <Link className="text-emerald-700 font-semibold hover:underline" href={ROUTES.PRIVACY} target="_blank">
+        <Link
+          className="font-semibold text-emerald-700 hover:underline"
+          href={ROUTES.PRIVACY}
+          target="_blank"
+        >
           Политикой конфиденциальности
         </Link>
         .
@@ -1738,7 +1918,7 @@ const OrderSummary = ({
 
       {/* Опциональное согласие на маркетинговые рассылки (38-ФЗ) */}
       {!currentUser?.marketing_consent ? (
-        <label className="mt-3 flex items-start gap-2.5 text-[11px] text-slate-600 cursor-pointer select-none">
+        <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-[11px] text-slate-600 select-none">
           <input
             type="checkbox"
             checked={marketingConsent}
@@ -1778,20 +1958,18 @@ const CheckoutBenefits = ({ itemsTotal, freeFrom }: CheckoutBenefitsProps) => {
 
   return (
     <section className="border-border bg-bg-primary divide-border overflow-hidden rounded-2xl border shadow-[0_12px_34px_rgb(20_28_18/0.05)]">
-      <div className="flex items-start gap-4 p-5 bg-gradient-to-r from-emerald-50/70 to-teal-50/40">
-        <span className="text-emerald-600 shrink-0">
+      <div className="flex items-start gap-4 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 p-5">
+        <span className="shrink-0 text-emerald-600">
           <Truck size={24} />
         </span>
         <div>
-          <p className="font-bold text-slate-900 text-sm">
+          <p className="text-sm font-bold text-slate-900">
             {isFree ? "Бесплатная доставка активна! 🎉" : "До бесплатной доставки"}
           </p>
           {isFree ? (
-            <p className="text-slate-600 mt-1 text-xs">
-              Ваш заказ доставляется курьером за 0 ₽
-            </p>
+            <p className="mt-1 text-xs text-slate-600">Ваш заказ доставляется курьером за 0 ₽</p>
           ) : (
-            <p className="text-slate-600 mt-1 text-xs">
+            <p className="mt-1 text-xs text-slate-600">
               Не хватает {toPriceFormat(amountLeft)} ·{" "}
               <Link href={ROUTES.CATALOG} className="font-bold text-emerald-700 hover:underline">
                 Вернуться в каталог
@@ -1847,8 +2025,13 @@ const ProductThumb = ({ item, size = 56 }: ProductThumbProps) => {
 
   return (
     <div
-      className="relative shrink-0 overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 flex items-center justify-center shadow-2xs"
-      style={{ height: `${size}px`, width: `${size}px`, minWidth: `${size}px`, minHeight: `${size}px` }}
+      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs"
+      style={{
+        height: `${size}px`,
+        width: `${size}px`,
+        minWidth: `${size}px`,
+        minHeight: `${size}px`,
+      }}
     >
       {item.preview_image_url && !hasError ? (
         <Image

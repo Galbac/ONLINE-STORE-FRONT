@@ -1,3 +1,5 @@
+import { apiClient, ensureAccessToken } from "@/shared/api/client";
+
 // Web Push & PWA utilities
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -49,9 +51,9 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
   }
 
   try {
-    const permission = Notification.permission === "granted"
-      ? "granted"
-      : await Notification.requestPermission();
+    await ensureAccessToken();
+    const permission =
+      Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
     if (permission !== "granted") {
       return { success: false, error: "Доступ к уведомлениям отклонен пользователем" };
     }
@@ -65,12 +67,10 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
 
     if (!subscription) {
       // 1. Получаем публичный VAPID ключ с бэкенда
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const resKey = await fetch(`${apiUrl}/api/notifications/push/vapid-public-key`);
-      if (!resKey.ok) {
-        throw new Error("Не удалось получить открытый ключ VAPID");
-      }
-      const { public_key } = await resKey.json();
+      const { public_key } = await apiClient.get<{ public_key: string }>(
+        "/api/notifications/push/vapid-public-key",
+      );
+      if (!public_key) throw new Error("Уведомления пока недоступны");
 
       // 2. Подписываемся в браузере
       const applicationServerKey = urlBase64ToUint8Array(public_key);
@@ -82,34 +82,26 @@ export async function subscribeToPush(): Promise<{ success: boolean; error?: str
 
     // 3. Отправляем ключи на наш сервер
     const subJson = subscription.toJSON();
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-    const { getStoredAccessToken } = await import("@/shared/ui/auth-guard");
-    const token = getStoredAccessToken();
-    const saveRes = await fetch(`${apiUrl}/api/notifications/push/subscribe`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${decodeURIComponent(token)}` } : {}),
-      },
-      body: JSON.stringify({
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: subJson.keys?.p256dh || "",
-          auth: subJson.keys?.auth || "",
-        },
-        user_agent: navigator.userAgent,
-      }),
+    await apiClient.post("/api/notifications/push/subscribe", {
+      endpoint: subscription.endpoint,
+      keys: { p256dh: subJson.keys?.p256dh || "", auth: subJson.keys?.auth || "" },
+      user_agent: navigator.userAgent,
     });
-
-    if (!saveRes.ok) {
-      throw new Error("Не удалось зарегистрировать подписку на сервере");
-    }
+    const status = await apiClient.get<{ enabled: boolean; is_subscribed: boolean }>(
+      "/api/notifications/push/status",
+      { endpoint: subscription.endpoint },
+    );
+    if (!status.enabled || !status.is_subscribed)
+      throw new Error("Отправка уведомлений пока недоступна. Попробуйте позже.");
 
     window.dispatchEvent(new Event("grocery-push-changed"));
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Push subscribe error:", error);
-    return { success: false, error: error.message || "Ошибка подключения пуш-уведомлений" };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Ошибка подключения уведомлений",
+    };
   }
 }
 
@@ -124,17 +116,29 @@ export async function unsubscribeFromPush(): Promise<boolean> {
       const removed = await subscription.unsubscribe();
       if (!removed) return false;
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      await fetch(`${apiUrl}/api/notifications/push/unsubscribe`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint }),
-      });
+      const { getStoredAccessToken, getStoredRefreshToken } =
+        await import("@/shared/ui/auth-guard");
+      if (getStoredAccessToken() || getStoredRefreshToken())
+        await apiClient.post("/api/notifications/push/unsubscribe", { endpoint });
     }
-    window.dispatchEvent(new Event("grocery-push-changed"));
     return true;
   } catch (error) {
     console.error("Unsubscribe error:", error);
     return false;
+  } finally {
+    window.dispatchEvent(new Event("grocery-push-changed"));
   }
+}
+
+export async function isPushSubscribedForAccount(): Promise<boolean> {
+  const subscription = await getPushSubscription();
+  if (!subscription || Notification.permission !== "granted") return false;
+  const { getStoredAccessToken, getStoredRefreshToken } = await import("@/shared/ui/auth-guard");
+  if (!getStoredAccessToken() && !getStoredRefreshToken()) return false;
+  await ensureAccessToken();
+  const status = await apiClient.get<{ enabled: boolean; is_subscribed: boolean }>(
+    "/api/notifications/push/status",
+    { endpoint: subscription.endpoint },
+  );
+  return status.enabled && status.is_subscribed;
 }

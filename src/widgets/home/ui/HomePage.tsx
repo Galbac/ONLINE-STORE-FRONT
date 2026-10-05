@@ -13,6 +13,8 @@ import {
   Sparkles,
   Wheat,
 } from "lucide-react";
+import { BenefitsSection } from "@/components/home/BenefitsSection";
+import { DeliveryWidgets } from "@/components/home/DeliveryWidgets";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi, type CategoryShortResponse } from "@/entities/category";
 import { deliveryApi, type DeliveryOptionsResponse } from "@/entities/delivery";
@@ -25,8 +27,6 @@ import { ROUTES } from "@/shared/config";
 import { Container, ProductCard, Section } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
-import { BenefitsSection } from "@/components/home/BenefitsSection";
-import { DeliveryWidgets } from "@/components/home/DeliveryWidgets";
 import { QuickRepeatOrderBanner } from "./QuickRepeatOrderBanner";
 
 export const HomePage = async () => {
@@ -66,20 +66,24 @@ export const HomePage = async () => {
     categoryApi.getTree(storeId).catch(() => ({ items: [] })),
     categoryApi.getList(storeId).catch(() => ({ items: [], total: 0, limit: 100, offset: 0 })),
     productApi.getPopular(storeId).catch(() => ({ items: [] })),
-    discountApi.getProducts(storeId !== undefined ? { store_id: storeId } : {}).catch(() => ({ items: [] })),
+    discountApi
+      .getProducts(storeId !== undefined ? { store_id: storeId } : {})
+      .catch(() => ({ items: [] })),
     productApi.getNew(storeId).catch(() => ({ items: [] })),
     discountApi.getActive().catch(() => ({ items: [] })),
     deliveryApi.getOptions().catch(() => defaultDeliveryOptions),
-    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse).catch(() => emptyCartResponse),
+    fallbackOnUnauthorized(cartApi.get(accessToken, storeId), emptyCartResponse).catch(
+      () => emptyCartResponse,
+    ),
     fallbackOnUnauthorized(
-      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken, storeId),
       emptyFavoritesResponse,
     ).catch(() => emptyFavoritesResponse),
     apiClient.get<{ items: any[] }>("/api/banners").catch(() => ({ items: [] })),
   ]);
 
   const visibleCategories: CategoryShortResponse[] =
-    (categories?.items && categories.items.length > 0)
+    categories?.items && categories.items.length > 0
       ? categories.items
       : (categoryTree?.items ?? []);
   const cartProductIds = new Set((cart?.items ?? []).map((item) => item.product_id));
@@ -90,7 +94,12 @@ export const HomePage = async () => {
       <Header />
       <main className="space-y-8 pb-20 md:space-y-12 md:pb-8">
         <Container className="hidden pt-6 md:block">
-          <Hero totalProducts={(categories?.items ?? []).reduce((acc, cat) => acc + (cat.products_count ?? 0), 0)} />
+          <Hero
+            totalProducts={(categories?.items ?? []).reduce(
+              (acc, cat) => acc + (cat.products_count ?? 0),
+              0,
+            )}
+          />
         </Container>
 
         {/* Блок 3 ключевых преимуществ сразу под Hero-баннером */}
@@ -196,7 +205,7 @@ const Hero = ({ totalProducts }: { totalProducts: number }) => {
           <span>100% свежесть</span>
         </div>
 
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight leading-[1.15] sm:mt-6 sm:text-5xl lg:text-6xl">
+        <h1 className="mt-4 text-3xl leading-[1.15] font-extrabold tracking-tight sm:mt-6 sm:text-5xl lg:text-6xl">
           Свежие продукты{" "}
           <span className="bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
             прямо к вашему столу
@@ -269,11 +278,11 @@ const CategorySection = ({ categories }: CategorySectionProps) => {
               key={category.id}
             >
               <span
-                className={`mb-3 flex size-15 items-center justify-center rounded-2xl ${colorClass} transition-transform duration-300 group-hover:scale-110 shadow-xs`}
+                className={`mb-3 flex size-15 items-center justify-center rounded-2xl ${colorClass} shadow-xs transition-transform duration-300 group-hover:scale-110`}
               >
                 <Icon size={28} />
               </span>
-              <span className="line-clamp-2 text-xs font-bold text-slate-800 transition-colors group-hover:text-emerald-700 leading-tight">
+              <span className="line-clamp-2 text-xs leading-tight font-bold text-slate-800 transition-colors group-hover:text-emerald-700">
                 {(category.name ?? "").trim()}
               </span>
               {category.products_count ? (
@@ -289,9 +298,7 @@ const CategorySection = ({ categories }: CategorySectionProps) => {
   );
 };
 
-const getCategoryMeta = (
-  name: string,
-): { Icon: typeof Apple; colorClass: string } => {
+const getCategoryMeta = (name: string): { Icon: typeof Apple; colorClass: string } => {
   const lower = name.toLowerCase();
 
   if (lower.includes("фрукт") || lower.includes("ягод")) {
@@ -338,7 +345,7 @@ const PromoStrip = ({ discounts }: PromoStripProps) => {
             </span>
             <span className="text-2xl font-black text-slate-200">0{index + 1}</span>
           </div>
-          <h2 className="mt-3 text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+          <h2 className="mt-3 text-lg font-bold text-slate-900 transition-colors group-hover:text-emerald-700">
             {discount.name}
           </h2>
           <p className="mt-2 text-xs leading-relaxed text-slate-500">
@@ -384,7 +391,7 @@ const ProductSection = ({
             initialInCart={cartProductIds.has(product.id)}
             cartControl={
               <CatalogCartButton
-                className="w-full h-10 font-bold"
+                className="h-10 w-full font-bold"
                 initialInCart={cartProductIds.has(product.id)}
                 productId={product.id}
                 productName={(product.name ?? "").trim()}
@@ -438,10 +445,10 @@ const PromoBanners = ({ banners }: { banners: BannerItem[] }) => {
                 {b.badge}
               </span>
             ) : null}
-            <h3 className="mt-3 text-xl font-extrabold leading-tight">{b.title}</h3>
+            <h3 className="mt-3 text-xl leading-tight font-extrabold">{b.title}</h3>
             {b.subtitle ? <p className="mt-1 text-xs text-white/80">{b.subtitle}</p> : null}
           </div>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white group-hover:translate-x-1 transition-transform">
+          <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white transition-transform group-hover:translate-x-1">
             Смотреть акцию <ArrowRight size={14} />
           </span>
         </Link>

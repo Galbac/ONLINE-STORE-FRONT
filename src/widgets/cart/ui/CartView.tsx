@@ -19,13 +19,13 @@ import {
   Trash2,
   Truck,
 } from "lucide-react";
-import { apiClient } from "@/shared/api";
 import {
   useCartStore,
   type CartItemResponse,
   type CartResponse,
   type CartSummaryResponse,
 } from "@/entities/cart";
+import { apiClient } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
 import { useIsHydrated } from "@/shared/lib/hooks";
@@ -73,8 +73,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
     } else {
       void fetchCart();
     }
-  }, [initialCart, initialSummary, setCart,
-    fetchCart, fetchCart]);
+  }, [initialCart, initialSummary, setCart, fetchCart]);
 
   // Fetch delivery options threshold & promo settings
   useEffect(() => {
@@ -129,12 +128,12 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
   };
 
   return (
-    <main className="min-h-[75vh] animate-in fade-in-0 duration-200 bg-slate-50/50 py-6 md:py-10">
+    <main className="animate-in fade-in-0 min-h-[75vh] bg-slate-50/50 py-6 duration-200 md:py-10">
       <Container>
         {/* Хлебные крошки */}
         <nav
           aria-label="Навигация"
-          className="mb-6 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-500"
+          className="mb-6 flex flex-wrap items-center gap-2 text-xs text-slate-500 sm:text-sm"
         >
           <Link className="transition-colors hover:text-emerald-700" href={ROUTES.HOME}>
             Главная
@@ -152,7 +151,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
             <span
               aria-live="polite"
               role="status"
-              className="inline-flex items-center rounded-xl bg-emerald-50 px-3 py-1 text-xs sm:text-sm font-extrabold text-emerald-800 border border-emerald-100"
+              className="inline-flex items-center rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-800 sm:text-sm"
             >
               {summary.items_count} {pluralizeProducts(summary.items_count)}
             </span>
@@ -163,7 +162,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
               type="button"
               disabled={isBusy}
               onClick={() => clearCart()}
-              className="inline-flex min-h-[44px] min-w-[40px] items-center gap-2 text-sm font-semibold text-rose-600 hover:text-rose-700 transition active:scale-95 disabled:opacity-50 cursor-pointer self-start sm:self-auto px-2 py-1"
+              className="inline-flex min-h-[44px] min-w-[40px] cursor-pointer items-center gap-2 self-start px-2 py-1 text-sm font-semibold text-rose-600 transition hover:text-rose-700 active:scale-95 disabled:opacity-50 sm:self-auto"
               aria-label="Очистить корзину полностью"
             >
               <Trash2 size={16} />
@@ -174,7 +173,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
 
         {errorMessage && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm text-rose-800 shadow-xs">
-            <AlertCircle className="size-5 text-rose-600 shrink-0 mt-0.5" />
+            <AlertCircle className="mt-0.5 size-5 shrink-0 text-rose-600" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -207,11 +206,11 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
               {/* Предупреждения по товарам (если есть) */}
               {cart.warnings && cart.warnings.length > 0 && (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-xs">
-                  <p className="mb-2 font-bold text-amber-900 text-sm flex items-center gap-1.5">
+                  <p className="mb-2 flex items-center gap-1.5 text-sm font-bold text-amber-900">
                     <AlertCircle size={16} className="text-amber-600" />
                     Ограничения по заказу:
                   </p>
-                  <ul className="space-y-1.5 text-xs sm:text-sm text-amber-800">
+                  <ul className="space-y-1.5 text-xs text-amber-800 sm:text-sm">
                     {cart.warnings.map((w) => (
                       <li key={w.product_id}>• {w.message}</li>
                     ))}
@@ -225,7 +224,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                   aria-labelledby="promo-heading"
                   className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
                 >
-                  <h2 id="promo-heading" className="text-base font-bold text-slate-900 mb-3">
+                  <h2 id="promo-heading" className="mb-3 text-base font-bold text-slate-900">
                     Промокод на скидку
                   </h2>
 
@@ -237,7 +236,9 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                         </span>
                         <div>
                           <p className="text-xs font-bold text-emerald-950">
-                            Промокод <span className="font-mono font-extrabold">«{appliedPromo}»</span> применён
+                            Промокод{" "}
+                            <span className="font-mono font-extrabold">«{appliedPromo}»</span>{" "}
+                            применён
                           </p>
                           <p className="text-[11px] text-emerald-700">
                             Скидка учтена в итоговой стоимости
@@ -248,14 +249,14 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                         type="button"
                         disabled={isBusy}
                         onClick={handleRemovePromo}
-                        className="inline-flex min-h-[44px] min-w-[40px] items-center justify-center text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline transition px-2 cursor-pointer"
+                        className="inline-flex min-h-[44px] min-w-[40px] cursor-pointer items-center justify-center px-2 text-xs font-semibold text-rose-600 transition hover:text-rose-700 hover:underline"
                         aria-label="Удалить применённый промокод"
                       >
                         Удалить
                       </button>
                     </div>
                   ) : (
-                    <form onSubmit={handleApplyPromo} className="flex flex-col sm:flex-row gap-2.5">
+                    <form onSubmit={handleApplyPromo} className="flex flex-col gap-2.5 sm:flex-row">
                       <div className="relative flex-1">
                         <input
                           type="text"
@@ -263,14 +264,14 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                           onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
                           placeholder="Введите промокод"
                           disabled={isBusy}
-                          className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-semibold tracking-wider placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none transition-colors uppercase"
+                          className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-semibold tracking-wider uppercase transition-colors placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
                           aria-label="Код промокода"
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={isBusy || !promoCodeInput.trim()}
-                        className="inline-flex min-h-[44px] min-w-[40px] items-center justify-center rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition disabled:opacity-50 cursor-pointer"
+                        className="inline-flex min-h-[44px] min-w-[40px] cursor-pointer items-center justify-center rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xs transition hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
                       >
                         Применить
                       </button>
@@ -285,7 +286,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
             </div>
 
             {/* Правая колонка: Sticky Order Summary */}
-            <aside className="xl:sticky xl:top-6 space-y-4">
+            <aside className="space-y-4 xl:sticky xl:top-6">
               <OrderSummaryCard
                 summary={summary}
                 isBusy={isBusy || !hasAvailableItems}
@@ -297,13 +298,13 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
             </aside>
 
             {/* Мобильная плавающая плашка оформления заказа */}
-            <div className="fixed bottom-[calc(56px+var(--sab,0px))] left-0 right-0 z-40 bg-white/95 supports-[backdrop-filter]:bg-white/80 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 shadow-lg flex items-center justify-between gap-3 xl:hidden">
+            <div className="fixed right-0 bottom-[calc(56px+var(--sab,0px))] left-0 z-40 flex items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur-md supports-[backdrop-filter]:bg-white/80 xl:hidden">
               <div className="min-w-0">
-                <p className="text-[11px] font-medium text-slate-500 leading-tight">К оплате:</p>
+                <p className="text-[11px] leading-tight font-medium text-slate-500">К оплате:</p>
                 <p
                   aria-live="polite"
                   aria-atomic="true"
-                  className="text-xl font-black text-slate-900 leading-tight truncate"
+                  className="truncate text-xl leading-tight font-black text-slate-900"
                 >
                   {toPriceFormat(summary.final_price)}
                 </p>
@@ -311,7 +312,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
               <Link
                 href={ROUTES.CHECKOUT}
                 className={cn(
-                  "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-700 active:scale-95 transition shrink-0",
+                  "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 transition hover:bg-emerald-700 active:scale-95",
                   (isBusy || !hasAvailableItems) && "pointer-events-none opacity-50",
                 )}
                 aria-disabled={isBusy || !hasAvailableItems}
@@ -357,9 +358,9 @@ const CartItemCard = ({
       : (quantityStepByType[item.product_type ?? ""] ?? 1);
 
   const isCurrentBusy =
-    pendingAction === 'quantity-' + item.id ||
-    pendingAction === 'delete-' + item.id ||
-    pendingAction === 'fav-' + item.id;
+    pendingAction === "quantity-" + item.id ||
+    pendingAction === "delete-" + item.id ||
+    pendingAction === "fav-" + item.id;
 
   const handleMinus = () => {
     const next = roundQty(quantity - step);
@@ -374,7 +375,7 @@ const CartItemCard = ({
   return (
     <article
       className={cn(
-        "group relative rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs transition-all hover:border-emerald-500/30 hover:shadow-md",
+        "group relative rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs transition-all hover:border-emerald-500/30 hover:shadow-md sm:p-4",
         isCurrentBusy && "opacity-70",
       )}
     >
@@ -382,7 +383,7 @@ const CartItemCard = ({
         {/* Изображение товара */}
         <Link
           href={item.slug ? ROUTES.PRODUCT(item.slug) : ROUTES.CATALOG}
-          className="relative flex size-16 sm:size-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs"
+          className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs sm:size-24"
         >
           {item.preview_image_url ? (
             <Image
@@ -394,7 +395,7 @@ const CartItemCard = ({
               className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
-            <ShoppingBag className="text-emerald-600/70 size-10" />
+            <ShoppingBag className="size-10 text-emerald-600/70" />
           )}
         </Link>
 
@@ -402,15 +403,15 @@ const CartItemCard = ({
         <div className="min-w-0 flex-1">
           <Link
             href={item.slug ? ROUTES.PRODUCT(item.slug) : ROUTES.CATALOG}
-            className="line-clamp-2 text-sm sm:text-base font-bold text-slate-900 hover:text-emerald-700 transition leading-snug"
+            className="line-clamp-2 text-sm leading-snug font-bold text-slate-900 transition hover:text-emerald-700 sm:text-base"
           >
             {item.name}
           </Link>
 
           <div className="mt-1.5 flex flex-wrap items-baseline gap-2">
-            <span className="text-xs sm:text-sm font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-slate-600 sm:text-sm">
               {toPriceFormat(item.price)}
-              <span className="text-slate-400 font-normal ml-1">/ {item.unit}</span>
+              <span className="ml-1 font-normal text-slate-400">/ {item.unit}</span>
             </span>
 
             {item.old_price && (
@@ -433,8 +434,8 @@ const CartItemCard = ({
               type="button"
               disabled={isBusy || !item.is_available}
               onClick={handleMinus}
-              className="flex min-h-[44px] min-w-[40px] items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-slate-900 active:scale-90 transition disabled:opacity-40 cursor-pointer"
-              aria-label={'Уменьшить количество ' + item.name}
+              className="flex min-h-[44px] min-w-[40px] cursor-pointer items-center justify-center rounded-lg text-slate-600 transition hover:bg-white hover:text-slate-900 active:scale-90 disabled:opacity-40"
+              aria-label={"Уменьшить количество " + item.name}
             >
               <Minus size={15} />
             </button>
@@ -442,27 +443,30 @@ const CartItemCard = ({
             <span
               aria-live="polite"
               role="status"
-              className="min-w-[44px] px-1 text-center font-black text-slate-900 text-sm whitespace-nowrap"
+              className="min-w-[44px] px-1 text-center text-sm font-black whitespace-nowrap text-slate-900"
             >
-              {formatQty(quantity)}{item.unit ? ` ${item.unit}` : ""}
+              {formatQty(quantity)}
+              {item.unit ? ` ${item.unit}` : ""}
             </span>
 
             <button
               type="button"
-              disabled={isBusy || !item.is_available || quantity + step > Number(item.stock_quantity)}
+              disabled={
+                isBusy || !item.is_available || quantity + step > Number(item.stock_quantity)
+              }
               onClick={handlePlus}
-              className="flex min-h-[44px] min-w-[40px] items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-slate-900 active:scale-90 transition disabled:opacity-40 cursor-pointer"
-              aria-label={'Увеличить количество ' + item.name}
+              className="flex min-h-[44px] min-w-[40px] cursor-pointer items-center justify-center rounded-lg text-slate-600 transition hover:bg-white hover:text-slate-900 active:scale-90 disabled:opacity-40"
+              aria-label={"Увеличить количество " + item.name}
             >
               <Plus size={15} />
             </button>
           </div>
 
           {/* Итоговая цена позиции */}
-          <div className="text-right min-w-0 flex-1 sm:flex-none">
+          <div className="min-w-0 flex-1 text-right sm:flex-none">
             <p
               aria-live="polite"
-              className="text-lg sm:text-xl font-black tracking-tight text-slate-900"
+              className="text-lg font-black tracking-tight text-slate-900 sm:text-xl"
             >
               {item.is_available ? toPriceFormat(item.final_price) : "Не в сумме"}
             </p>
@@ -474,8 +478,8 @@ const CartItemCard = ({
               type="button"
               disabled={isBusy}
               onClick={onMoveToFavorites}
-              className="flex min-h-[44px] min-w-[40px] items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition active:scale-90 cursor-pointer"
-              aria-label={'Переместить ' + item.name + ' в избранное'}
+              className="flex min-h-[44px] min-w-[40px] cursor-pointer items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-500 active:scale-90"
+              aria-label={"Переместить " + item.name + " в избранное"}
               title="В избранное"
             >
               <Heart size={18} />
@@ -485,8 +489,8 @@ const CartItemCard = ({
               type="button"
               disabled={isBusy}
               onClick={onRemove}
-              className="flex min-h-[44px] min-w-[40px] items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition active:scale-90 cursor-pointer"
-              aria-label={'Удалить ' + item.name + ' из корзины'}
+              className="flex min-h-[44px] min-w-[40px] cursor-pointer items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 active:scale-90"
+              aria-label={"Удалить " + item.name + " из корзины"}
               title="Удалить"
             >
               <Trash2 size={18} />
@@ -531,18 +535,21 @@ const FreeDeliveryProgressBar = ({
     <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/30 p-4.5 shadow-xs">
       <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
         <span className="flex items-center gap-2 font-bold text-slate-800">
-          <Truck size={17} className="text-emerald-600 shrink-0" />
+          <Truck size={17} className="shrink-0 text-emerald-600" />
           Бесплатная доставка от {toPriceFormat(threshold)}
         </span>
         <span className="font-semibold text-emerald-800">
-          Добавьте еще на <strong className="font-black text-emerald-700 text-sm">{toPriceFormat(remaining)}</strong>
+          Добавьте еще на{" "}
+          <strong className="text-sm font-black text-emerald-700">
+            {toPriceFormat(remaining)}
+          </strong>
         </span>
       </div>
 
       <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 shadow-inner">
         <div
           className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500 ease-out"
-          style={{ width: percent + '%' }}
+          style={{ width: percent + "%" }}
           role="progressbar"
           aria-valuenow={percent}
           aria-valuemin={0}
@@ -559,11 +566,7 @@ interface OrderSummaryCardProps {
   freeDeliveryThreshold: number;
 }
 
-const OrderSummaryCard = ({
-  freeDeliveryThreshold,
-  isBusy,
-  summary,
-}: OrderSummaryCardProps) => {
+const OrderSummaryCard = ({ freeDeliveryThreshold, isBusy, summary }: OrderSummaryCardProps) => {
   const currentTotal = Number(summary.final_price || 0);
   const isFreeDelivery = currentTotal >= freeDeliveryThreshold;
   const savings = Number(summary.discount_amount || 0) + Number(summary.promo_discount_amount || 0);
@@ -573,9 +576,7 @@ const OrderSummaryCard = ({
       aria-label="Сводка заказа"
       className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs"
     >
-      <h2 className="text-xl font-extrabold tracking-tight text-slate-900 mb-5">
-        Ваш заказ
-      </h2>
+      <h2 className="mb-5 text-xl font-extrabold tracking-tight text-slate-900">Ваш заказ</h2>
 
       <div className="space-y-3.5 text-sm">
         <div className="flex justify-between gap-4">
@@ -605,7 +606,7 @@ const OrderSummaryCard = ({
           <span className="text-slate-500">Доставка</span>
           <span className="font-bold text-slate-900">
             {isFreeDelivery ? (
-              <span className="text-emerald-600 font-extrabold">Бесплатно</span>
+              <span className="font-extrabold text-emerald-600">Бесплатно</span>
             ) : summary.delivery_price ? (
               toPriceFormat(summary.delivery_price)
             ) : (
@@ -615,7 +616,7 @@ const OrderSummaryCard = ({
         </div>
       </div>
 
-      <div className="mt-6 pt-5 border-t border-slate-100 flex items-baseline justify-between gap-4">
+      <div className="mt-6 flex items-baseline justify-between gap-4 border-t border-slate-100 pt-5">
         <span className="text-base font-extrabold text-slate-900">Итого к оплате</span>
         <span
           aria-live="polite"
@@ -627,12 +628,12 @@ const OrderSummaryCard = ({
       </div>
 
       {savings > 0 && (
-        <div className="mt-4 flex items-center justify-between rounded-xl bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-900 font-bold border border-emerald-100">
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-2.5 text-xs font-bold text-emerald-900">
           <span className="flex items-center gap-1.5">
             <TicketPercent size={16} className="text-emerald-700" />
             Ваша экономия:
           </span>
-          <span className="text-emerald-700 font-black text-sm">{toPriceFormat(savings)}</span>
+          <span className="text-sm font-black text-emerald-700">{toPriceFormat(savings)}</span>
         </div>
       )}
 
@@ -665,47 +666,47 @@ const EmptyCartState = () => {
         В вашей корзине пока пусто
       </h2>
 
-      <p className="mx-auto mt-3 max-w-md text-sm sm:text-base text-slate-500 leading-relaxed">
+      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-500 sm:text-base">
         Но это легко исправить! Выбирайте свежие овощи, молочные продукты, свежую выпечку и
         деликатесы с быстрой доставкой к вашей двери.
       </p>
 
       {/* Быстрые ссылки на категории */}
       <div className="mx-auto mt-8 max-w-2xl">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
+        <p className="mb-4 text-xs font-bold tracking-wider text-slate-400 uppercase">
           Популярные категории каталога
         </p>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Link
             href="/catalog/molochnye-produkty"
-            className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500/40 hover:bg-emerald-50/30 hover:shadow-xs min-h-[90px]"
+            className="flex min-h-[90px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500/40 hover:bg-emerald-50/30 hover:shadow-xs"
           >
-            <span className="text-2xl mb-1">🧀</span>
+            <span className="mb-1 text-2xl">🧀</span>
             <span className="text-xs font-bold text-slate-800">Молоко и сыр</span>
           </Link>
 
           <Link
             href="/catalog/ovoshchi"
-            className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500/40 hover:bg-emerald-50/30 hover:shadow-xs min-h-[90px]"
+            className="flex min-h-[90px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500/40 hover:bg-emerald-50/30 hover:shadow-xs"
           >
-            <span className="text-2xl mb-1">🍎</span>
+            <span className="mb-1 text-2xl">🍎</span>
             <span className="text-xs font-bold text-slate-800">Овощи и фрукты</span>
           </Link>
 
           <Link
             href="/catalog"
-            className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500/40 hover:bg-emerald-50/30 hover:shadow-xs min-h-[90px]"
+            className="flex min-h-[90px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500/40 hover:bg-emerald-50/30 hover:shadow-xs"
           >
-            <span className="text-2xl mb-1">🥩</span>
+            <span className="mb-1 text-2xl">🥩</span>
             <span className="text-xs font-bold text-slate-800">Мясо и птица</span>
           </Link>
 
           <Link
             href="/catalog/khleb-i-vypechka"
-            className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500/40 hover:bg-emerald-50/30 hover:shadow-xs min-h-[90px]"
+            className="flex min-h-[90px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500/40 hover:bg-emerald-50/30 hover:shadow-xs"
           >
-            <span className="text-2xl mb-1">🥐</span>
+            <span className="mb-1 text-2xl">🥐</span>
             <span className="text-xs font-bold text-slate-800">Хлеб и выпечка</span>
           </Link>
         </div>
@@ -714,7 +715,7 @@ const EmptyCartState = () => {
       <div className="mt-8 flex justify-center">
         <Link
           href={ROUTES.CATALOG}
-          className="inline-flex min-h-[44px] min-w-[40px] items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-7 text-sm font-bold text-white shadow-md shadow-emerald-700/20 transition-all hover:bg-emerald-700 hover:scale-[1.02] active:scale-95"
+          className="inline-flex min-h-[44px] min-w-[40px] items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-7 text-sm font-bold text-white shadow-md shadow-emerald-700/20 transition-all hover:scale-[1.02] hover:bg-emerald-700 active:scale-95"
         >
           <span>Перейти в каталог</span>
           <ArrowRight size={17} />
@@ -726,9 +727,9 @@ const EmptyCartState = () => {
 
 const BenefitsPanel = () => {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white divide-y divide-slate-100 overflow-hidden shadow-xs">
+    <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
       <div className="flex items-center gap-3.5 p-4">
-        <Clock className="size-5 text-emerald-600 shrink-0" />
+        <Clock className="size-5 shrink-0 text-emerald-600" />
         <div>
           <p className="text-xs font-bold text-slate-900">Быстрая доставка</p>
           <p className="text-[11px] text-slate-500">Доставим заказ от 30 минут</p>
@@ -736,7 +737,7 @@ const BenefitsPanel = () => {
       </div>
 
       <div className="flex items-center gap-3.5 p-4">
-        <ShieldCheck className="size-5 text-emerald-600 shrink-0" />
+        <ShieldCheck className="size-5 shrink-0 text-emerald-600" />
         <div>
           <p className="text-xs font-bold text-slate-900">Гарантия свежести</p>
           <p className="text-[11px] text-slate-500">Контроль качества каждого продукта</p>
@@ -744,7 +745,7 @@ const BenefitsPanel = () => {
       </div>
 
       <div className="flex items-center gap-3.5 p-4">
-        <LockKeyhole className="size-5 text-emerald-600 shrink-0" />
+        <LockKeyhole className="size-5 shrink-0 text-emerald-600" />
         <div>
           <p className="text-xs font-bold text-slate-900">Безопасная оплата</p>
           <p className="text-[11px] text-slate-500">Картой онлайн или при получении</p>

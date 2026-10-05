@@ -1,20 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { apiClient, ensureAccessToken } from "@/shared/api/client";
 import {
   getPushSubscription,
+  isPushSubscribedForAccount,
   isPushSupported,
   subscribeToPush,
   unsubscribeFromPush,
 } from "@/shared/lib/push-notifications";
-import { getStoredAccessToken } from "@/shared/ui";
+import { getStoredAccessToken, getStoredRefreshToken } from "@/shared/ui";
 
-export type PushPermissionStatus =
-  | "loading"
-  | "default"
-  | "granted"
-  | "denied"
-  | "unsupported";
+export type PushPermissionStatus = "loading" | "default" | "granted" | "denied" | "unsupported";
 
 const STORAGE_BANNER_KEY = "grocery_push_banner_dismissed";
 
@@ -54,13 +51,14 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     const dismissedAt = storedDismissal === "true" ? Date.now() : Number(storedDismissal);
     if (storedDismissal === "true") localStorage.setItem(STORAGE_BANNER_KEY, String(dismissedAt));
     setIsBannerDismissed(
-      Number.isFinite(dismissedAt) && dismissedAt > 0 && Date.now() - dismissedAt < 3 * 24 * 60 * 60 * 1000,
+      Number.isFinite(dismissedAt) &&
+        dismissedAt > 0 &&
+        Date.now() - dismissedAt < 3 * 24 * 60 * 60 * 1000,
     );
 
     void (async () => {
       try {
-        const sub = await getPushSubscription();
-        setIsSubscribed(Boolean(sub));
+        setIsSubscribed(await isPushSubscribedForAccount());
       } catch {
         setIsSubscribed(false);
       }
@@ -71,11 +69,29 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     if (!isPushSupported()) return;
     const sync = () => {
       setPermission(Notification.permission);
-      void getPushSubscription().then((subscription) => setIsSubscribed(Boolean(subscription)));
+      void isPushSubscribedForAccount()
+        .then(setIsSubscribed)
+        .catch(() => setIsSubscribed(false));
     };
+    const syncAccount = async () => {
+      if (
+        (getStoredAccessToken() || getStoredRefreshToken()) &&
+        Notification.permission === "granted" &&
+        (await getPushSubscription())
+      ) {
+        await subscribeToPush();
+      }
+      sync();
+    };
+    void syncAccount();
+    window.addEventListener("grocery-auth-changed", syncAccount);
     window.addEventListener("focus", sync);
     window.addEventListener("grocery-push-changed", sync);
-    return () => { window.removeEventListener("focus", sync); window.removeEventListener("grocery-push-changed", sync); };
+    return () => {
+      window.removeEventListener("grocery-auth-changed", syncAccount);
+      window.removeEventListener("focus", sync);
+      window.removeEventListener("grocery-push-changed", sync);
+    };
   }, []);
 
   const dismissBanner = useCallback(() => {
@@ -87,7 +103,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (typeof window === "undefined" || !isPushSupported()) {
-      
       return false;
     }
 
@@ -136,7 +151,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         if (res.success) {
           setIsSubscribed(true);
           dismissBanner();
-          
         } else {
           setFeedback("Не удалось изменить подписку. Попробуйте ещё раз.");
         }
@@ -150,25 +164,21 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     setFeedback(null);
     setIsTesting(true);
     try {
-      const accessToken = getStoredAccessToken();
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const res = await fetch(apiUrl + "/api/notifications/push/test", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: accessToken ? "Bearer " + accessToken : "",
-        },
-        body: JSON.stringify({
-          title: "Проверка уведомлений 🔔",
-          body: "Push-уведомления работают отлично! Вы будете узнавать о доставке первыми.",
-          url: "/profile/notifications",
-        }),
+      await ensureAccessToken();
+      const data = await apiClient.post<
+        { title: string; body: string; url: string },
+        { success: boolean; message: string }
+      >("/api/notifications/push/test", {
+        title: "Проверка уведомлений",
+        body: "Уведомления о заказах будут появляться здесь.",
+        url: "/profile/notifications",
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setFeedback("Проверочное уведомление отправлено. Посмотрите уведомления на устройстве.");
       } else {
-        setFeedback(data.message || "Не удалось отправить уведомление. Подключите уведомления повторно.");
+        setFeedback(
+          data.message || "Не удалось отправить уведомление. Подключите уведомления повторно.",
+        );
       }
     } catch {
       setFeedback("Не удалось отправить уведомление. Проверьте подключение.");

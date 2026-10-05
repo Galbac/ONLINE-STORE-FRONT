@@ -33,12 +33,14 @@ export const useUnreadNotifications = (): number => {
     void load();
     const timer = window.setInterval(load, 30_000);
     window.addEventListener("focus", load);
+    window.addEventListener("grocery-auth-changed", load);
     document.addEventListener("visibilitychange", load);
     window.addEventListener("customer-notifications-read", clear);
     return () => {
       active = false;
       window.clearInterval(timer);
       window.removeEventListener("focus", load);
+      window.removeEventListener("grocery-auth-changed", load);
       document.removeEventListener("visibilitychange", load);
       window.removeEventListener("customer-notifications-read", clear);
     };

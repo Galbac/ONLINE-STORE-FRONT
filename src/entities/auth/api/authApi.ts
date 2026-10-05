@@ -55,11 +55,15 @@ export const authApi = {
     });
   },
 
-  refresh: async (data: RefreshTokenRequest): Promise<TokenPairResponse> => {
-    return apiClient.post<RefreshTokenRequest, TokenPairResponse>(API_ENDPOINTS.AUTH.REFRESH, data);
+  refresh: async (_data: RefreshTokenRequest): Promise<TokenPairResponse> => {
+    const tokens = await apiClient.refreshBrowserTokens();
+    if (!tokens) throw new Error("Не удалось восстановить сессию");
+    return { ...tokens, token_type: "bearer" };
   },
 
   logout: async (data: LogoutRequest): Promise<MessageResponse> => {
+    const { unsubscribeFromPush } = await import("@/shared/lib/push-notifications");
+    await unsubscribeFromPush();
     return apiClient.post<LogoutRequest, MessageResponse>(API_ENDPOINTS.AUTH.LOGOUT, data);
   },
 

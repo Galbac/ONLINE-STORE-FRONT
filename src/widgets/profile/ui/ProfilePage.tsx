@@ -6,15 +6,8 @@ import { authApi } from "@/entities/auth";
 import { profileApi, type ProfileSummaryResponse } from "@/entities/profile";
 import { userApi, type UserMeResponse } from "@/entities/user";
 import { isApiErrorStatus } from "@/shared/api";
-import {
-  AuthGuard,
-  clearStoredAuth,
-  Container,
-  getLoginRedirectHref,
-  getStoredAccessToken,
-  getStoredRefreshToken,
-  storeAuthTokens,
-} from "@/shared/ui";
+import { ensureAccessToken } from "@/shared/api/client";
+import { AuthGuard, clearStoredAuth, Container, getLoginRedirectHref } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
 import { ProfileView } from "./ProfileView";
 
@@ -34,16 +27,12 @@ export const ProfilePage = () => {
   });
 
   useEffect(() => {
-    const accessToken = getStoredAccessToken();
-
-    if (!accessToken) {
-      return;
-    }
-
     let isActive = true;
 
     const loadProfile = async (): Promise<void> => {
       try {
+        const accessToken = await ensureAccessToken();
+        if (!accessToken) return;
         const authUser = await authApi.getMe(accessToken);
 
         const [profile, user] = await Promise.all([
@@ -66,34 +55,6 @@ export const ProfilePage = () => {
         }
 
         if (isApiErrorStatus(error, 401)) {
-          const refreshToken = getStoredRefreshToken();
-          if (refreshToken) {
-            try {
-              const res = await authApi.refresh({ refresh_token: refreshToken });
-              if (isActive && res.access_token) {
-                storeAuthTokens({
-                  accessToken: res.access_token,
-                  refreshToken: res.refresh_token,
-                });
-                // Retry loading profile with fresh token
-                const retryAuthUser = await authApi.getMe(res.access_token);
-                const [retryProfile, retryUser] = await Promise.all([
-                  profileApi.getSummary(res.access_token),
-                  userApi.getMe(res.access_token),
-                ]);
-                const isVerified = retryAuthUser.is_verified ?? retryUser.is_verified;
-                const enrichedUser =
-                  isVerified === undefined
-                    ? { ...retryUser, permissions: retryAuthUser.permissions }
-                    : { ...retryUser, is_verified: isVerified, permissions: retryAuthUser.permissions };
-                setState({ profile: retryProfile, status: "ready", user: enrichedUser });
-                return;
-              }
-            } catch {
-              // refresh failed, proceed to logout
-            }
-          }
-
           clearStoredAuth();
           setState({ profile: null, user: null, status: "unauthorized" });
           router.replace(getLoginRedirectHref(pathname || "/profile"));
@@ -120,9 +81,7 @@ export const ProfilePage = () => {
 
   return (
     <>
-      <AuthGuard fallback={<ProfileStateView status="loading" />}>
-        {content}
-      </AuthGuard>
+      <AuthGuard fallback={<ProfileStateView status="loading" />}>{content}</AuthGuard>
       <Footer showAdvantages={false} />
     </>
   );

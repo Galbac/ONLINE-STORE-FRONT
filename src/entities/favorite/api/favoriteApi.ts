@@ -9,12 +9,14 @@ export const favoriteApi = {
   getList: async (
     params: { page?: number; limit?: number } = { page: 1, limit: 100 },
     accessToken?: string | null,
+    storeId?: number,
   ): Promise<FavoritesResponse> => {
     return apiClient.get<FavoritesResponse>(
       API_ENDPOINTS.FAVORITE.LIST,
       {
         page: params.page,
         limit: params.limit,
+        store_id: storeId,
       },
       getAuthHeaders(accessToken),
     );

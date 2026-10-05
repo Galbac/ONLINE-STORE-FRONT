@@ -4,16 +4,14 @@ import { useTransition } from "react";
 import { LogOut } from "lucide-react";
 import { authApi } from "@/entities/auth";
 import { cn, ROUTES } from "@/shared/config";
-import { clearStoredAuth } from "@/shared/ui";
+import { clearStoredAuth, getStoredRefreshToken } from "@/shared/ui";
 
 export const ProfileLogoutButton = () => {
   const [isPending, startTransition] = useTransition();
 
   const handleLogout = (): void => {
     startTransition(async () => {
-      const refreshToken =
-        window.localStorage.getItem("refresh_token") ??
-        window.sessionStorage.getItem("refresh_token");
+      const refreshToken = getStoredRefreshToken();
 
       try {
         if (refreshToken) {
@@ -31,7 +29,7 @@ export const ProfileLogoutButton = () => {
   return (
     <button
       className={cn(
-        "inline-flex h-12 min-w-36 items-center justify-center gap-2.5 rounded-xl border border-rose-200/90 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-300 hover:text-rose-800 active:scale-[0.98] px-5 text-sm font-bold shadow-xs transition-all disabled:cursor-wait disabled:opacity-70",
+        "inline-flex h-12 min-w-36 items-center justify-center gap-2.5 rounded-xl border border-rose-200/90 bg-rose-50 px-5 text-sm font-bold text-rose-700 shadow-xs transition-all hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70",
         isPending && "cursor-wait opacity-70",
       )}
       type="button"

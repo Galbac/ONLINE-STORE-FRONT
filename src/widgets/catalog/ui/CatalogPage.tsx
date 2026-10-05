@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { Package } from "lucide-react";
+import { CatalogControls } from "@/components/catalog/CatalogControls";
+import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import { cartApi, emptyCartResponse } from "@/entities/cart";
 import { categoryApi } from "@/entities/category";
 import { emptyFavoritesResponse, favoriteApi } from "@/entities/favorite";
@@ -9,14 +11,12 @@ import { fallbackOnUnauthorized, isApiErrorStatus } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { AutoSubmitSelect, Container, ViewModeToggle } from "@/shared/ui";
 import type { ProductViewMode } from "@/shared/ui";
+import { formatFoundProducts } from "@/utils/pluralize";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
-import { CatalogControls } from "@/components/catalog/CatalogControls";
-import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
-import { formatFoundProducts } from "@/utils/pluralize";
 import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
-import { QuickFilterChips } from "./QuickFilterChips";
 import { CatalogProductFeed } from "./CatalogProductFeed";
+import { QuickFilterChips } from "./QuickFilterChips";
 
 interface CatalogPageProps {
   searchParams: CatalogSearchParams;
@@ -52,7 +52,10 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const hasDiscount = searchParams.has_discount === "true";
   const minPrice = toOptionalPrice(searchParams.min_price);
   const maxPrice = toOptionalPrice(searchParams.max_price);
-  const productType = searchParams.product_type === "piece" || searchParams.product_type === "weight" ? searchParams.product_type : undefined;
+  const productType =
+    searchParams.product_type === "piece" || searchParams.product_type === "weight"
+      ? searchParams.product_type
+      : undefined;
   const tag = searchParams.tag?.trim() || undefined;
   const sort = toCatalogSort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
@@ -114,21 +117,22 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
     priceBoundsParams.has_discount = true;
   }
 
-  const [categoryTree, categories, products, allCategoriesProducts, cart, favorites, facets] = await Promise.all([
-    categoryApi.getTree(storeId),
-    categoryApi.getList(storeId),
-    getCatalogProducts(productParams, page, pageSize),
-    getCatalogProducts(allCategoriesProductParams, 1, 1),
-    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
-    fallbackOnUnauthorized(
-      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
-      emptyFavoritesResponse,
-    ),
-    productApi.getFacets({
-      category_id: categoryId,
-      store_id: storeId,
-    }),
-  ]);
+  const [categoryTree, categories, products, allCategoriesProducts, cart, favorites, facets] =
+    await Promise.all([
+      categoryApi.getTree(storeId),
+      categoryApi.getList(storeId),
+      getCatalogProducts(productParams, page, pageSize),
+      getCatalogProducts(allCategoriesProductParams, 1, 1),
+      fallbackOnUnauthorized(cartApi.get(accessToken, storeId), emptyCartResponse),
+      fallbackOnUnauthorized(
+        favoriteApi.getList({ page: 1, limit: 100 }, accessToken, storeId),
+        emptyFavoritesResponse,
+      ),
+      productApi.getFacets({
+        category_id: categoryId,
+        store_id: storeId,
+      }),
+    ]);
 
   const visibleCategories = categories.items.length > 0 ? categories.items : categoryTree.items;
   const selectedCategory = visibleCategories.find((category) => category.id === categoryId);
@@ -157,15 +161,17 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
       <Header />
       <main className="pb-24 md:pb-12">
         <Container className="py-6">
-          <nav className="text-slate-500 mb-5 flex items-center gap-2 text-sm">
-            <Link className="hover:text-emerald-700 transition" href={ROUTES.HOME}>
+          <nav className="mb-5 flex items-center gap-2 text-sm text-slate-500">
+            <Link className="transition hover:text-emerald-700" href={ROUTES.HOME}>
               Главная
             </Link>
             <span>/</span>
-            <span className="text-slate-800 font-medium">Каталог</span>
+            <span className="font-medium text-slate-800">Каталог</span>
           </nav>
 
-          <h1 className="text-slate-900 mb-6 text-3xl sm:text-4xl font-black tracking-tight">Каталог товаров</h1>
+          <h1 className="mb-6 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+            Каталог товаров
+          </h1>
 
           <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
             {/* Сайдбар фильтров на десктопе */}
@@ -220,10 +226,7 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
               {/* Компактная лента БЫСТРЫХ ТЕГОВ */}
               <div className="my-5">
-                <QuickFilterChips
-                  chips={quickFilterChips}
-                  className="py-1"
-                />
+                <QuickFilterChips chips={quickFilterChips} className="py-1" />
               </div>
 
               {/* Сетка товаров */}
@@ -273,7 +276,7 @@ const CatalogToolbar = ({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-slate-600 text-sm font-semibold">
+          <p className="text-sm font-semibold text-slate-600">
             {formatFoundProducts(productsTotal)}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -282,14 +285,14 @@ const CatalogToolbar = ({
             {maxPrice ? <FilterChip label={`Цена: до ${maxPrice} ₽`} /> : null}
             {minPrice ? <FilterChip label={`Цена: от ${minPrice} ₽`} /> : null}
             <Link
-              className="text-emerald-700 hover:text-emerald-800 px-2 py-2 text-sm font-semibold transition"
+              className="px-2 py-2 text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
               href={ROUTES.CATALOG}
             >
               Сбросить все
             </Link>
           </div>
         </div>
-        <div className="hidden lg:flex max-w-full flex-wrap items-center gap-4">
+        <div className="hidden max-w-full flex-wrap items-center gap-4 lg:flex">
           <AutoSubmitSelect
             action={ROUTES.CATALOG}
             defaultValue={sort}
@@ -322,7 +325,7 @@ interface FilterChipProps {
 
 const FilterChip = ({ label }: FilterChipProps) => {
   return (
-    <span className="border border-emerald-200/80 bg-emerald-50/70 text-emerald-800 rounded-lg px-3 py-1.5 text-xs font-semibold">
+    <span className="rounded-lg border border-emerald-200/80 bg-emerald-50/70 px-3 py-1.5 text-xs font-semibold text-emerald-800">
       {label}
     </span>
   );
@@ -330,16 +333,17 @@ const FilterChip = ({ label }: FilterChipProps) => {
 
 const CatalogEmptyState = () => {
   return (
-    <div className="border border-slate-200 mt-5 rounded-2xl bg-white p-10 text-center shadow-xs">
-      <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-3">
+    <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-xs">
+      <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
         <Package size={28} />
       </div>
-      <h2 className="text-slate-900 text-lg font-bold">Товары не найдены</h2>
-      <p className="text-slate-500 mt-2 text-xs leading-relaxed max-w-sm mx-auto">
-        По выбранным фильтрам ничего не найдено. Попробуйте сбросить параметры или изменить поисковый запрос.
+      <h2 className="text-lg font-bold text-slate-900">Товары не найдены</h2>
+      <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-slate-500">
+        По выбранным фильтрам ничего не найдено. Попробуйте сбросить параметры или изменить
+        поисковый запрос.
       </p>
       <Link
-        className="bg-emerald-600 text-white hover:bg-emerald-700 mt-5 inline-flex h-11 items-center justify-center rounded-xl px-6 text-xs font-bold transition shadow-sm"
+        className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"
         href={ROUTES.CATALOG}
       >
         Сбросить фильтры
@@ -347,8 +351,6 @@ const CatalogEmptyState = () => {
     </div>
   );
 };
-
-
 
 const toCatalogUrlParams = (searchParams: CatalogSearchParams): CatalogUrlParams => ({
   article: searchParams.article,
@@ -396,9 +398,7 @@ const toOptionalPrice = (value: string | undefined): string | undefined => {
   return Number.isFinite(parsed) && parsed >= 0 ? String(Math.floor(parsed)) : undefined;
 };
 
-const toCatalogSort = (
-  value: string | undefined,
-): NonNullable<ProductListParams["sort"]> => {
+const toCatalogSort = (value: string | undefined): NonNullable<ProductListParams["sort"]> => {
   if (
     value === "price_asc" ||
     value === "price_desc" ||

@@ -13,8 +13,12 @@ import type {
 } from "../types";
 
 export const cartApi = {
-  get: async (): Promise<CartResponse> => {
-    return apiClient.get<CartResponse>(API_ENDPOINTS.CART.DETAIL);
+  get: async (accessToken?: string | null, storeId?: number): Promise<CartResponse> => {
+    return apiClient.get<CartResponse>(
+      API_ENDPOINTS.CART.DETAIL,
+      storeId ? { store_id: storeId } : undefined,
+      accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    );
   },
 
   addItem: async (data: CartItemCreateRequest): Promise<MessageCartResponse> => {

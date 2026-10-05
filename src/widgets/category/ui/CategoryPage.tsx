@@ -16,13 +16,13 @@ import { fallbackOnUnauthorized } from "@/shared/api";
 import { cn, ROUTES } from "@/shared/config";
 import { AutoSubmitSelect, Container, ViewModeToggle } from "@/shared/ui";
 import type { ProductViewMode } from "@/shared/ui";
+import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
+import { CatalogProductFeed } from "@/widgets/catalog/ui/CatalogProductFeed";
+import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
+import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
+import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
-import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
-import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
-import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
-import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
-import { CatalogProductFeed } from "@/widgets/catalog/ui/CatalogProductFeed";
 
 interface CategoryPageProps {
   slug: string;
@@ -73,9 +73,8 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   const accessToken = await getAccessToken();
   const cookieStore = await cookies();
   const selectedStoreId = Number(cookieStore.get("current_store_id")?.value);
-  const storeId = Number.isInteger(selectedStoreId) && selectedStoreId > 0
-    ? selectedStoreId
-    : undefined;
+  const storeId =
+    Number.isInteger(selectedStoreId) && selectedStoreId > 0 ? selectedStoreId : undefined;
 
   const categoryBySlug = await categoryApi.getBySlug(slug, storeId);
   const category = await categoryApi.getById(categoryBySlug.id, storeId);
@@ -110,9 +109,9 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
 
   const [products, cart, favorites, facets] = await Promise.all([
     productApi.getList(productParams),
-    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    fallbackOnUnauthorized(cartApi.get(accessToken, storeId), emptyCartResponse),
     fallbackOnUnauthorized(
-      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken, storeId),
       emptyFavoritesResponse,
     ),
     productApi.getFacets({
@@ -221,8 +220,12 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
                 />
               ) : (
                 <div className="border-border rounded-lg border bg-white p-8 text-center shadow-xs">
-                  <h3 className="text-lg font-bold text-slate-800">В этой категории нет подходящих товаров</h3>
-                  <p className="mt-2 text-xs text-slate-500">Попробуйте сбросить фильтры или выбрать другой диапазон цен.</p>
+                  <h3 className="text-lg font-bold text-slate-800">
+                    В этой категории нет подходящих товаров
+                  </h3>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Попробуйте сбросить фильтры или выбрать другой диапазон цен.
+                  </p>
                   <Link
                     href={ROUTES.CATEGORY(slug)}
                     className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white transition hover:bg-emerald-700"
@@ -265,7 +268,8 @@ const CategoryFilters = ({
   slug,
   subcategories,
 }: CategoryFiltersProps) => {
-  const showDiscountPanel = hasDiscountAvailable !== undefined ? (hasDiscountAvailable || hasDiscount) : true;
+  const showDiscountPanel =
+    hasDiscountAvailable !== undefined ? hasDiscountAvailable || hasDiscount : true;
   return (
     <aside className="min-w-0 space-y-4">
       {subcategories.length > 0 && (
@@ -279,7 +283,7 @@ const CategoryFilters = ({
                 >
                   <span className="truncate">{sub.name}</span>
                   {sub.products_count !== undefined && (
-                    <span className="text-slate-400 text-[11px]">{sub.products_count}</span>
+                    <span className="text-[11px] text-slate-400">{sub.products_count}</span>
                   )}
                 </Link>
               </li>
@@ -287,8 +291,6 @@ const CategoryFilters = ({
           </ul>
         </FilterPanel>
       )}
-
-
 
       {showDiscountPanel && (
         <FilterPanel>
@@ -482,7 +484,9 @@ const SubcategoryCard = ({ subcategory }: SubcategoryCardProps) => {
           <p className="group-hover:text-accent-primary text-sm font-bold transition">
             {subcategory.name}
           </p>
-          <p className="text-text-secondary mt-1 text-xs">{subcategory.products_count ?? 0} товаров</p>
+          <p className="text-text-secondary mt-1 text-xs">
+            {subcategory.products_count ?? 0} товаров
+          </p>
         </div>
         <ChevronRight
           className="text-text-secondary group-hover:text-accent-primary transition group-hover:translate-x-1"

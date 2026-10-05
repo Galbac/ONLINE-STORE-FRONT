@@ -38,9 +38,8 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
   const accessToken = await getAccessToken();
   const cookieStore = await cookies();
   const selectedStoreId = Number(cookieStore.get("current_store_id")?.value);
-  const storeParams = Number.isInteger(selectedStoreId) && selectedStoreId > 0
-    ? { store_id: selectedStoreId }
-    : {};
+  const storeParams =
+    Number.isInteger(selectedStoreId) && selectedStoreId > 0 ? { store_id: selectedStoreId } : {};
   const product = await productApi.getBySlug(slug, {
     ...storeParams,
     with_breadcrumbs: true,
@@ -61,9 +60,9 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
         in_stock: true,
       })
       .catch(() => ({ items: [] as any[] })),
-    fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
+    fallbackOnUnauthorized(cartApi.get(accessToken, storeParams.store_id), emptyCartResponse),
     fallbackOnUnauthorized(
-      favoriteApi.getList({ page: 1, limit: 100 }, accessToken),
+      favoriteApi.getList({ page: 1, limit: 100 }, accessToken, storeParams.store_id),
       emptyFavoritesResponse,
     ),
     productApi.getReviewSummary(product.id).catch(() => null),
@@ -183,7 +182,9 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
               <p className="text-text-secondary mb-3 text-sm">
                 {product.category?.name ?? "Каталог"}
               </p>
-              <h1 className="text-text-primary break-words text-2xl sm:text-4xl leading-tight font-bold">{displayTitle}</h1>
+              <h1 className="text-text-primary text-2xl leading-tight font-bold break-words sm:text-4xl">
+                {displayTitle}
+              </h1>
 
               <div className="mt-4 flex items-center gap-2">
                 <ProductArticleCopy
@@ -522,50 +523,50 @@ const ProductDescription = ({ product }: ProductDescriptionProps) => {
           />
         </summary>
         <section className="mt-3 space-y-3.5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-            <MapPin size={18} className="shrink-0 text-emerald-600" />
-            <span>Доставка в г. Кизляр</span>
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <MapPin size={18} className="shrink-0 text-emerald-600" />
+              <span>Доставка в г. Кизляр</span>
+            </div>
+            <span className="rounded-full border border-emerald-200/60 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+              от 45 минут
+            </span>
           </div>
-          <span className="rounded-full border border-emerald-200/60 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-            от 45 минут
-          </span>
-        </div>
 
-        <div className="space-y-3 text-xs">
-          <div className="flex items-start gap-3">
-            <Truck size={17} className="mt-0.5 shrink-0 text-emerald-600" />
-            <div>
-              <p className="font-bold text-slate-800">Быстрая курьерская доставка</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
-                Сегодня, ближайший интервал 14:00 – 16:00. Бесплатно при заказе от 1 500 ₽.
-              </p>
+          <div className="space-y-3 text-xs">
+            <div className="flex items-start gap-3">
+              <Truck size={17} className="mt-0.5 shrink-0 text-emerald-600" />
+              <div>
+                <p className="font-bold text-slate-800">Быстрая курьерская доставка</p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                  Сегодня, ближайший интервал 14:00 – 16:00. Бесплатно при заказе от 1 500 ₽.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Store size={17} className="mt-0.5 shrink-0 text-slate-500" />
+              <div>
+                <p className="font-bold text-slate-800">Самовывоз из супермаркета</p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                  ул. Ленина, 14. Готов к выдаче через 15 минут после оформления, бесплатно.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <RotateCcw size={17} className="mt-0.5 shrink-0 text-slate-500" />
+              <div>
+                <p className="font-bold text-slate-800">Гарантия 100% свежести и возврата</p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                  Если качество или свежесть продукта вас не устроит — заменим товар или вернем
+                  деньги в пределах срока годности товара (до 48 часов).
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <Store size={17} className="mt-0.5 shrink-0 text-slate-500" />
-            <div>
-              <p className="font-bold text-slate-800">Самовывоз из супермаркета</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
-                ул. Ленина, 14. Готов к выдаче через 15 минут после оформления, бесплатно.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <RotateCcw size={17} className="mt-0.5 shrink-0 text-slate-500" />
-            <div>
-              <p className="font-bold text-slate-800">Гарантия 100% свежести и возврата</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
-                Если качество или свежесть продукта вас не устроит — заменим товар или вернем деньги
-                в пределах срока годности товара (до 48 часов).
-              </p>
-            </div>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between border-t border-slate-100 pt-1">
-          <KizlyarDeliveryZonesModal />
-        </div>
+          <div className="flex items-center justify-between border-t border-slate-100 pt-1">
+            <KizlyarDeliveryZonesModal />
+          </div>
         </section>
       </details>
     </div>

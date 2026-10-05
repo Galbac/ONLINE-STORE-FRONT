@@ -4,7 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Clock, LayoutGrid, Loader2, Search, ShoppingBag, Sparkles, Trash2, X } from "lucide-react";
+import {
+  ArrowRight,
+  Clock,
+  LayoutGrid,
+  Loader2,
+  Search,
+  ShoppingBag,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useStoreBranch } from "@/entities/delivery";
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -59,7 +70,9 @@ const highlightMatch = (text: string, query: string): React.ReactNode => {
   return (
     <>
       {before}
-      <span className="font-extrabold text-emerald-600 underline decoration-emerald-500/40">{match}</span>
+      <span className="font-extrabold text-emerald-600 underline decoration-emerald-500/40">
+        {match}
+      </span>
       {after}
     </>
   );
@@ -71,13 +84,14 @@ export const HeaderSearch = ({
   className,
 }: HeaderSearchProps) => {
   const router = useRouter();
+  const storeId = useStoreBranch((state) => state.selectedStore?.id);
   const [query, setQuery] = useState(defaultValue ?? "");
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchSuggestionsResponse | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [dynamicPopularSearches, setDynamicPopularSearches] = useState<string[]>([]);
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -135,7 +149,10 @@ export const HeaderSearch = ({
     try {
       const cleanTerm = term.trim();
       if (!cleanTerm) return;
-      const updated = [cleanTerm, ...recentSearches.filter((item) => item.toLowerCase() !== cleanTerm.toLowerCase())].slice(0, 5);
+      const updated = [
+        cleanTerm,
+        ...recentSearches.filter((item) => item.toLowerCase() !== cleanTerm.toLowerCase()),
+      ].slice(0, 5);
       setRecentSearches(updated);
       localStorage.setItem(RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(updated));
     } catch {}
@@ -156,25 +173,32 @@ export const HeaderSearch = ({
       return;
     }
 
+    let active = true;
+    setSuggestions(null);
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
         const data = await apiClient.get<SearchSuggestionsResponse>(
           API_ENDPOINTS.PRODUCT.SEARCH_SUGGESTIONS(trimmed),
+          storeId ? { store_id: storeId } : undefined,
         );
+        if (!active) return;
         setSuggestions(data);
         if (data.categories.length > 0 || data.products.length > 0) {
           setIsOpen(true);
         }
       } catch {
-        setSuggestions(null);
+        if (active) setSuggestions(null);
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     }, 200);
 
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [query, storeId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,7 +219,9 @@ export const HeaderSearch = ({
     router.push(`${ROUTES.SEARCH}?q=${encodeURIComponent(term)}`);
   };
 
-  const hasOverlay = isOpen && (Boolean(query.trim()) || recentSearches.length > 0 || dynamicPopularSearches.length > 0);
+  const hasOverlay =
+    isOpen &&
+    (Boolean(query.trim()) || recentSearches.length > 0 || dynamicPopularSearches.length > 0);
 
   return (
     <>
@@ -203,12 +229,15 @@ export const HeaderSearch = ({
       {hasOverlay && (
         <div
           aria-hidden="true"
-          className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] transition-opacity animate-in fade-in-0 duration-200"
+          className="animate-in fade-in-0 fixed inset-0 z-40 bg-black/25 backdrop-blur-[2px] transition-opacity duration-200"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      <div className={`relative w-full ${hasOverlay ? "z-50" : "z-10"} ${className || ""}`} ref={containerRef}>
+      <div
+        className={`relative w-full ${hasOverlay ? "z-50" : "z-10"} ${className || ""}`}
+        ref={containerRef}
+      >
         <form
           className="group relative flex w-full items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 shadow-xs transition-all duration-200 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-3 focus-within:ring-emerald-500/15"
           onSubmit={handleSubmit}
@@ -219,14 +248,14 @@ export const HeaderSearch = ({
 
           {/* Иконка лупы внутри поля слева */}
           <Search
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-emerald-600 shrink-0"
+            className="pointer-events-none absolute top-1/2 left-3.5 shrink-0 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-emerald-600"
             size={18}
           />
 
           <input
             ref={inputRef}
             autoComplete="off"
-            className="h-11 w-full bg-transparent pl-10 pr-10 text-sm text-slate-800 placeholder:text-slate-500 outline-none"
+            className="h-11 w-full bg-transparent pr-10 pl-10 text-sm text-slate-800 outline-none placeholder:text-slate-500"
             id="header-site-search"
             name="q"
             placeholder={placeholder}
@@ -237,12 +266,12 @@ export const HeaderSearch = ({
           />
 
           {/* Правая панель: индикатор загрузки, кнопка очистки, хоткей Cmd+K */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+          <div className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1.5">
             {isLoading ? (
               <Loader2 className="size-4 animate-spin text-emerald-600" />
             ) : query ? (
               <button
-                className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200/50 transition cursor-pointer"
+                className="cursor-pointer rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200/50 hover:text-slate-600"
                 onClick={() => {
                   setQuery("");
                   inputRef.current?.focus();
@@ -254,7 +283,7 @@ export const HeaderSearch = ({
               </button>
             ) : null}
 
-            <div className="hidden lg:flex items-center gap-0.5 rounded-md border border-slate-200 bg-white/90 px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-400 select-none shadow-2xs">
+            <div className="hidden items-center gap-0.5 rounded-md border border-slate-200 bg-white/90 px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-400 shadow-2xs select-none lg:flex">
               <span>⌘</span>
               <span>K</span>
             </div>
@@ -263,18 +292,18 @@ export const HeaderSearch = ({
 
         {/* Выпадающий блок: недавние запросы и часто ищут */}
         {isOpen && !query.trim() && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150">
+          <div className="animate-in fade-in-0 zoom-in-95 absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl duration-150">
             {recentSearches.length > 0 && (
               <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                     <Clock size={12} className="text-slate-400" />
                     Вы недавно искали
                   </span>
                   <button
                     type="button"
                     onClick={clearRecentSearches}
-                    className="text-[11px] text-slate-400 hover:text-rose-600 flex items-center gap-1 font-medium transition cursor-pointer"
+                    className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-slate-400 transition hover:text-rose-600"
                   >
                     <Trash2 size={11} />
                     Очистить
@@ -286,7 +315,7 @@ export const HeaderSearch = ({
                       key={item}
                       type="button"
                       onClick={() => handleSelectSearch(item)}
-                      className="rounded-xl bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition border border-transparent cursor-pointer"
+                      className="cursor-pointer rounded-xl border border-transparent bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700"
                     >
                       {item}
                     </button>
@@ -296,17 +325,20 @@ export const HeaderSearch = ({
             )}
 
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2.5">
+              <span className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                 <Sparkles size={12} className="text-amber-500" />
                 Часто ищут
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {(dynamicPopularSearches.length > 0 ? dynamicPopularSearches : POPULAR_SEARCHES).map((item) => (
+                {(dynamicPopularSearches.length > 0
+                  ? dynamicPopularSearches
+                  : POPULAR_SEARCHES
+                ).map((item) => (
                   <button
                     key={item}
                     type="button"
                     onClick={() => handleSelectSearch(item)}
-                    className="rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition cursor-pointer"
+                    className="cursor-pointer rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700"
                   >
                     {item}
                   </button>
@@ -318,10 +350,10 @@ export const HeaderSearch = ({
 
         {/* Выпадающий блок: результаты автокомплита */}
         {isOpen && suggestions && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150">
+          <div className="animate-in fade-in-0 zoom-in-95 absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl duration-150">
             {suggestions.categories.length > 0 && (
               <div className="mb-3">
-                <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                   Категории
                 </span>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -342,7 +374,7 @@ export const HeaderSearch = ({
 
             {suggestions.products.length > 0 && (
               <div>
-                <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                   Товары
                 </span>
                 <div className="mt-1.5 divide-y divide-slate-100">
@@ -356,8 +388,8 @@ export const HeaderSearch = ({
                       }}
                       className="group flex items-center justify-between gap-3 rounded-xl p-2.5 transition hover:bg-slate-50"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="relative flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 overflow-hidden shadow-2xs">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200/80 bg-slate-50 shadow-2xs">
                           {p.preview_image_url ? (
                             <Image
                               alt={p.name}
@@ -370,12 +402,12 @@ export const HeaderSearch = ({
                             <ShoppingBag size={18} className="text-emerald-600/70" />
                           )}
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="line-clamp-1 text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition">
+                        <div className="flex min-w-0 flex-col">
+                          <span className="line-clamp-1 text-xs font-bold text-slate-800 transition group-hover:text-emerald-700">
                             {highlightMatch(p.name, query)}
                           </span>
                           {p.article ? (
-                            <span className="text-[10px] text-slate-400 font-mono">
+                            <span className="font-mono text-[10px] text-slate-400">
                               Арт. {highlightMatch(p.article, query)}
                             </span>
                           ) : null}
@@ -392,7 +424,7 @@ export const HeaderSearch = ({
 
             <div className="mt-2 border-t border-slate-100 pt-2 text-center">
               <button
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-bold text-emerald-700 transition hover:text-emerald-800"
                 onClick={handleSubmit}
                 type="button"
               >

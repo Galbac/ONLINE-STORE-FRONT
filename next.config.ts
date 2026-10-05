@@ -6,7 +6,11 @@ const API_PROXY_TARGET = (
   "http://localhost:8000"
 ).replace(/\/$/, "");
 
-const configuredDomain = (process.env.DOMAIN_NAME || process.env.NEXT_PUBLIC_DOMAIN_NAME || "").trim();
+const configuredDomain = (
+  process.env.DOMAIN_NAME ||
+  process.env.NEXT_PUBLIC_DOMAIN_NAME ||
+  ""
+).trim();
 
 const remotePatterns: Array<{
   protocol: "http" | "https";
@@ -53,7 +57,7 @@ if (configuredDomain) {
   remotePatterns.push(
     { protocol: "https", hostname: configuredDomain },
     { protocol: "https", hostname: "www." + configuredDomain },
-    { protocol: "http", hostname: configuredDomain }
+    { protocol: "http", hostname: configuredDomain },
   );
 }
 
@@ -73,8 +77,7 @@ if (publicApiUrl) {
         });
       }
     }
-  } catch {
-  }
+  } catch {}
 }
 
 const nextConfig: NextConfig = {
@@ -93,9 +96,8 @@ const nextConfig: NextConfig = {
     "@opentelemetry/semantic-conventions",
   ],
 
-
   images: {
-    unoptimized: true,
+    unoptimized: false,
     remotePatterns,
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
@@ -103,8 +105,14 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      { source: "/:asset(favicon.svg|apple-touch-icon.png|manifest.webmanifest)", headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }] },
-      { source: "/icons/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }] },
+      {
+        source: "/:asset(favicon.svg|apple-touch-icon.png|manifest.webmanifest)",
+        headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }],
+      },
+      {
+        source: "/icons/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }],
+      },
       {
         source: "/:path*",
         headers: [

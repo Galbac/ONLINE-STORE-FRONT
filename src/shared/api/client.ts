@@ -1,3 +1,4 @@
+import { isAccessTokenValid } from "../lib/auth-token";
 import { localizeErrorMessage } from "../lib/format/localize-error";
 import { API_BASE_URL, API_ENDPOINTS } from "./endpoints";
 
@@ -54,14 +55,14 @@ const getStoredRefreshToken = (): StoredRefreshToken | null => {
   const token =
     window.localStorage.getItem("refresh_token") ??
     window.sessionStorage.getItem("refresh_token") ??
-    getBrowserCookieValue("refresh_token");
+    getBrowserCookieValue("refresh_token") ??
+    (getBrowserCookieValue("grocery_session") ? "__cookie__" : null);
 
   return token ? { remember: true, token } : null;
 };
 
 const storeBrowserAuthTokens = ({
   accessToken,
-  refreshToken,
 }: {
   accessToken: string;
   refreshToken: string;
@@ -71,15 +72,16 @@ const storeBrowserAuthTokens = ({
     return;
   }
 
-  const cookieMaxAge = `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}`;
+  const cookieMaxAge = `; max-age=${AUTH_COOKIE_MAX_AGE_SECONDS}${window.location.protocol === "https:" ? "; secure" : ""}`;
 
   window.localStorage.setItem("access_token", accessToken);
-  window.localStorage.setItem("refresh_token", refreshToken);
+  window.localStorage.removeItem("refresh_token");
   window.sessionStorage.removeItem("access_token");
   window.sessionStorage.removeItem("refresh_token");
 
   document.cookie = `access_token=${encodeURIComponent(accessToken)}; path=/; samesite=lax${cookieMaxAge}`;
-  document.cookie = `refresh_token=${encodeURIComponent(refreshToken)}; path=/; samesite=lax${cookieMaxAge}`;
+  document.cookie = "refresh_token=; path=/; max-age=0; samesite=lax";
+  window.dispatchEvent(new Event("grocery-auth-changed"));
 };
 
 const clearBrowserAuth = (): void => {
@@ -93,6 +95,8 @@ const clearBrowserAuth = (): void => {
   window.sessionStorage.removeItem("refresh_token");
   document.cookie = "access_token=; path=/; max-age=0; samesite=lax";
   document.cookie = "refresh_token=; path=/; max-age=0; samesite=lax";
+  document.cookie = "grocery_session=; path=/; max-age=0; samesite=lax";
+  window.dispatchEvent(new Event("grocery-auth-changed"));
 };
 
 const redirectToLogin = (): void => {
@@ -101,7 +105,7 @@ const redirectToLogin = (): void => {
   }
 
   const nextPath = `${window.location.pathname}${window.location.search}`;
-  window.location.assign(`/login?next=${encodeURIComponent(nextPath)}`);
+  window.location.assign(`/login?mode=form&next=${encodeURIComponent(nextPath)}`);
 };
 
 interface TokenPairResponse {
@@ -130,7 +134,10 @@ export class ApiError extends Error {
   }
 }
 
-export const extractErrorMessage = (error: unknown, fallback: string = "Произошла ошибка"): string => {
+export const extractErrorMessage = (
+  error: unknown,
+  fallback: string = "Произошла ошибка",
+): string => {
   let raw: string = fallback;
   if (error instanceof ApiError) {
     if (typeof error.data?.detail === "string") {
@@ -194,7 +201,9 @@ class ApiClient {
 
     if (!response.ok) {
       let errData: any = null;
-      try { errData = await response.json(); } catch (_) {}
+      try {
+        errData = await response.json();
+      } catch (_) {}
       throw new ApiError(response.status, response.statusText, errData);
     }
 
@@ -221,11 +230,13 @@ class ApiClient {
       config.body = JSON.stringify(data);
     }
 
-    const response = await this.fetchWithAuth(`${this.baseUrl}${url}`, config);
+    const response = await this.fetchWithAuth(this.getRequestEndpoint(url), config);
 
     if (!response.ok) {
       let errData: any = null;
-      try { errData = await response.json(); } catch (_) {}
+      try {
+        errData = await response.json();
+      } catch (_) {}
       throw new ApiError(response.status, response.statusText, errData);
     }
 
@@ -250,7 +261,9 @@ class ApiClient {
 
     if (!response.ok) {
       let errData: any = null;
-      try { errData = await response.json(); } catch (_) {}
+      try {
+        errData = await response.json();
+      } catch (_) {}
       throw new ApiError(response.status, response.statusText, errData);
     }
 
@@ -276,7 +289,9 @@ class ApiClient {
 
     if (!response.ok) {
       let errData: any = null;
-      try { errData = await response.json(); } catch (_) {}
+      try {
+        errData = await response.json();
+      } catch (_) {}
       throw new ApiError(response.status, response.statusText, errData);
     }
 
@@ -307,7 +322,9 @@ class ApiClient {
 
     if (!response.ok) {
       let errData: any = null;
-      try { errData = await response.json(); } catch (_) {}
+      try {
+        errData = await response.json();
+      } catch (_) {}
       throw new ApiError(response.status, response.statusText, errData);
     }
 
@@ -321,7 +338,13 @@ class ApiClient {
       return response;
     }
 
-    const tokens = await this.refreshBrowserTokens();
+    let tokens: TokenPairResponse | null;
+    try {
+      tokens = await this.refreshBrowserTokens();
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403, 404].includes(error.status)) redirectToLogin();
+      throw error;
+    }
 
     if (!tokens) {
       return response;
@@ -329,6 +352,7 @@ class ApiClient {
 
     return fetch(input, {
       ...init,
+      signal: AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS),
       headers: {
         ...this.headersToRecord(init.headers),
         Authorization: `Bearer ${tokens.access_token}`,
@@ -339,6 +363,7 @@ class ApiClient {
   private isAuthOrGuestRequest(input: RequestInfo | URL): boolean {
     const url = String(input);
     return (
+      /\/api\/session\/(?:login|register|refresh)$/.test(url) ||
       url.endsWith(API_ENDPOINTS.AUTH.REFRESH) ||
       url.endsWith(API_ENDPOINTS.AUTH.LOGIN) ||
       url.endsWith(API_ENDPOINTS.AUTH.REGISTER) ||
@@ -348,58 +373,57 @@ class ApiClient {
     );
   }
 
-  private async refreshBrowserTokens(): Promise<TokenPairResponse | null> {
-    if (ongoingRefreshPromise) {
-      return ongoingRefreshPromise;
-    }
-
-    const storedRefreshToken = getStoredRefreshToken();
-
-    if (!storedRefreshToken) {
-      clearBrowserAuth();
-      redirectToLogin();
-      return null;
-    }
-
-    ongoingRefreshPromise = (async () => {
-      try {
-        const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.AUTH.REFRESH}`, {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            refresh_token: storedRefreshToken.token,
-          }),
-          signal: AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS),
-        });
-
-        if (!response.ok) {
-          clearBrowserAuth();
-          redirectToLogin();
-          return null;
-        }
-
-        const tokens = (await response.json()) as TokenPairResponse;
-
-        storeBrowserAuthTokens({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          remember: storedRefreshToken.remember,
-        });
-
-        return tokens;
-      } catch {
-        clearBrowserAuth();
-        redirectToLogin();
-        return null;
-      } finally {
-        ongoingRefreshPromise = null;
+  async refreshBrowserTokens(): Promise<TokenPairResponse | null> {
+    if (typeof window === "undefined") return null;
+    if (ongoingRefreshPromise) return ongoingRefreshPromise;
+    const previousToken = getBrowserCookieValue("access_token");
+    const refresh = async (): Promise<TokenPairResponse | null> => {
+      const currentToken = getBrowserCookieValue("access_token");
+      if (currentToken && currentToken !== previousToken && isAccessTokenValid(currentToken)) {
+        return { access_token: currentToken, refresh_token: "" };
       }
-    })();
-
+      const storedRefreshToken = getStoredRefreshToken();
+      if (!storedRefreshToken) {
+        clearBrowserAuth();
+        throw new ApiError(401, "Unauthorized", { detail: "Войдите в аккаунт" });
+      }
+      const response = await fetch("/api/session/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ refresh_token: storedRefreshToken.token }),
+        signal: AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS),
+      });
+      if (!response.ok) {
+        if ([401, 403, 404].includes(response.status)) clearBrowserAuth();
+        throw new ApiError(response.status, response.statusText, await response.json());
+      }
+      const tokens = (await response.json()) as TokenPairResponse;
+      storeBrowserAuthTokens({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+      });
+      return tokens;
+    };
+    ongoingRefreshPromise = (async () =>
+      navigator.locks
+        ? await navigator.locks.request("grocery-session-refresh", async () => await refresh())
+        : await refresh())().finally(() => {
+      ongoingRefreshPromise = null;
+    });
     return ongoingRefreshPromise;
+  }
+
+  private getRequestEndpoint(url: string): string {
+    if (
+      typeof window !== "undefined" &&
+      [API_ENDPOINTS.AUTH.LOGIN, API_ENDPOINTS.AUTH.REGISTER, API_ENDPOINTS.AUTH.LOGOUT].some(
+        (endpoint) => endpoint === url,
+      )
+    ) {
+      return "/api/session/" + url.split("/").pop();
+    }
+    return `${this.baseUrl}${url}`;
   }
 
   private headersToRecord(headers: HeadersInit | undefined): Record<string, string> {
@@ -438,3 +462,11 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient({ baseUrl: API_BASE_URL });
+
+export const ensureAccessToken = async (): Promise<string | null> => {
+  if (typeof window === "undefined") return null;
+  const token =
+    window.localStorage.getItem("access_token") ?? getBrowserCookieValue("access_token");
+  if (token && isAccessTokenValid(token)) return token;
+  return (await apiClient.refreshBrowserTokens())?.access_token ?? null;
+};

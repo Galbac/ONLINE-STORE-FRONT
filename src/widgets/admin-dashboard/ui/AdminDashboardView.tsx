@@ -43,15 +43,12 @@ import type {
   TopProductItem,
   ZoneSalesItem,
 } from "@/entities/admin-dashboard";
-import { adminOrderApi } from "@/entities/admin-order";
 import { adminDashboardApi } from "@/entities/admin-dashboard/api/adminDashboardApi";
+import { adminOrderApi } from "@/entities/admin-order";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat, ORDER_STATUS_LABELS } from "@/shared/lib/format";
 import { getStoredAccessToken, OrderStatusBadge } from "@/shared/ui";
-import {
-  PRESET_OPTIONS,
-  useDashboardFilters,
-} from "../lib/useDashboardFilters";
+import { PRESET_OPTIONS, useDashboardFilters } from "../lib/useDashboardFilters";
 import { DonutChart, type DonutChartItem } from "./DonutChart";
 
 interface AdminDashboardViewProps {
@@ -72,7 +69,9 @@ export const AdminDashboardView = ({
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const filters = useDashboardFilters("week");
 
-  const [analytics, setAnalytics] = useState<AdminAnalyticsResponse | null>(initialAnalytics || null);
+  const [analytics, setAnalytics] = useState<AdminAnalyticsResponse | null>(
+    initialAnalytics || null,
+  );
   const [salesTimeline, setSalesTimeline] = useState<AdminSalesSeriesItem[]>(
     initialAnalytics?.sales_timeline || initialSales.series || [],
   );
@@ -145,7 +144,7 @@ export const AdminDashboardView = ({
     return () => {
       isCancelled = true;
     };
-  }, [filters.preset, filters.dateFrom, filters.dateTo, filters.filterParams]);
+  }, [filters.preset, filters.dateFrom, filters.dateTo, filters.filterParams, initialAnalytics]);
 
   const handleStartDateChange = (val: string) => {
     setCustomStartDate(val);
@@ -186,23 +185,25 @@ export const AdminDashboardView = ({
   }));
 
   // Convert Delivery breakdown to Donut items
-  const deliveryDonutItems: DonutChartItem[] = (analytics?.delivery_breakdown || []).map((item) => ({
-    id: item.type,
-    label: item.label,
-    value: item.count,
-    share_percent: item.share_percent,
-  }));
+  const deliveryDonutItems: DonutChartItem[] = (analytics?.delivery_breakdown || []).map(
+    (item) => ({
+      id: item.type,
+      label: item.label,
+      value: item.count,
+      share_percent: item.share_percent,
+    }),
+  );
 
   return (
     <div className="space-y-6">
       {/* Header & Unified Date Filter Bar */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-slate-200 pb-5">
+      <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <BarChart3 className="text-emerald-600 size-7 sm:size-8" />
+          <h1 className="flex items-center gap-2.5 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+            <BarChart3 className="size-7 text-emerald-600 sm:size-8" />
             Аналитическая панель
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
             Сводка выручки, воронка статусов, каналы оплат и складские остатки.
           </p>
         </div>
@@ -210,7 +211,7 @@ export const AdminDashboardView = ({
         {/* Unified Filter Preset Buttons + Custom Date Picker */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Presets */}
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-2xl bg-slate-100 p-1.5 border border-slate-200/80">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-2xl border border-slate-200/80 bg-slate-100 p-1.5">
             {PRESET_OPTIONS.map((p) => {
               const isActive = filters.preset === p.value;
               return (
@@ -219,9 +220,9 @@ export const AdminDashboardView = ({
                   type="button"
                   disabled={isLoading}
                   onClick={() => filters.setPreset(p.value)}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                  className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
                     isActive
-                      ? "bg-white text-emerald-800 shadow-sm font-extrabold"
+                      ? "bg-white font-extrabold text-emerald-800 shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -236,26 +237,32 @@ export const AdminDashboardView = ({
             <button
               type="button"
               onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-              className={`inline-flex items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition-all ${
                 filters.isCustom
-                  ? "bg-emerald-50 border-emerald-300 text-emerald-800 shadow-xs"
-                  : "bg-white border-slate-200/80 text-slate-700 hover:bg-slate-50"
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-800 shadow-xs"
+                  : "border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50"
               }`}
             >
-              <Calendar size={14} className={filters.isCustom ? "text-emerald-600" : "text-slate-400"} />
+              <Calendar
+                size={14}
+                className={filters.isCustom ? "text-emerald-600" : "text-slate-400"}
+              />
               <span>{filters.isCustom ? filters.label : "Выбрать даты"}</span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${isDatePickerOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                size={14}
+                className={`text-slate-400 transition-transform ${isDatePickerOpen ? "rotate-180" : ""}`}
+              />
             </button>
 
             {isDatePickerOpen && (
               <form
                 onSubmit={handleApplyCustomRange}
-                className="absolute right-0 top-full mt-2 z-30 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl space-y-3"
+                className="absolute top-full right-0 z-30 mt-2 w-72 space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
               >
                 <div className="text-xs font-bold text-slate-800">Произвольный диапазон</div>
                 <div className="space-y-2 text-xs">
                   <div>
-                    <label className="block text-slate-500 mb-1">С даты (От):</label>
+                    <label className="mb-1 block text-slate-500">С даты (От):</label>
                     <input
                       type="date"
                       value={customStartDate}
@@ -264,7 +271,7 @@ export const AdminDashboardView = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-500 mb-1">По дату (До):</label>
+                    <label className="mb-1 block text-slate-500">По дату (До):</label>
                     <input
                       type="date"
                       value={customEndDate}
@@ -273,7 +280,7 @@ export const AdminDashboardView = ({
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-1">
                   <span className="text-[10px] text-slate-400">Применится автоматически</span>
                   <button
                     type="button"
@@ -290,7 +297,7 @@ export const AdminDashboardView = ({
       </div>
 
       {/* Clean Navigation Tabs without raw numbering */}
-      <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex [scrollbar-width:none] items-center gap-2 overflow-x-auto border-b border-slate-200 pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {[
           { id: "overview", label: "Обзор", icon: TrendingUp },
           { id: "products", label: "Продажи и товары", icon: Package },
@@ -303,10 +310,10 @@ export const AdminDashboardView = ({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as TabType)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex cursor-pointer items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-all sm:text-sm ${
                 isActive
-                  ? "border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-xl"
-                  : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                  ? "rounded-t-xl border-emerald-600 bg-emerald-50/50 text-emerald-800"
+                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
               }`}
             >
               <Icon size={16} className={isActive ? "text-emerald-600" : "text-slate-400"} />
@@ -340,7 +347,9 @@ export const AdminDashboardView = ({
             <KpiCard
               icon={Users}
               label="Активные клиенты"
-              value={(analytics?.customers.total_customers ?? dashboard.users.total).toLocaleString("ru-RU")}
+              value={(analytics?.customers.total_customers ?? dashboard.users.total).toLocaleString(
+                "ru-RU",
+              )}
               subLabel={`Новых за период: ${analytics?.customers.new_customers ?? 0} • Повторных: ${analytics?.customers.repeat_customers ?? 0}`}
               gradient="from-purple-500/10 to-indigo-500/10 border-purple-200"
               iconColor="bg-purple-600 text-white"
@@ -420,7 +429,8 @@ export const AdminDashboardView = ({
             ) : null}
           </div>
 
-          {analytics?.inventory?.top_stock_alerts && analytics.inventory.top_stock_alerts.length > 0 ? (
+          {analytics?.inventory?.top_stock_alerts &&
+          analytics.inventory.top_stock_alerts.length > 0 ? (
             <TopStockAlertsWidget items={analytics.inventory.top_stock_alerts} />
           ) : null}
         </div>
@@ -432,35 +442,38 @@ export const AdminDashboardView = ({
           {/* Operations & Delivery KPIs */}
           <div className="grid gap-4 sm:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Скорость доставки</p>
-              <p className="text-xl font-black text-emerald-600 mt-2">
+              <p className="text-xs font-medium text-slate-500">Скорость доставки</p>
+              <p className="mt-2 text-xl font-black text-emerald-600">
                 ~{analytics?.operations?.total_lifecycle_minutes ?? 30} мин
               </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Сборка: {analytics?.operations?.picking_minutes ?? 12}м • В пути: {analytics?.operations?.transit_minutes ?? 18}м
+              <p className="mt-1 text-xs text-slate-400">
+                Сборка: {analytics?.operations?.picking_minutes ?? 12}м • В пути:{" "}
+                {analytics?.operations?.transit_minutes ?? 18}м
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">Оценка сервиса (CSAT)</p>
-              <p className="text-xl font-black text-amber-500 mt-2 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-slate-500">Оценка сервиса (CSAT)</p>
+              <p className="mt-2 flex items-center gap-1.5 text-xl font-black text-amber-500">
                 <Star size={18} className="fill-amber-400 text-amber-400" />
                 {analytics?.operations?.csat_score ?? 4.8} / 5.0
               </p>
-              <p className="text-xs text-slate-400 mt-1">На основе {analytics?.operations?.total_reviews_count ?? 120} отзывов</p>
+              <p className="mt-1 text-xs text-slate-400">
+                На основе {analytics?.operations?.total_reviews_count ?? 120} отзывов
+              </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">NPS Клиентов</p>
-              <p className="text-xl font-black text-emerald-600 mt-2">
-                +{((analytics?.operations as any)?.nps_score) ?? 78}%
+              <p className="text-xs font-medium text-slate-500">NPS Клиентов</p>
+              <p className="mt-2 text-xl font-black text-emerald-600">
+                +{(analytics?.operations as any)?.nps_score ?? 78}%
               </p>
-              <p className="text-xs text-slate-400 mt-1">Лояльная база покупателей</p>
+              <p className="mt-1 text-xs text-slate-400">Лояльная база покупателей</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <p className="text-xs text-slate-500 font-medium">OTD (On-Time Delivery)</p>
-              <p className="text-xl font-black text-blue-600 mt-2">
-                {((analytics?.operations as any)?.on_time_delivery_percent) ?? 96.5}%
+              <p className="text-xs font-medium text-slate-500">OTD (On-Time Delivery)</p>
+              <p className="mt-2 text-xl font-black text-blue-600">
+                {(analytics?.operations as any)?.on_time_delivery_percent ?? 96.5}%
               </p>
-              <p className="text-xs text-slate-400 mt-1">Доставка вовремя в слот</p>
+              <p className="mt-1 text-xs text-slate-400">Доставка вовремя в слот</p>
             </div>
           </div>
 
@@ -511,17 +524,21 @@ function KpiCard({
   iconColor: string;
 }) {
   return (
-    <article className={`rounded-2xl border bg-gradient-to-br ${gradient} p-5 shadow-xs transition-all hover:shadow-md`}>
+    <article
+      className={`rounded-2xl border bg-gradient-to-br ${gradient} p-5 shadow-xs transition-all hover:shadow-md`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</p>
-          <p className="text-2xl font-black text-slate-900 mt-2 truncate">{value}</p>
+          <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">{label}</p>
+          <p className="mt-2 truncate text-2xl font-black text-slate-900">{value}</p>
         </div>
-        <span className={`grid size-11 shrink-0 place-items-center rounded-2xl ${iconColor} shadow-sm`}>
+        <span
+          className={`grid size-11 shrink-0 place-items-center rounded-2xl ${iconColor} shadow-sm`}
+        >
           <Icon size={20} />
         </span>
       </div>
-      <p className="text-xs text-slate-500 mt-3 pt-3 border-t border-slate-200/50 truncate font-medium">
+      <p className="mt-3 truncate border-t border-slate-200/50 pt-3 text-xs font-medium text-slate-500">
         {subLabel}
       </p>
     </article>
@@ -538,21 +555,21 @@ function SalesTimelineChart({
   const maxAmount = Math.max(...timeline.map((i) => Number(i.amount)), 0);
 
   return (
-    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
-          <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-base font-black text-slate-900 sm:text-lg">
             <TrendingUp size={18} className="text-emerald-600" />
             Динамика выручки
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">Период: {periodLabel}</p>
+          <p className="mt-0.5 text-xs text-slate-400">Период: {periodLabel}</p>
         </div>
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
           Всего {timeline.reduce((s, i) => s + i.orders_count, 0)} заказов
         </span>
       </div>
 
-      <div className="mt-6 flex h-60 items-end gap-1.5 sm:gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mt-6 flex h-60 [scrollbar-width:none] items-end gap-1.5 overflow-x-auto pb-2 [-ms-overflow-style:none] sm:gap-2 [&::-webkit-scrollbar]:hidden">
         {timeline.length > 0 ? (
           timeline.map((item) => {
             const amt = Number(item.amount);
@@ -563,16 +580,16 @@ function SalesTimelineChart({
             return (
               <div
                 key={String(item.date)}
-                className="group flex h-full min-w-8 sm:min-w-11 flex-1 flex-col justify-end items-center gap-1.5"
+                className="group flex h-full min-w-8 flex-1 flex-col items-center justify-end gap-1.5 sm:min-w-11"
               >
-                <div className="relative w-full flex-1 flex items-end justify-center">
+                <div className="relative flex w-full flex-1 items-end justify-center">
                   <div
-                    className="w-full rounded-t-lg bg-emerald-500 group-hover:bg-emerald-600 transition-all cursor-pointer shadow-xs"
+                    className="w-full cursor-pointer rounded-t-lg bg-emerald-500 shadow-xs transition-all group-hover:bg-emerald-600"
                     style={{ height: `${heightPct}%` }}
                     title={`${item.date}: ${toPriceFormat(item.amount)} (${item.orders_count} зак.)`}
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 font-medium group-hover:text-slate-900 truncate">
+                <span className="truncate text-[10px] font-medium text-slate-400 group-hover:text-slate-900">
                   {shortDate}
                 </span>
               </div>
@@ -592,8 +609,8 @@ function StatusFunnelWidget({ funnel }: { funnel: StatusFunnelItem[] }) {
   const totalInFunnel = funnel.reduce((acc, curr) => acc + curr.count, 0);
 
   return (
-    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
+      <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-base font-black text-slate-900">
         <Layers size={18} className="text-emerald-600" />
         <span>Воронка заказов</span>
       </h2>
@@ -602,19 +619,21 @@ function StatusFunnelWidget({ funnel }: { funnel: StatusFunnelItem[] }) {
           funnel.map((item) => (
             <div key={item.status} className="space-y-1">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-slate-700">{ORDER_STATUS_LABELS[item.status.toLowerCase()] || item.label}</span>
-                <span className="text-slate-900 font-mono">
+                <span className="text-slate-700">
+                  {ORDER_STATUS_LABELS[item.status.toLowerCase()] || item.label}
+                </span>
+                <span className="font-mono text-slate-900">
                   {item.count} зак. ({item.share_percent}%)
                 </span>
               </div>
-              <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                 <div
                   className={`h-full rounded-full ${
                     item.status === "delivered"
                       ? "bg-emerald-500"
                       : item.status === "cancelled"
-                      ? "bg-rose-500"
-                      : "bg-blue-500"
+                        ? "bg-rose-500"
+                        : "bg-blue-500"
                   }`}
                   style={{ width: `${Math.min(item.share_percent, 100)}%` }}
                 />
@@ -622,12 +641,12 @@ function StatusFunnelWidget({ funnel }: { funnel: StatusFunnelItem[] }) {
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
+          <div className="flex flex-col items-center justify-center space-y-2 py-8 text-center">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
               <Layers size={20} />
             </div>
             <p className="text-xs font-bold text-slate-700">Нет данных по статусам</p>
-            <p className="text-[11px] text-slate-400 max-w-xs">
+            <p className="max-w-xs text-[11px] text-slate-400">
               За выбранный период заказы не проходили этапы воронки.
             </p>
           </div>
@@ -640,7 +659,7 @@ function StatusFunnelWidget({ funnel }: { funnel: StatusFunnelItem[] }) {
 function CategorySalesWidget({ categories }: { categories: CategorySalesItem[] }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+      <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-base font-black text-slate-900">
         <PieChart size={18} className="text-emerald-600" />
         Выручка по категориям
       </h2>
@@ -653,13 +672,13 @@ function CategorySalesWidget({ categories }: { categories: CategorySalesItem[] }
                 <span className="font-black text-slate-900">{toPriceFormat(c.total_amount)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                   <div
                     className="h-full rounded-full bg-teal-500"
                     style={{ width: `${Math.min(c.share_percent, 100)}%` }}
                   />
                 </div>
-                <span className="text-[11px] font-bold text-slate-500 w-10 text-right">
+                <span className="w-10 text-right text-[11px] font-bold text-slate-500">
                   {c.share_percent}%
                 </span>
               </div>
@@ -676,12 +695,12 @@ function CategorySalesWidget({ categories }: { categories: CategorySalesItem[] }
 function TopProductsTable({ items }: { items: TopProductItem[] }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 mb-4">
-        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+      <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
           <Sparkles size={18} className="text-amber-500" />
           ABC-анализ и Топ продаж
         </h2>
-        <span className="text-[11px] text-slate-400 font-bold">Группа A (80% кассы)</span>
+        <span className="text-[11px] font-bold text-slate-400">Группа A (80% кассы)</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
@@ -701,19 +720,23 @@ function TopProductsTable({ items }: { items: TopProductItem[] }) {
                 group === "A"
                   ? "bg-emerald-100 text-emerald-800"
                   : group === "B"
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-slate-100 text-slate-600";
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-slate-100 text-slate-600";
               return (
-                <tr key={p.id} className="hover:bg-slate-50 transition">
+                <tr key={p.id} className="transition hover:bg-slate-50">
                   <td className="py-2.5 pr-2 whitespace-nowrap">
-                    <span className={`inline-block px-1.5 py-0.5 rounded-lg font-black text-center text-xs ${badgeBg}`}>
+                    <span
+                      className={`inline-block rounded-lg px-1.5 py-0.5 text-center text-xs font-black ${badgeBg}`}
+                    >
                       {group}/{p.xyz_group || "X"}
                     </span>
                   </td>
-                  <td className="py-2.5 font-bold text-slate-900 pr-2">
+                  <td className="py-2.5 pr-2 font-bold text-slate-900">
                     <p className="line-clamp-1">{p.name}</p>
                     {p.category_name ? (
-                      <span className="text-[10px] text-slate-400 font-normal">{p.category_name}</span>
+                      <span className="text-[10px] font-normal text-slate-400">
+                        {p.category_name}
+                      </span>
                     ) : null}
                   </td>
                   <td className="py-2.5 text-right font-semibold text-slate-700">
@@ -722,9 +745,7 @@ function TopProductsTable({ items }: { items: TopProductItem[] }) {
                   <td className="py-2.5 text-right font-black text-emerald-700">
                     {toPriceFormat(p.total_sales)}
                   </td>
-                  <td className="py-2.5 text-right font-bold text-slate-600">
-                    {p.current_stock}
-                  </td>
+                  <td className="py-2.5 text-right font-bold text-slate-600">{p.current_stock}</td>
                 </tr>
               );
             })}
@@ -738,21 +759,24 @@ function TopProductsTable({ items }: { items: TopProductItem[] }) {
 function DeadStockWidget({ items }: { items: DeadStockItem[] }) {
   return (
     <section className="rounded-3xl border border-rose-200/80 bg-rose-50/30 p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-rose-100 mb-3">
-        <h2 className="text-base font-black text-rose-900 flex items-center gap-2">
+      <div className="mb-3 flex items-center justify-between border-b border-rose-100 pb-3">
+        <h2 className="flex items-center gap-2 text-base font-black text-rose-900">
           <PackageX size={18} className="text-rose-600" />
           Неликвид (0 продаж за период)
         </h2>
-        <span className="text-xs text-rose-600 font-semibold">Замораживают оборот</span>
+        <span className="text-xs font-semibold text-rose-600">Замораживают оборот</span>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {items.map((p) => (
           <div key={p.id} className="rounded-2xl border border-rose-100 bg-white p-3 shadow-2xs">
-            <p className="text-xs font-bold text-slate-900 line-clamp-1">{p.name}</p>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Остаток: <span className="font-bold text-slate-800">{p.stock_quantity} {p.unit}</span>
+            <p className="line-clamp-1 text-xs font-bold text-slate-900">{p.name}</p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Остаток:{" "}
+              <span className="font-bold text-slate-800">
+                {p.stock_quantity} {p.unit}
+              </span>
             </p>
-            <p className="text-xs font-black text-rose-700 mt-1">{toPriceFormat(p.price)}</p>
+            <p className="mt-1 text-xs font-black text-rose-700">{toPriceFormat(p.price)}</p>
           </div>
         ))}
       </div>
@@ -763,7 +787,7 @@ function DeadStockWidget({ items }: { items: DeadStockItem[] }) {
 function ZoneSalesWidget({ items }: { items: ZoneSalesItem[] }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+      <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-base font-black text-slate-900">
         <MapPin size={18} className="text-emerald-600" />
         Выручка по зонам доставки
       </h2>
@@ -773,16 +797,18 @@ function ZoneSalesWidget({ items }: { items: ZoneSalesItem[] }) {
             <div key={z.zone_name} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-800">{z.zone_name}</span>
-                <span className="font-black text-slate-900">{toPriceFormat(z.total_amount)} ({z.orders_count} зак.)</span>
+                <span className="font-black text-slate-900">
+                  {toPriceFormat(z.total_amount)} ({z.orders_count} зак.)
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                   <div
                     className="h-full rounded-full bg-indigo-500"
                     style={{ width: `${Math.min(z.share_percent, 100)}%` }}
                   />
                 </div>
-                <span className="text-[11px] font-bold text-slate-500 w-10 text-right">
+                <span className="w-10 text-right text-[11px] font-bold text-slate-500">
                   {z.share_percent}%
                 </span>
               </div>
@@ -799,22 +825,27 @@ function ZoneSalesWidget({ items }: { items: ZoneSalesItem[] }) {
 function PromoCodesAnalyticsWidget({ items }: { items: PromoCodeAnalyticsItem[] }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+      <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-base font-black text-slate-900">
         <Tag size={18} className="text-purple-600" />
         Эффективность промокодов
       </h2>
       <div className="space-y-3">
         {items.length > 0 ? (
           items.map((p) => (
-            <div key={p.code} className="flex items-center justify-between border-b border-slate-50 pb-2.5">
+            <div
+              key={p.code}
+              className="flex items-center justify-between border-b border-slate-50 pb-2.5"
+            >
               <div>
                 <span className="inline-block rounded-md bg-purple-50 px-2 py-0.5 font-mono text-xs font-bold text-purple-700">
                   {p.code}
                 </span>
-                {p.name ? <p className="text-[11px] text-slate-400 mt-0.5">{p.name}</p> : null}
+                {p.name ? <p className="mt-0.5 text-[11px] text-slate-400">{p.name}</p> : null}
               </div>
               <div className="text-right">
-                <p className="text-xs font-black text-slate-900">{toPriceFormat(p.total_discount)}</p>
+                <p className="text-xs font-black text-slate-900">
+                  {toPriceFormat(p.total_discount)}
+                </p>
                 <p className="text-[11px] text-slate-400">{p.uses_count} применений</p>
               </div>
             </div>
@@ -833,20 +864,26 @@ function LoyaltyAnalyticsWidget({ loyalty }: { loyalty?: any }) {
 
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+      <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-base font-black text-slate-900">
         <Coins size={18} className="text-amber-500" />
         Экономика бонусов лояльности
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
-          <p className="text-xs text-emerald-800 font-bold">Начислено за период</p>
-          <p className="text-2xl font-black text-emerald-700 mt-1.5">+{accrued.toLocaleString("ru-RU")} Б</p>
-          <p className="text-[11px] text-slate-400 mt-1">Кешбэк за заказы</p>
+          <p className="text-xs font-bold text-emerald-800">Начислено за период</p>
+          <p className="mt-1.5 text-2xl font-black text-emerald-700">
+            +{accrued.toLocaleString("ru-RU")} Б
+          </p>
+          <p className="mt-1 text-[11px] text-slate-400">Кешбэк за заказы</p>
         </div>
         <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
-          <p className="text-xs text-amber-800 font-bold">Списано клиентами</p>
-          <p className="text-2xl font-black text-amber-700 mt-1.5">-{spent.toLocaleString("ru-RU")} Б</p>
-          <p className="text-[11px] text-slate-500 mt-1">Доля оплаты баллами: {loyalty?.points_payment_share_percent ?? 3.5}%</p>
+          <p className="text-xs font-bold text-amber-800">Списано клиентами</p>
+          <p className="mt-1.5 text-2xl font-black text-amber-700">
+            -{spent.toLocaleString("ru-RU")} Б
+          </p>
+          <p className="mt-1 text-[11px] text-slate-500">
+            Доля оплаты баллами: {loyalty?.points_payment_share_percent ?? 3.5}%
+          </p>
         </div>
       </div>
     </section>
@@ -858,7 +895,7 @@ function HourlyHeatmapWidget({ items }: { items: { hour: number; orders_count: n
 
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+      <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-base font-black text-slate-900">
         <Clock size={18} className="text-emerald-600" />
         Активность по часам суток (00:00 - 23:00)
       </h2>
@@ -866,13 +903,16 @@ function HourlyHeatmapWidget({ items }: { items: { hour: number; orders_count: n
         {items.map((i) => {
           const hPct = Math.max((i.orders_count / maxH) * 100, 4);
           return (
-            <div key={i.hour} className="flex-1 flex flex-col items-center justify-end gap-1 h-full min-w-3">
+            <div
+              key={i.hour}
+              className="flex h-full min-w-3 flex-1 flex-col items-center justify-end gap-1"
+            >
               <div
-                className="w-full rounded-t bg-cyan-500 hover:bg-cyan-600 transition cursor-pointer"
+                className="w-full cursor-pointer rounded-t bg-cyan-500 transition hover:bg-cyan-600"
                 style={{ height: `${hPct}%` }}
                 title={`${i.hour}:00 - ${i.orders_count} заказов`}
               />
-              <span className="text-[9px] text-slate-400 font-medium">{i.hour}</span>
+              <span className="text-[9px] font-medium text-slate-400">{i.hour}</span>
             </div>
           );
         })}
@@ -897,8 +937,8 @@ function RecentOrdersWidget({
   const displayOrders = hasFilteredOrders ? orders : fallbackOrders.slice(0, 6);
 
   return (
-    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-slate-100 mb-3">
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-black text-slate-900">Заказы</h2>
           <span
@@ -913,14 +953,18 @@ function RecentOrdersWidget({
             {hasFilteredOrders ? periodLabel : "Последние из БД"}
           </span>
         </div>
-        <Link href={ROUTES.ADMIN_ORDERS} className="text-xs font-bold text-emerald-600 hover:text-emerald-700">
+        <Link
+          href={ROUTES.ADMIN_ORDERS}
+          className="text-xs font-bold text-emerald-600 hover:text-emerald-700"
+        >
           Все заказы ➔
         </Link>
       </div>
 
       {!hasFilteredOrders && (
-        <div className="mb-3 rounded-xl bg-amber-50/70 border border-amber-200/60 p-2.5 text-[11px] text-amber-800">
-          За период «{periodLabel}» новых заказов не зафиксировано. Показаны последние заказы магазина:
+        <div className="mb-3 rounded-xl border border-amber-200/60 bg-amber-50/70 p-2.5 text-[11px] text-amber-800">
+          За период «{periodLabel}» новых заказов не зафиксировано. Показаны последние заказы
+          магазина:
         </div>
       )}
 
@@ -930,20 +974,29 @@ function RecentOrdersWidget({
             <Link
               key={o.id}
               href={`${ROUTES.ADMIN_ORDERS}/${o.id}`}
-              className="py-2.5 flex items-center justify-between hover:bg-slate-50 transition rounded-xl px-2.5 -mx-2.5 group"
+              className="group -mx-2.5 flex items-center justify-between rounded-xl px-2.5 py-2.5 transition hover:bg-slate-50"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition">
+                  <p className="text-xs font-bold text-slate-900 transition group-hover:text-emerald-700">
                     #{o.order_number}
                   </p>
                   <OrderStatusBadge status={o.status} size="sm" />
                 </div>
                 <p className="text-[10px] text-slate-400">
-                  {o.created_at ? new Date(o.created_at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "ID: " + o.id}
+                  {o.created_at
+                    ? new Date(o.created_at).toLocaleString("ru-RU", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "ID: " + o.id}
                 </p>
               </div>
-              <span className="text-xs font-black text-slate-900">{toPriceFormat(o.final_price)}</span>
+              <span className="text-xs font-black text-slate-900">
+                {toPriceFormat(o.final_price)}
+              </span>
             </Link>
           ))}
         </div>
@@ -957,23 +1010,26 @@ function RecentOrdersWidget({
 function LowStockWidget({ lowStock }: { lowStock: AdminLowStockResponse }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+        <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
           <AlertTriangle size={16} className="text-amber-500" />
           <span>Малый остаток</span>
-          <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-700">
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700">
             {lowStock.total} шт.
           </span>
         </h2>
-        <Link href={ROUTES.ADMIN_PRODUCTS} className="text-xs font-bold text-emerald-600 hover:text-emerald-700">
+        <Link
+          href={ROUTES.ADMIN_PRODUCTS}
+          className="text-xs font-bold text-emerald-600 hover:text-emerald-700"
+        >
           На склад ➔
         </Link>
       </div>
       <div className="divide-y divide-slate-100">
         {lowStock.items.slice(0, 5).map((p) => (
-          <div key={p.id} className="py-2.5 flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-800 line-clamp-1 pr-2">{p.name}</p>
-            <span className="text-xs font-black text-rose-600 shrink-0">
+          <div key={p.id} className="flex items-center justify-between py-2.5">
+            <p className="line-clamp-1 pr-2 text-xs font-bold text-slate-800">{p.name}</p>
+            <span className="shrink-0 text-xs font-black text-rose-600">
               {p.stock_quantity} {p.unit}
             </span>
           </div>
@@ -986,22 +1042,25 @@ function LowStockWidget({ lowStock }: { lowStock: AdminLowStockResponse }) {
 function MarketBasketWidget({ items }: { items: any[] }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+        <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
           <HeartHandshake size={18} className="text-indigo-600" />
           Частые товарные связки (Market Basket)
         </h2>
-        <span className="text-xs text-slate-400 font-medium">Покупают вместе</span>
+        <span className="text-xs font-medium text-slate-400">Покупают вместе</span>
       </div>
       <div className="space-y-2.5">
         {items.map((pair, idx) => (
-          <div key={idx} className="flex items-center justify-between rounded-xl bg-slate-50/70 p-3 border border-slate-100 text-xs">
-            <div className="flex items-center gap-2 min-w-0 pr-3">
-              <span className="font-bold text-slate-900 truncate">{pair.product_a}</span>
-              <span className="text-slate-400 font-black">+</span>
-              <span className="font-bold text-slate-900 truncate">{pair.product_b}</span>
+          <div
+            key={idx}
+            className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-xs"
+          >
+            <div className="flex min-w-0 items-center gap-2 pr-3">
+              <span className="truncate font-bold text-slate-900">{pair.product_a}</span>
+              <span className="font-black text-slate-400">+</span>
+              <span className="truncate font-bold text-slate-900">{pair.product_b}</span>
             </div>
-            <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-black text-indigo-700 shrink-0">
+            <span className="shrink-0 rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-black text-indigo-700">
               {pair.frequency} заказов
             </span>
           </div>
@@ -1013,27 +1072,47 @@ function MarketBasketWidget({ items }: { items: any[] }) {
 
 function RfmSegmentationWidget({ rfm }: { rfm?: any }) {
   const segments = [
-    { label: "VIP / Чемпионы", count: rfm?.vip_count ?? 0, desc: "Чек > 10 000 ₽ или 5+ заказов", color: "border-amber-200 bg-amber-50/40 text-amber-900" },
-    { label: "Постоянные (Regular)", count: rfm?.regular_count ?? 0, desc: "Совершили 2-4 покупки", color: "border-emerald-200 bg-emerald-50/40 text-emerald-900" },
-    { label: "Новички", count: rfm?.newbies_count ?? 0, desc: "Сделали первый заказ", color: "border-blue-200 bg-blue-50/40 text-blue-900" },
-    { label: "В зоне риска (Спящие)", count: rfm?.at_risk_count ?? 0, desc: "Без покупок > 21 дня", color: "border-rose-200 bg-rose-50/40 text-rose-900" },
+    {
+      label: "VIP / Чемпионы",
+      count: rfm?.vip_count ?? 0,
+      desc: "Чек > 10 000 ₽ или 5+ заказов",
+      color: "border-amber-200 bg-amber-50/40 text-amber-900",
+    },
+    {
+      label: "Постоянные (Regular)",
+      count: rfm?.regular_count ?? 0,
+      desc: "Совершили 2-4 покупки",
+      color: "border-emerald-200 bg-emerald-50/40 text-emerald-900",
+    },
+    {
+      label: "Новички",
+      count: rfm?.newbies_count ?? 0,
+      desc: "Сделали первый заказ",
+      color: "border-blue-200 bg-blue-50/40 text-blue-900",
+    },
+    {
+      label: "В зоне риска (Спящие)",
+      count: rfm?.at_risk_count ?? 0,
+      desc: "Без покупок > 21 дня",
+      color: "border-rose-200 bg-rose-50/40 text-rose-900",
+    },
   ];
 
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+        <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
           <Crown size={18} className="text-amber-500" />
           RFM-сегментация покупателей
         </h2>
-        <span className="text-xs text-slate-400 font-medium">Сегменты LTV</span>
+        <span className="text-xs font-medium text-slate-400">Сегменты LTV</span>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {segments.map((s) => (
           <div key={s.label} className={`rounded-2xl border p-4 shadow-2xs ${s.color}`}>
-            <p className="text-xs font-bold leading-tight">{s.label}</p>
-            <p className="text-2xl font-black mt-2">{s.count}</p>
-            <p className="text-[11px] opacity-75 mt-1">{s.desc}</p>
+            <p className="text-xs leading-tight font-bold">{s.label}</p>
+            <p className="mt-2 text-2xl font-black">{s.count}</p>
+            <p className="mt-1 text-[11px] opacity-75">{s.desc}</p>
           </div>
         ))}
       </div>
@@ -1044,7 +1123,7 @@ function RfmSegmentationWidget({ rfm }: { rfm?: any }) {
 function SubstitutionSplitWidget({ items }: { items: any[] }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <h2 className="text-base font-black text-slate-900 flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+      <h2 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-base font-black text-slate-900">
         <Shuffle size={18} className="text-emerald-600" />
         Политика замен при сборке
       </h2>
@@ -1053,9 +1132,11 @@ function SubstitutionSplitWidget({ items }: { items: any[] }) {
           <div key={item.policy} className="space-y-1.5">
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="text-slate-800">{item.label}</span>
-              <span className="text-slate-900">{item.count} заказов ({item.share_percent}%)</span>
+              <span className="text-slate-900">
+                {item.count} заказов ({item.share_percent}%)
+              </span>
             </div>
-            <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
               <div
                 className="h-full rounded-full bg-teal-500"
                 style={{ width: `${Math.min(item.share_percent, 100)}%` }}
@@ -1071,12 +1152,12 @@ function SubstitutionSplitWidget({ items }: { items: any[] }) {
 function RetentionCohortWidget({ cohorts }: { cohorts: any[] }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+        <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
           <Users size={18} className="text-emerald-600" />
           Когортный анализ удержания (Retention Cohorts)
         </h2>
-        <span className="text-xs text-slate-400 font-medium">Повторные покупки по месяцам</span>
+        <span className="text-xs font-medium text-slate-400">Повторные покупки по месяцам</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-center text-xs">
@@ -1092,13 +1173,35 @@ function RetentionCohortWidget({ cohorts }: { cohorts: any[] }) {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {cohorts.map((c) => (
-              <tr key={c.cohort_name} className="hover:bg-slate-50 transition">
+              <tr key={c.cohort_name} className="transition hover:bg-slate-50">
                 <td className="py-2.5 text-left font-bold text-slate-900">{c.cohort_name}</td>
                 <td className="py-2.5 font-semibold text-slate-600">{c.users_count} чел.</td>
-                <td className="py-2.5"><span className="rounded-lg bg-emerald-600 text-white font-bold px-2 py-0.5">{c.m0}%</span></td>
-                <td className="py-2.5"><span className={`rounded-lg px-2 py-0.5 font-bold ${c.m1 > 0 ? "bg-emerald-100 text-emerald-800" : "text-slate-300"}`}>{c.m1 > 0 ? `${c.m1}%` : "—"}</span></td>
-                <td className="py-2.5"><span className={`rounded-lg px-2 py-0.5 font-bold ${c.m2 > 0 ? "bg-emerald-50 text-emerald-700" : "text-slate-300"}`}>{c.m2 > 0 ? `${c.m2}%` : "—"}</span></td>
-                <td className="py-2.5"><span className={`rounded-lg px-2 py-0.5 font-bold ${c.m3 > 0 ? "bg-emerald-50 text-emerald-700" : "text-slate-300"}`}>{c.m3 > 0 ? `${c.m3}%` : "—"}</span></td>
+                <td className="py-2.5">
+                  <span className="rounded-lg bg-emerald-600 px-2 py-0.5 font-bold text-white">
+                    {c.m0}%
+                  </span>
+                </td>
+                <td className="py-2.5">
+                  <span
+                    className={`rounded-lg px-2 py-0.5 font-bold ${c.m1 > 0 ? "bg-emerald-100 text-emerald-800" : "text-slate-300"}`}
+                  >
+                    {c.m1 > 0 ? `${c.m1}%` : "—"}
+                  </span>
+                </td>
+                <td className="py-2.5">
+                  <span
+                    className={`rounded-lg px-2 py-0.5 font-bold ${c.m2 > 0 ? "bg-emerald-50 text-emerald-700" : "text-slate-300"}`}
+                  >
+                    {c.m2 > 0 ? `${c.m2}%` : "—"}
+                  </span>
+                </td>
+                <td className="py-2.5">
+                  <span
+                    className={`rounded-lg px-2 py-0.5 font-bold ${c.m3 > 0 ? "bg-emerald-50 text-emerald-700" : "text-slate-300"}`}
+                  >
+                    {c.m3 > 0 ? `${c.m3}%` : "—"}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -1111,18 +1214,21 @@ function RetentionCohortWidget({ cohorts }: { cohorts: any[] }) {
 function TopStockAlertsWidget({ items }: { items: any[] }) {
   return (
     <section className="rounded-3xl border border-amber-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-amber-100 mb-3">
-        <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+      <div className="mb-3 flex items-center justify-between border-b border-amber-100 pb-3">
+        <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
           <BellRing size={18} className="text-amber-500" />
           Лист ожидания (Топ запросов «Сообщить о поступлении»)
         </h2>
-        <span className="text-xs text-amber-700 font-semibold">Ждут пополнения</span>
+        <span className="text-xs font-semibold text-amber-700">Ждут пополнения</span>
       </div>
       <div className="space-y-2">
         {items.map((item) => (
-          <div key={item.product_id} className="flex items-center justify-between py-2 border-b border-slate-50 text-xs">
-            <span className="font-bold text-slate-800 line-clamp-1 pr-2">{item.product_name}</span>
-            <span className="rounded-lg bg-amber-50 px-2 py-0.5 font-black text-amber-800 shrink-0">
+          <div
+            key={item.product_id}
+            className="flex items-center justify-between border-b border-slate-50 py-2 text-xs"
+          >
+            <span className="line-clamp-1 pr-2 font-bold text-slate-800">{item.product_name}</span>
+            <span className="shrink-0 rounded-lg bg-amber-50 px-2 py-0.5 font-black text-amber-800">
               {item.waiting_users_count} покупателей ждут
             </span>
           </div>
@@ -1135,13 +1241,15 @@ function TopStockAlertsWidget({ items }: { items: any[] }) {
 function CouriersRatingWidget({ couriers, totalTips }: { couriers: any[]; totalTips?: any }) {
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
-          <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
             <Award size={18} className="text-emerald-600" />
             Топ курьеров и чаевые
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">Всего чаевых за период: {toPriceFormat(totalTips || 1900)}</p>
+          <p className="mt-0.5 text-xs text-slate-400">
+            Всего чаевых за период: {toPriceFormat(totalTips || 1900)}
+          </p>
         </div>
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
           Рейтинг курьеров
@@ -1149,16 +1257,23 @@ function CouriersRatingWidget({ couriers, totalTips }: { couriers: any[]; totalT
       </div>
       <div className="space-y-3">
         {couriers.map((c) => (
-          <div key={c.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 text-xs">
+          <div
+            key={c.id}
+            className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-xs"
+          >
             <div>
-              <p className="font-bold text-slate-900 flex items-center gap-1.5">
+              <p className="flex items-center gap-1.5 font-bold text-slate-900">
                 {c.name}
-                <span className="text-[11px] text-amber-500 font-black">★ {c.rating}</span>
+                <span className="text-[11px] font-black text-amber-500">★ {c.rating}</span>
               </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">{c.delivered_orders_count} доставок выполнено</p>
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {c.delivered_orders_count} доставок выполнено
+              </p>
             </div>
             <div className="text-right">
-              <span className="text-xs font-black text-emerald-700">+{toPriceFormat(c.tips_amount)}</span>
+              <span className="text-xs font-black text-emerald-700">
+                +{toPriceFormat(c.tips_amount)}
+              </span>
               <p className="text-[10px] text-slate-400">чаевые</p>
             </div>
           </div>

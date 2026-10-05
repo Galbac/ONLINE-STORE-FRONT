@@ -139,7 +139,7 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
   }
 
   const [categoryListResponse, products, cart, favorites] = await Promise.all([
-    categoryApi.getList(),
+    categoryApi.getList(storeId),
     getSearchProducts(searchPayload, query, page, pageSize),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),
     fallbackOnUnauthorized(

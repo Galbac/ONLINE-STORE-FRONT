@@ -48,7 +48,7 @@ export const productApi = {
       max_price: params.max_price,
       has_discount: params.has_discount,
       product_type: params.product_type,
-      store_id: params.store_id,
+      store_id: params.store_id ?? getCurrentStoreId(),
       sort: params.sort ?? "popular",
     });
   },
@@ -62,11 +62,12 @@ export const productApi = {
     });
   },
 
-  getDiscounted: async (): Promise<ProductDiscountedResponse> => {
+  getDiscounted: async (storeId?: number): Promise<ProductDiscountedResponse> => {
     return apiClient.get<ProductDiscountedResponse>(API_ENDPOINTS.PRODUCT.DISCOUNTED, {
       page: 1,
       limit: 8,
       in_stock: true,
+      store_id: storeId ?? getCurrentStoreId(),
       sort: "discount_desc",
     });
   },
@@ -91,7 +92,7 @@ export const productApi = {
       max_price: params.max_price,
       has_discount: params.has_discount,
       product_type: params.product_type,
-      store_id: params.store_id,
+      store_id: params.store_id ?? getCurrentStoreId(),
       tag: params.tag,
       sort: params.sort ?? "relevance",
     });
@@ -102,6 +103,7 @@ export const productApi = {
     params: ProductDetailParams = {},
   ): Promise<ProductDetailResponse> => {
     return apiClient.get<ProductDetailResponse>(API_ENDPOINTS.PRODUCT.BY_SLUG(slug), {
+      store_id: params.store_id ?? getCurrentStoreId(),
       with_similar: params.with_similar ?? false,
       with_breadcrumbs: params.with_breadcrumbs ?? true,
     });
@@ -112,6 +114,7 @@ export const productApi = {
     params: ProductDetailParams = {},
   ): Promise<ProductDetailResponse> => {
     return apiClient.get<ProductDetailResponse>(API_ENDPOINTS.PRODUCT.BY_ID(productId), {
+      store_id: params.store_id ?? getCurrentStoreId(),
       with_similar: params.with_similar ?? false,
       with_breadcrumbs: params.with_breadcrumbs ?? true,
     });
@@ -122,6 +125,7 @@ export const productApi = {
     params: ProductSimilarParams = {},
   ): Promise<ProductSimilarResponse> => {
     return apiClient.get<ProductSimilarResponse>(API_ENDPOINTS.PRODUCT.SIMILAR(productId), {
+      store_id: params.store_id ?? getCurrentStoreId(),
       limit: params.limit ?? 8,
       in_stock: params.in_stock ?? true,
     });

@@ -63,8 +63,8 @@ export const HomePage = async () => {
     favorites,
     banners,
   ] = await Promise.all([
-    categoryApi.getTree().catch(() => ({ items: [] })),
-    categoryApi.getList().catch(() => ({ items: [], total: 0, limit: 100, offset: 0 })),
+    categoryApi.getTree(storeId).catch(() => ({ items: [] })),
+    categoryApi.getList(storeId).catch(() => ({ items: [], total: 0, limit: 100, offset: 0 })),
     productApi.getPopular(storeId).catch(() => ({ items: [] })),
     discountApi.getProducts(storeId !== undefined ? { store_id: storeId } : {}).catch(() => ({ items: [] })),
     productApi.getNew(storeId).catch(() => ({ items: [] })),
@@ -88,8 +88,8 @@ export const HomePage = async () => {
   return (
     <>
       <Header />
-      <main className="space-y-12 pb-20 md:pb-8">
-        <Container className="pt-6">
+      <main className="space-y-8 pb-20 md:space-y-12 md:pb-8">
+        <Container className="hidden pt-6 md:block">
           <Hero totalProducts={(categories?.items ?? []).reduce((acc, cat) => acc + (cat.products_count ?? 0), 0)} />
         </Container>
 

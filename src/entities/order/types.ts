@@ -21,6 +21,7 @@ export interface ProfileOrderListParams {
 }
 
 export interface OrderCreateRequest {
+  expected_cart_total?: string;
   delivery_type: "delivery" | "pickup";
   payment_method: "online" | "on_delivery" | "sbp";
   address_id?: number | null;

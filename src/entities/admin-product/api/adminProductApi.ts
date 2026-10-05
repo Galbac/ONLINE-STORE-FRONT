@@ -1,6 +1,8 @@
 import { adminApiClient, API_ENDPOINTS } from "@/shared/api";
 
 import type {
+  AdminProductStoreResponse,
+  AdminProductStoreUpdateRequest,
   AdminProductCreateRequest,
   AdminProductDetailResponse,
   AdminProductAvailabilityRequest,
@@ -23,6 +25,18 @@ import type {
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
 export const adminProductApi = {
+  getStores: async (productId: number, accessToken?: string | null): Promise<AdminProductStoreResponse[]> => {
+    return adminApiClient.get<AdminProductStoreResponse[]>(
+      API_ENDPOINTS.ADMIN.PRODUCT_STORES(productId), undefined,
+      accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    );
+  },
+  updateStore: async (productId: number, storeId: number, data: AdminProductStoreUpdateRequest, accessToken?: string | null): Promise<AdminProductStoreResponse> => {
+    return adminApiClient.patch<AdminProductStoreUpdateRequest, AdminProductStoreResponse>(
+      API_ENDPOINTS.ADMIN.PRODUCT_STORE(productId, storeId), data,
+      accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    );
+  },
   create: async (
     data: AdminProductCreateRequest,
     accessToken?: string | null,

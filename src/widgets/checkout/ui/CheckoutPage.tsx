@@ -1,5 +1,6 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cartApi, type CartResponse, type CartSummaryResponse } from "@/entities/cart";
@@ -37,6 +38,8 @@ interface CheckoutPageState {
 }
 
 export const CheckoutPage = () => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
+  const [isRepricing, setIsRepricing] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const [state, setState] = useState<CheckoutPageState>({
@@ -59,6 +62,7 @@ export const CheckoutPage = () => {
     }
 
     let isActive = true;
+    setIsRepricing(true);
 
     const loadCheckout = async (): Promise<void> => {
       try {
@@ -127,6 +131,8 @@ export const CheckoutPage = () => {
         }
 
         setState((currentState) => ({ ...currentState, status: "error" }));
+      } finally {
+        if (isActive) setIsRepricing(false);
       }
     };
 
@@ -135,7 +141,7 @@ export const CheckoutPage = () => {
     return () => {
       isActive = false;
     };
-  }, [pathname, router]);
+  }, [pathname, router, selectedStoreId]);
 
   const {
     addresses,
@@ -158,6 +164,7 @@ export const CheckoutPage = () => {
     summary &&
     timeSlots ? (
       <CheckoutView
+        isRepricing={isRepricing}
         addresses={addresses}
         cart={cart}
         deliveryCalculation={deliveryCalculation}

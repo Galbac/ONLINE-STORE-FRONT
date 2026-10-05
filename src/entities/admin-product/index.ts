@@ -1,5 +1,7 @@
 export { adminProductApi } from "./api/adminProductApi";
 export type {
+  AdminProductStoreResponse,
+  AdminProductStoreUpdateRequest,
   AdminProductCategoryResponse,
   AdminProductCreateRequest,
   AdminProductDetailResponse,

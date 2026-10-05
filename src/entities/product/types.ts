@@ -1,4 +1,6 @@
 export interface StoreStockResponse {
+  price?: string | null;
+  old_price?: string | null;
   store_id: number;
   store_name: string;
   address: string;
@@ -134,11 +136,13 @@ export interface ProductSearchResponse {
 }
 
 export interface ProductDetailParams {
+  store_id?: number;
   with_similar?: boolean;
   with_breadcrumbs?: boolean;
 }
 
 export interface ProductSimilarParams {
+  store_id?: number;
   limit?: number;
   in_stock?: boolean;
 }

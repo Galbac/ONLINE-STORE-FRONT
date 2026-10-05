@@ -165,3 +165,21 @@ export interface AdminProductListParams {
   sort?: string;
   sync_status?: string;
 }
+
+
+export interface AdminProductStoreResponse {
+  store_id: number;
+  store_name: string;
+  address: string;
+  stock_quantity: string;
+  reserved_quantity: string;
+  price: string;
+  old_price: string | null;
+  uses_base_price: boolean;
+}
+
+export interface AdminProductStoreUpdateRequest {
+  stock_quantity?: string;
+  price?: string | null;
+  old_price?: string | null;
+}

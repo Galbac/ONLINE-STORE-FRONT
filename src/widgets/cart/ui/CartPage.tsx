@@ -1,5 +1,6 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -22,6 +23,7 @@ interface CartPageState {
 }
 
 export const CartPage = () => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
   const pathname = usePathname();
   const router = useRouter();
   const [state, setState] = useState<CartPageState>({
@@ -32,6 +34,7 @@ export const CartPage = () => {
 
   useEffect(() => {
     let isActive = true;
+    setState((current) => ({ ...current, status: "loading" }));
 
     const loadCart = async (): Promise<void> => {
       try {
@@ -60,7 +63,7 @@ export const CartPage = () => {
     return () => {
       isActive = false;
     };
-  }, [pathname, router]);
+  }, [pathname, router, selectedStoreId]);
 
   return (
     <>

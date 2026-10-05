@@ -115,8 +115,8 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   }
 
   const [categoryTree, categories, products, allCategoriesProducts, cart, favorites, facets] = await Promise.all([
-    categoryApi.getTree(),
-    categoryApi.getList(),
+    categoryApi.getTree(storeId),
+    categoryApi.getList(storeId),
     getCatalogProducts(productParams, page, pageSize),
     getCatalogProducts(allCategoriesProductParams, 1, 1),
     fallbackOnUnauthorized(cartApi.get(), emptyCartResponse),

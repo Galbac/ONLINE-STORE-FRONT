@@ -25,7 +25,11 @@ const getBrowserAuthHeaders = (): HeadersInit => {
     window.sessionStorage.getItem("access_token") ??
     getBrowserCookieValue("access_token");
 
-  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+  const storeId = getBrowserCookieValue("current_store_id");
+  return {
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    ...(storeId && /^[1-9]\d*$/.test(storeId) ? { "X-Store-ID": storeId } : {}),
+  };
 };
 
 const getBrowserCookieValue = (name: string): string | null => {

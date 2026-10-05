@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Clock, MapPin, Phone, Search, Store, X } from "lucide-react";
 import { deliveryApi, useStoreBranch, type PickupPointResponse } from "@/entities/delivery";
@@ -8,6 +8,7 @@ import { formatPhoneMask } from "@/shared/lib/format/phone";
 
 export const StoreBranchSelector = () => {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const { selectedStore, setSelectedStore } = useStoreBranch();
   const [isOpen, setIsOpen] = useState(false);
   const [stores, setStores] = useState<PickupPointResponse[]>([]);
@@ -23,7 +24,8 @@ export const StoreBranchSelector = () => {
         const res = await deliveryApi.getPickupPoints({ only_active: true });
         if (isMounted && res.items) {
           setStores(res.items);
-          if (!selectedStore && res.items[0]) {
+          const currentStore = useStoreBranch.getState().selectedStore;
+          if (!res.items.some((store) => store.id === currentStore?.id) && res.items[0]) {
             setSelectedStore(res.items[0]);
             router.refresh();
           }
@@ -38,7 +40,7 @@ export const StoreBranchSelector = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedStore, setSelectedStore, router]);
+  }, [setSelectedStore, router]);
 
   // Закрытие по клику вне контейнера
   useEffect(() => {
@@ -74,14 +76,17 @@ export const StoreBranchSelector = () => {
   }, [stores, searchQuery]);
 
   const handleSelectStore = (store: PickupPointResponse) => {
-    setSelectedStore(store);
     setIsOpen(false);
-    router.refresh();
+    if (selectedStore?.id === store.id) return;
+    setSelectedStore(store);
+    startTransition(() => router.refresh());
   };
 
   const displayText = selectedStore
     ? selectedStore.name || selectedStore.address
     : "Выбрать магазин";
+
+  if (stores.length <= 1) return null;
 
   return (
     <div className="relative inline-block min-w-0 max-w-full text-left" ref={containerRef}>
@@ -91,6 +96,8 @@ export const StoreBranchSelector = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="group inline-flex max-w-full items-center gap-1 px-2 py-1 rounded-full bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 hover:text-emerald-700 transition-all cursor-pointer border border-slate-200/90 shadow-2xs sm:gap-1.5 sm:px-3"
         title="Выбрать филиал магазина"
+        disabled={isPending}
+        aria-busy={isPending}
         aria-expanded={isOpen}
       >
         <span className="flex size-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 group-hover:scale-105 transition-transform">
@@ -125,7 +132,7 @@ export const StoreBranchSelector = () => {
                   <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
                     Филиалы магазина
                   </h4>
-                  <p className="text-[11px] text-slate-400">Остатки зависят от филиала, цены единые</p>
+                  <p className="text-[11px] text-slate-400">Ассортимент и цены выбранного магазина</p>
                 </div>
               </div>
               <button

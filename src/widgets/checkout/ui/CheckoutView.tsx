@@ -45,6 +45,7 @@ import { Button, Container } from "@/shared/ui";
 import { PhoneVerificationModal } from "@/widgets/profile/ui/PhoneVerificationModal";
 
 interface CheckoutViewProps {
+  isRepricing?: boolean;
   addresses: AddressListResponse;
   cart: CartResponse;
   deliveryCalculation: DeliveryCalculateResponse;
@@ -74,6 +75,7 @@ const steps = [
 ] as const;
 
 export const CheckoutView = ({
+  isRepricing = false,
   addresses,
   cart,
   deliveryCalculation,
@@ -86,7 +88,7 @@ export const CheckoutView = ({
   const { isMaintenance, statusText } = useDynamicStoreInfo();
   const defaultAddress =
     addresses.items.find((address) => address.is_default) ?? addresses.items[0];
-  const { selectedStore } = useStoreBranch();
+  const { selectedStore, setSelectedStore } = useStoreBranch();
   const defaultPickupPoint =
     (selectedStore && pickupPoints.items.find((point) => point.id === selectedStore.id)) ??
     pickupPoints.items[0];
@@ -192,6 +194,12 @@ export const CheckoutView = ({
     }
   }, [selectedAddress, deliveryType, summary.final_price, summary.subtotal]);
 
+
+  useEffect(() => {
+    if (selectedStore && pickupPoints.items.some((point) => point.id === selectedStore.id)) {
+      setSelectedPickupPointId(selectedStore.id);
+    }
+  }, [selectedStore, pickupPoints.items]);
 
   const selectedPickupPoint = useMemo(() => {
     return (
@@ -344,6 +352,10 @@ export const CheckoutView = ({
 
   const handleCreateOrder = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
+    if (isRepricing) {
+      setErrorMessage("Дождитесь пересчёта корзины для выбранного магазина");
+      return;
+    }
     setErrorMessage(null);
 
 
@@ -378,6 +390,7 @@ export const CheckoutView = ({
     const fullComment = notesParts.join(". ");
 
     const request: OrderCreateRequest = {
+      expected_cart_total: String(summary.final_price),
       delivery_type: deliveryType,
       payment_method: paymentMethod,
       customer_name: contact.name,
@@ -411,7 +424,7 @@ export const CheckoutView = ({
         return;
       }
       request.address_id = selectedAddress.id;
-      request.pickup_point_id = null;
+      request.pickup_point_id = selectedStore?.id ?? null;
     } else {
       if (!selectedPickupPoint?.id) {
         setErrorMessage("Пожалуйста, выберите пункт выдачи заказа.");
@@ -727,7 +740,11 @@ export const CheckoutView = ({
                 <PickupSelector
                   pickupPoints={pickupPoints.items}
                   selectedPickupPointId={selectedPickupPointId}
-                  onSelect={setSelectedPickupPointId}
+                  onSelect={(pointId) => {
+                    const point = pickupPoints.items.find((item) => item.id === pointId);
+                    setSelectedPickupPointId(pointId);
+                    if (point && point.id !== selectedStore?.id) setSelectedStore(point);
+                  }}
                 />
               )}
             </CheckoutSection>
@@ -829,6 +846,7 @@ export const CheckoutView = ({
               deliveryPrice={deliveryPrice}
               deliveryType={deliveryType}
               isPending={isPending}
+              isRepricing={isRepricing}
               order={order}
               payment={payment}
               summary={summary}
@@ -1520,6 +1538,7 @@ const ReviewList = ({ items }: ReviewListProps) => {
 };
 
 interface OrderSummaryProps {
+  isRepricing: boolean;
   cart: CartResponse;
   currentUser?: UserMeResponse | null | undefined;
   deliveryCalculation: DeliveryCalculateResponse;
@@ -1543,6 +1562,7 @@ const OrderSummary = ({
   deliveryPrice,
   deliveryType,
   isPending,
+  isRepricing,
   order,
   payment,
   summary,
@@ -1646,14 +1666,14 @@ const OrderSummary = ({
         className="mt-5 h-14 w-full text-base font-bold shadow-md shadow-emerald-700/20 cursor-pointer"
         type="submit"
         disabled={
-          isPending || 
+          isRepricing || isPending ||
           isMaintenance ||
           itemsCount === 0 || 
           !isMinOrderMet ||
           Boolean(order)
         }
       >
-        {isPending ? (
+        {isRepricing ? "Пересчитываем корзину…" : isPending ? (
           <span className="flex items-center justify-center gap-2">
             <Loader2 className="animate-spin" size={18} />
             <span>Создание заказа...</span>

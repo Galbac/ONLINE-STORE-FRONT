@@ -24,6 +24,8 @@ export const API_ENDPOINTS = {
     ME: "/api/admin/auth/me",
   },
   ADMIN: {
+    PRODUCT_STORES: (productId: number): string => `/api/admin/products/${productId}/stores`,
+    PRODUCT_STORE: (productId: number, storeId: number): string => `/api/admin/products/${productId}/stores/${storeId}`,
     CATEGORIES: "/api/admin/categories",
     CATEGORIES_SORT: "/api/admin/categories/sort",
     CATEGORY_BY_ID: (categoryId: number): string => `/api/admin/categories/${categoryId}`,

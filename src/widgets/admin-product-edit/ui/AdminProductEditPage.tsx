@@ -1,6 +1,6 @@
 import type { AdminCategoryListItemResponse } from "@/entities/admin-category";
 import type { AdminProductDetailResponse } from "@/entities/admin-product";
-import { AdminProductEditForm } from "@/features/edit-admin-product";
+import { AdminProductEditForm, AdminProductStores } from "@/features/edit-admin-product";
 
 interface AdminProductEditPageProps {
   categories: AdminCategoryListItemResponse[];
@@ -8,5 +8,10 @@ interface AdminProductEditPageProps {
 }
 
 export const AdminProductEditPage = ({ categories, product }: AdminProductEditPageProps) => {
-  return <AdminProductEditForm categories={categories} product={product} />;
+  return (
+    <div className="space-y-6">
+      <AdminProductEditForm categories={categories} product={product} />
+      <AdminProductStores productId={product.id} />
+    </div>
+  );
 };

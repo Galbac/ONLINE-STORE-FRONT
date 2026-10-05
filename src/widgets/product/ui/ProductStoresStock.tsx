@@ -42,7 +42,7 @@ export const ProductStoresStock = ({ storesStock, unit }: ProductStoresStockProp
                 <span className="text-rose-500 font-semibold">Нет в наличии</span>
               )
             ) : (
-              <span className="text-slate-500">Выберите филиал для проверки</span>
+              <span className="text-slate-500">{selectedStore ? "Нет в наличии в этом магазине" : "Выберите магазин"}</span>
             )}
           </div>
         </div>

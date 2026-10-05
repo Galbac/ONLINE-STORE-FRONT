@@ -71,15 +71,21 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
   const sort = toCategorySort(searchParams.sort);
   const viewMode = toViewMode(searchParams.view);
   const accessToken = await getAccessToken();
+  const cookieStore = await cookies();
+  const selectedStoreId = Number(cookieStore.get("current_store_id")?.value);
+  const storeId = Number.isInteger(selectedStoreId) && selectedStoreId > 0
+    ? selectedStoreId
+    : undefined;
 
-  const categoryBySlug = await categoryApi.getBySlug(slug);
-  const category = await categoryApi.getById(categoryBySlug.id);
+  const categoryBySlug = await categoryApi.getBySlug(slug, storeId);
+  const category = await categoryApi.getById(categoryBySlug.id, storeId);
 
   const productParams: ProductListParams = {
     page,
     limit: pageSize,
     category_id: category.id,
     category_slug: category.slug,
+    ...(storeId !== undefined ? { store_id: storeId } : {}),
     sort,
   };
 
@@ -111,6 +117,7 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
     ),
     productApi.getFacets({
       category_id: category.id,
+      store_id: storeId,
     }),
   ]);
 

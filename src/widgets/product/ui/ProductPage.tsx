@@ -36,18 +36,26 @@ interface ProductPageProps {
 
 export const ProductPage = async ({ slug }: ProductPageProps) => {
   const accessToken = await getAccessToken();
+  const cookieStore = await cookies();
+  const selectedStoreId = Number(cookieStore.get("current_store_id")?.value);
+  const storeParams = Number.isInteger(selectedStoreId) && selectedStoreId > 0
+    ? { store_id: selectedStoreId }
+    : {};
   const product = await productApi.getBySlug(slug, {
+    ...storeParams,
     with_breadcrumbs: true,
     with_similar: false,
   });
 
   const [similarProducts, crossSellProducts, cart, favorites, reviewSummary] = await Promise.all([
     productApi.getSimilar(product.id, {
+      ...storeParams,
       limit: 6,
       in_stock: true,
     }),
     productApi
       .getList({
+        ...storeParams,
         limit: 4,
         category_slug: "sousy-i-specii",
         in_stock: true,

@@ -21,6 +21,7 @@ import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
 
 export interface CatalogSidebarProps {
   categories: CategoryShortResponse[];
+  initialCategoriesOpen?: boolean;
   currentCategoryId?: number | undefined;
   currentParams: CatalogUrlParams;
   hasDiscount: boolean;
@@ -37,6 +38,7 @@ export interface CatalogSidebarProps {
 
 export const CatalogSidebar = ({
   categories,
+  initialCategoriesOpen = true,
   currentCategoryId,
   currentParams,
   hasDiscount,
@@ -49,7 +51,7 @@ export const CatalogSidebar = ({
   minPrice,
   sliderMax,
 }: CatalogSidebarProps) => {
-  const [isCategoriesOpen, setIsCategoriesOpen] = useState(true);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(initialCategoriesOpen);
 
   const halalActive = Boolean(isHalal || currentParams.tag === "halal");
 

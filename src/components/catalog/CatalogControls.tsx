@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpDown, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import type { CategoryShortResponse } from "@/entities/category";
 import { buildCatalogHref, type CatalogUrlParams } from "@/widgets/catalog/lib/catalogUrl";
 import { CatalogSidebar } from "./CatalogSidebar";
@@ -50,6 +50,8 @@ export const CatalogControls = ({
 }: CatalogControlsProps) => {
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const selectedSortLabel = SORT_OPTIONS.find((option) => option.value === currentSort)?.label ?? "Сортировка";
 
   // Подсчет активных фильтров (наличие исключено, так как всегда в наличии)
   let activeFiltersCount = 0;
@@ -101,38 +103,49 @@ export const CatalogControls = ({
 
           {/* Быстрый селект сортировки */}
           <div className="relative flex-1">
-            <select
+            <button
+              type="button"
               aria-label="Сортировка товаров"
-              value={currentSort}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/80 pl-3 pr-8 text-xs font-bold text-slate-800 transition outline-none cursor-pointer focus:border-emerald-500"
+              aria-expanded={isSortOpen}
+              aria-haspopup="listbox"
+              onClick={() => setIsSortOpen(!isSortOpen)}
+              className="flex h-10 w-full items-center justify-between gap-1 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 text-[13px] font-bold text-slate-800 transition outline-none cursor-pointer focus:border-emerald-500"
             >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <ArrowUpDown
-              size={13}
-              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-            />
+              <span className="truncate">{selectedSortLabel}</span>
+              <ChevronDown size={15} className={`shrink-0 text-slate-500 transition-transform ${isSortOpen ? "rotate-180" : ""}`} />
+            </button>
+            {isSortOpen ? (
+              <ul
+                role="listbox"
+                aria-label="Варианты сортировки"
+                className="absolute right-0 top-[calc(100%+6px)] z-40 w-full min-w-[176px] overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-xl"
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <li key={option.value}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={option.value === currentSort}
+                      onClick={() => {
+                        setIsSortOpen(false);
+                        handleSortChange(option.value);
+                      }}
+                      className={`flex min-h-10 w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] ${
+                        option.value === currentSort
+                          ? "bg-emerald-50 font-bold text-emerald-800"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span>{option.label}</span>
+                      {option.value === currentSort ? <Check size={15} className="shrink-0" /> : null}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         </div>
 
-        {/* Строка со счетчиком товаров */}
-        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 px-0.5">
-          <span>Найдено: <strong className="font-bold text-slate-800">{formatProductsCount(productsTotal)}</strong></span>
-          {activeFiltersCount > 0 ? (
-            <button
-              type="button"
-              onClick={() => router.push("/catalog")}
-              className="font-medium text-emerald-700 hover:underline cursor-pointer"
-            >
-              Сбросить фильтры
-            </button>
-          ) : null}
-        </div>
       </div>
 
       {/* Мобильная шторка фильтров (Bottom Sheet) */}
@@ -166,6 +179,7 @@ export const CatalogControls = ({
             <div className="flex-1 overflow-y-auto py-4">
               <CatalogSidebar
                 categories={categories}
+                initialCategoriesOpen={false}
                 currentCategoryId={currentParams.category_id ? Number(currentParams.category_id) : undefined}
                 currentParams={currentParams}
                 hasDiscount={hasDiscount}

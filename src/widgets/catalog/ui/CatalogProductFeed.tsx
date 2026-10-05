@@ -76,7 +76,7 @@ export const CatalogProductFeed = ({
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) void loadMore();
       },
-      { rootMargin: "0px 0px 200px 0px" },
+      { rootMargin: "0px 0px 1200px 0px" },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -121,7 +121,7 @@ export const CatalogProductFeed = ({
       </div>
       <div
         ref={sentinelRef}
-        className="mt-6 flex min-h-12 flex-col items-center justify-center gap-3 [overflow-anchor:none]"
+        className="mt-6 flex min-h-[80vh] flex-col items-center justify-center gap-3 [overflow-anchor:none]"
         role="status"
         aria-live="polite"
       >

@@ -24,6 +24,9 @@ import { useDynamicStoreInfo } from "@/entities/settings";
 import { LEGAL_DOCS_NAV } from "../data/legalDocs";
 import type { LegalDocumentConfig } from "../types";
 
+const legalDocumentReturnPathKey = "grocery-legal-document-return-path";
+const legalDocumentPaths = new Set(["/offer", "/privacy", "/personal-data-consent", "/cookies"]);
+
 interface LegalDocLayoutProps {
   document: LegalDocumentConfig;
   contentHtml?: string | null | undefined;
@@ -123,11 +126,15 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
             <button
               type="button"
               onClick={() => {
-                if (window.history.length > 1) {
-                  router.back();
-                } else {
-                  router.push(ROUTES.HOME);
-                }
+                const returnPath = sessionStorage.getItem(legalDocumentReturnPathKey);
+                sessionStorage.removeItem(legalDocumentReturnPathKey);
+                const returnPathname = returnPath?.split(/[?#]/, 1)[0] ?? "";
+                const isSafeReturnPath =
+                  Boolean(returnPath?.startsWith("/")) &&
+                  !returnPath?.startsWith("//") &&
+                  !legalDocumentPaths.has(returnPathname);
+
+                router.replace(isSafeReturnPath ? returnPath! : ROUTES.HOME);
               }}
               className="inline-flex items-center gap-1.5 transition hover:text-emerald-700"
             >

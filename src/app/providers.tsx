@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
 import { StoreSettingsProvider } from "@/entities/settings/model/StoreSettingsProvider";
@@ -17,9 +17,20 @@ interface AppProvidersProps {
   children: React.ReactNode;
 }
 
+const legalDocumentPaths = ["/offer", "/privacy", "/personal-data-consent", "/cookies"] as const;
+const legalDocumentReturnPathKey = "grocery-legal-document-return-path";
+
+const isLegalDocumentPath = (pathname: string): boolean => {
+  return legalDocumentPaths.includes(pathname as (typeof legalDocumentPaths)[number]);
+};
+
 export const AppProviders = ({ children }: AppProvidersProps) => {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+  const previousPathnameRef = useRef(pathname);
+  const previousHrefRef = useRef(
+    typeof window === "undefined" ? pathname : `${window.location.pathname}${window.location.search}`,
+  );
   const isAuthRoute =
     pathname === "/login" ||
     pathname === "/register" ||
@@ -60,6 +71,31 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (isLegalDocumentPath(pathname)) {
+      if (!isLegalDocumentPath(previousPathnameRef.current)) {
+        sessionStorage.setItem(legalDocumentReturnPathKey, previousHrefRef.current);
+      } else if (!sessionStorage.getItem(legalDocumentReturnPathKey)) {
+        try {
+          const referrer = new URL(document.referrer);
+          if (referrer.origin === window.location.origin && !isLegalDocumentPath(referrer.pathname)) {
+            sessionStorage.setItem(
+              legalDocumentReturnPathKey,
+              `${referrer.pathname}${referrer.search}`,
+            );
+          }
+        } catch {
+          // A directly opened document falls back to the home page.
+        }
+      }
+    } else {
+      sessionStorage.removeItem(legalDocumentReturnPathKey);
+    }
+
+    previousPathnameRef.current = pathname;
+    previousHrefRef.current = `${window.location.pathname}${window.location.search}`;
+  }, [pathname]);
 
   return (
     <StoreSettingsProvider>

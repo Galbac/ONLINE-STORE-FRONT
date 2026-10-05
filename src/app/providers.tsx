@@ -25,7 +25,11 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
     pathname === "/register" ||
     pathname.startsWith("/register/") ||
     pathname === "/forgot-password" ||
-    pathname === "/reset-password";
+    pathname === "/reset-password" ||
+    pathname === "/personal-data-consent" ||
+    pathname === "/privacy" ||
+    pathname === "/offer" ||
+    pathname === "/cookies";
 
   useEffect(() => {
     setMounted(true);

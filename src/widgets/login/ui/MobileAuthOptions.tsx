@@ -13,7 +13,10 @@ export const MobileAuthOptions = () => {
   const nextQuery = nextPath ? `&next=${encodeURIComponent(nextPath)}` : "";
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-white px-6">
+    <main
+      data-no-mobile-nav
+      className="auth-viewport flex items-center justify-center bg-white px-6"
+    >
       <div className="flex w-full max-w-sm flex-col items-center gap-10">
         <div className="flex items-center gap-3">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-900/15">

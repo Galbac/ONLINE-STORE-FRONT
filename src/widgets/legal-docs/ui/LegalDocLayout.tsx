@@ -129,7 +129,10 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
         <Header />
       </div>
 
-      <main className="min-h-screen bg-slate-50/50 py-6 sm:py-10 print:bg-white print:p-0">
+      <main
+        data-no-mobile-nav
+        className="min-h-screen bg-slate-50/50 py-6 sm:py-10 print:bg-white print:p-0"
+      >
         <Container className="max-w-7xl">
           {/* Breadcrumbs (Hidden on print) */}
           <nav

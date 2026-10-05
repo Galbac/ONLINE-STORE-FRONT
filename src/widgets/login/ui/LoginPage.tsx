@@ -48,8 +48,11 @@ export const LoginPage = ({ isMobile, showLoginForm }: LoginPageProps) => {
 
   if (isMobile) {
     return (
-      <main className="min-h-dvh bg-white px-4 py-6 sm:px-6">
-        <div className="mx-auto w-full max-w-md pt-8">
+      <main
+        data-no-mobile-nav
+        className="auth-viewport flex items-center justify-center bg-white px-4 py-4 sm:px-6"
+      >
+        <div className="mx-auto w-full max-w-md">
           <LoginForm />
         </div>
       </main>

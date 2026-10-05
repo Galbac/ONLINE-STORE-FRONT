@@ -167,6 +167,14 @@ body {
 .mobile-bottom-padding {
   padding-bottom: calc(72px + var(--sab));
 }
+.auth-viewport {
+  min-height: calc(100dvh - var(--sat));
+}
+@media (max-width: 1023px) {
+  body.mobile-bottom-padding:has([data-no-mobile-nav]) {
+    padding-bottom: 0;
+  }
+}
 @media (min-width: 1024px) {
   .mobile-bottom-padding {
     padding-bottom: 0px;

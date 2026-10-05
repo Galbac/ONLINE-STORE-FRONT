@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   Building2,
   Calendar,
   Check,
@@ -28,6 +30,7 @@ interface LegalDocLayoutProps {
 }
 
 export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
+  const router = useRouter();
   const { phone, phoneHref, email } = useDynamicStoreInfo();
   const [activeSectionId, setActiveSectionId] = useState<string>(
     document.sections[0]?.id || "",
@@ -117,9 +120,20 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
             aria-label="Навигация по сайту"
             className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 print:hidden"
           >
-            <Link className="transition hover:text-emerald-700" href={ROUTES.HOME}>
-              Главная
-            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push(ROUTES.HOME);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 transition hover:text-emerald-700"
+            >
+              <ArrowLeft size={14} />
+              Назад
+            </button>
             <span>/</span>
             <span className="text-slate-400">Юридические документы</span>
             <span>/</span>

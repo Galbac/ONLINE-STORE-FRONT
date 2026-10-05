@@ -1,5 +1,7 @@
 "use client";
 
+import { Select } from "@/shared/ui/select";
+
 import { type ChangeEvent, type FormEvent, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -182,20 +184,10 @@ export const ProfileUploadsView = () => {
                 />
               </label>
 
-              <label className="block">
+              <div className="block">
                 <span className="mb-3 block text-sm font-bold">Назначение</span>
-                <select
-                  className="border-border h-12 w-full rounded-lg border bg-white px-4 text-sm outline-none"
-                  value={entityType}
-                  onChange={(event) => setEntityType(event.target.value as UploadEntityType)}
-                >
-                  {entityTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <Select label="Назначение загрузки" value={entityType} onChange={(value) => setEntityType(value as UploadEntityType)} options={entityTypeOptions} />
+              </div>
 
               <Button className="h-12 w-full gap-2" type="submit" disabled={isBusy}>
                 <Upload size={18} />

@@ -1,5 +1,7 @@
 "use client";
 
+import { Select } from "@/shared/ui/select";
+
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import {
@@ -329,8 +331,8 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
         </div>
 
         {/* 2. Сгруппированный flex-тулбар: Поиск с кнопкой очистки и выбор периода */}
-        <div className="mb-8 flex flex-wrap items-center gap-3 sm:flex-nowrap">
-          <div className="relative min-w-[220px] flex-1">
+        <div className="mb-5 flex flex-col items-stretch gap-3 sm:mb-8 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 w-full flex-1">
             <Search
               className="absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400"
               size={16}
@@ -354,18 +356,14 @@ export const ProfileOrdersView = ({ initialOrders }: ProfileOrdersViewProps) => 
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <span className="text-xs font-semibold whitespace-nowrap text-slate-500">Период:</span>
-            <select
-              value={datePeriod}
-              onChange={(e) => setDatePeriod(e.target.value)}
-              className="h-11 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs outline-none focus:border-emerald-500"
-            >
-              <option value="all">За всё время</option>
-              <option value="month">За последний месяц</option>
-              <option value="3months">За 3 месяца</option>
-              <option value="year">За последний год</option>
-            </select>
+            <Select value={datePeriod} onChange={setDatePeriod} label="Период заказов" className="flex-1 sm:w-52" options={[
+              { value: "all", label: "За всё время" },
+              { value: "month", label: "За последний месяц" },
+              { value: "3months", label: "За 3 месяца" },
+              { value: "year", label: "За последний год" },
+            ]} />
           </div>
         </div>
 
@@ -580,13 +578,13 @@ const OrderCard = ({ isPending, onCancel, onRepeat, order }: OrderCardProps) => 
   const isPendingPayment = order.status === "pending_payment";
 
   return (
-    <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-slate-300 md:p-6">
-      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.7fr_0.55fr_1fr_1fr_190px] xl:items-center">
-        <div>
-          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+    <article className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-slate-300 md:p-6">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.7fr)_minmax(0,0.55fr)_minmax(0,1fr)_minmax(0,1fr)_190px] xl:items-center">
+        <div className="col-span-2 min-w-0 sm:col-span-1">
+          <p className="text-text-secondary text-[10px] sm:text-xs font-semibold tracking-wider uppercase">
             № заказа
           </p>
-          <p className="text-text-primary mt-1.5 text-lg font-black break-words">
+          <p className="text-text-primary mt-1 text-base sm:text-lg font-black break-words">
             {order.order_number}
           </p>
           <time className="mt-1.5 block text-xs text-slate-400" suppressHydrationWarning>
@@ -595,7 +593,7 @@ const OrderCard = ({ isPending, onCancel, onRepeat, order }: OrderCardProps) => 
         </div>
 
         <div>
-          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+          <p className="text-text-secondary text-[10px] sm:text-xs font-semibold tracking-wider uppercase">
             Статус
           </p>
           <span
@@ -609,16 +607,16 @@ const OrderCard = ({ isPending, onCancel, onRepeat, order }: OrderCardProps) => 
         </div>
 
         <div>
-          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+          <p className="text-text-secondary text-[10px] sm:text-xs font-semibold tracking-wider uppercase">
             Сумма
           </p>
-          <p className="mt-1.5 text-lg font-black text-slate-900">
+          <p className="mt-1 text-base sm:text-lg font-black text-slate-900">
             {toPriceFormat(order.final_price)}
           </p>
         </div>
 
         <div>
-          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+          <p className="text-text-secondary text-[10px] sm:text-xs font-semibold tracking-wider uppercase">
             Получение
           </p>
           <div className="mt-2 flex items-start gap-2.5">
@@ -633,7 +631,7 @@ const OrderCard = ({ isPending, onCancel, onRepeat, order }: OrderCardProps) => 
         </div>
 
         <div>
-          <p className="text-text-secondary text-xs font-semibold tracking-wider uppercase">
+          <p className="text-text-secondary text-[10px] sm:text-xs font-semibold tracking-wider uppercase">
             Оплата
           </p>
           <div className="mt-2 flex items-start gap-2.5">
@@ -650,7 +648,7 @@ const OrderCard = ({ isPending, onCancel, onRepeat, order }: OrderCardProps) => 
         </div>
 
         {/* Кнопки действий */}
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        <div className="col-span-2 grid grid-cols-2 gap-2 sm:col-span-3 sm:grid-cols-3 xl:col-span-1 xl:grid-cols-1">
           {isPendingPayment ? (
             <Link
               className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-amber-600 active:scale-95"

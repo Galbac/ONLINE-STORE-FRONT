@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
@@ -86,7 +87,7 @@ export const CatalogControls = ({
   return (
     <>
       {/* Мобильная панель фильтров и сортировки (sticky над товарами) */}
-      <div className="lg:hidden sticky top-[56px] sm:top-[64px] z-20 -mx-4 mb-4 border-y border-slate-200/80 bg-white/95 px-4 py-2.5 backdrop-blur-md shadow-xs">
+      <div className="lg:hidden sticky top-[var(--store-header-height,120px)] z-20 -mx-4 mb-4 border-y border-slate-200/80 bg-white/95 px-4 py-2.5 backdrop-blur-md shadow-xs">
         <div className="flex items-center justify-between gap-2.5">
           {/* Кнопка «Фильтры» с бейджем */}
           <button
@@ -151,8 +152,8 @@ export const CatalogControls = ({
       </div>
 
       {/* Мобильная шторка фильтров (Bottom Sheet) */}
-      {isSheetOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden">
+      {isSheetOpen && createPortal(
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end lg:hidden">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in-0 duration-200"
@@ -160,7 +161,7 @@ export const CatalogControls = ({
           />
 
           {/* Drawer content */}
-          <div className="relative z-10 flex max-h-[85vh] flex-col rounded-t-3xl border-t border-slate-200 bg-white p-5 shadow-2xl animate-in slide-in-from-bottom duration-250">
+          <div className="relative z-10 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-slate-200 bg-white p-4 pb-[max(16px,var(--sab,0px))] sm:p-5 shadow-2xl animate-in slide-in-from-bottom duration-250">
             {/* Drawer Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
@@ -178,7 +179,7 @@ export const CatalogControls = ({
             </div>
 
             {/* Scrollable Filters */}
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-4">
               <CatalogSidebar
                 categories={categories}
                 allCategoriesTotal={allCategoriesTotal}
@@ -208,7 +209,7 @@ export const CatalogControls = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
     </>
   );

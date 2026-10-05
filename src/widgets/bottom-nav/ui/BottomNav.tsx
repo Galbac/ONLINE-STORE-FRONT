@@ -1,5 +1,7 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,6 +15,7 @@ import { CART_CHANGED_EVENT, type CartChangedDetail } from "@/shared/lib/cart-ev
 import { getStoredAccessToken } from "@/shared/ui";
 
 export const BottomNav = () => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
   const rawPathname = usePathname();
   const pathname = rawPathname || "";
   const [cartCount, setCartCount] = useState<number>(0);
@@ -66,9 +69,10 @@ export const BottomNav = () => {
       window.removeEventListener("focus", fetchOrdersCount);
       document.removeEventListener("visibilitychange", fetchOrdersCount);
     };
-  }, [pathname]);
+  }, [pathname, selectedStoreId]);
 
   useEffect(() => {
+    let cancelled = false;
     const updateAuth = () => {
       const token = getStoredAccessToken();
       setIsAuth(Boolean(token && isAccessTokenValid(token)));
@@ -81,7 +85,7 @@ export const BottomNav = () => {
         const token = getStoredAccessToken();
         if (token && isAccessTokenValid(token)) {
           const summary = await cartApi.getSummary();
-          setCartCount(summary.items_count);
+          if (!cancelled) setCartCount(summary.items_count);
         } else {
           setCartCount(0);
         }
@@ -104,9 +108,10 @@ export const BottomNav = () => {
     window.addEventListener(CART_CHANGED_EVENT, handleCartChanged);
 
     return () => {
+      cancelled = true;
       window.removeEventListener(CART_CHANGED_EVENT, handleCartChanged);
     };
-  }, [pathname]);
+  }, [pathname, selectedStoreId]);
 
   if (pathname.startsWith("/admin")) {
     return null;

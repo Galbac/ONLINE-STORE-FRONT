@@ -177,13 +177,13 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
             <ProductBreadcrumbs breadcrumbs={product.breadcrumbs} product={product} />
           </div>
 
-          <section className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]">
+          <section className="grid gap-6 sm:gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]">
             <ProductGallery images={product.images} productName={product.name} />
             <div>
               <p className="text-text-secondary mb-3 text-sm">
                 {product.category?.name ?? "Каталог"}
               </p>
-              <h1 className="text-text-primary text-4xl leading-tight font-bold">{displayTitle}</h1>
+              <h1 className="text-text-primary break-words text-2xl sm:text-4xl leading-tight font-bold">{displayTitle}</h1>
 
               <div className="mt-4 flex items-center gap-2">
                 <ProductArticleCopy
@@ -191,7 +191,7 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
                 />
               </div>
 
-              <div className="mt-6 flex items-center justify-between gap-4">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
                 <span className="text-success flex items-center gap-2 text-sm font-semibold">
                   <span
                     className={`${hasLowStock ? "bg-error" : "bg-success"} size-2 rounded-full`}
@@ -579,11 +579,11 @@ interface CharacteristicProps {
 
 const Characteristic = ({ label, value }: CharacteristicProps) => {
   return (
-    <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-4">
       <dt className="text-text-muted border-border overflow-hidden border-b border-dotted">
         {label}
       </dt>
-      <dd>{value}</dd>
+      <dd className="break-words">{value}</dd>
     </div>
   );
 };

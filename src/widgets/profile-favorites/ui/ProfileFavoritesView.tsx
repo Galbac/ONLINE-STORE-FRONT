@@ -1,5 +1,7 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
+
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,63 +32,8 @@ interface ProfileFavoritesViewProps {
   initialFavorites: FavoritesResponse;
 }
 
-// Fallback recommended products if network or API returns empty
-const FALLBACK_RECOMMENDED_PRODUCTS: ProductShortResponse[] = [
-  {
-    id: 101,
-    name: "Молоко пастеризованное 3.2%",
-    slug: "moloko-3-2",
-    price: "89.00",
-    old_price: "105.00",
-    unit: "шт",
-    product_type: "piece",
-    is_available: true,
-    stock_display: "В наличии",
-    category: { id: 3, name: "Молочные продукты", slug: "molochnye-produkty" },
-    preview_image_url: null,
-  },
-  {
-    id: 102,
-    name: "Бананы свежие экстра",
-    slug: "banany",
-    price: "149.00",
-    old_price: null,
-    unit: "кг",
-    product_type: "weight",
-    is_available: true,
-    stock_display: "В наличии",
-    category: { id: 1, name: "Фрукты и ягоды", slug: "frukty-i-yagody" },
-    preview_image_url: null,
-  },
-  {
-    id: 103,
-    name: "Хлеб ремесленный на закваске",
-    slug: "khleb-remeslennyj",
-    price: "65.00",
-    old_price: "75.00",
-    unit: "шт",
-    product_type: "piece",
-    is_available: true,
-    stock_display: "В наличии",
-    category: { id: 4, name: "Хлеб и выпечка", slug: "khleb-i-vypechka" },
-    preview_image_url: null,
-  },
-  {
-    id: 104,
-    name: "Томаты розовые отборные",
-    slug: "tomaty-rozovye",
-    price: "249.00",
-    old_price: "289.00",
-    unit: "кг",
-    product_type: "weight",
-    is_available: true,
-    stock_display: "В наличии",
-    category: { id: 2, name: "Овощи", slug: "ovoshchi" },
-    preview_image_url: null,
-  },
-];
-
 export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewProps) => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
   const isHydrated = useIsHydrated();
   const {
     items,
@@ -113,7 +60,7 @@ export const ProfileFavoritesView = ({ initialFavorites }: ProfileFavoritesViewP
   // Sync favorites with API on mount
   useEffect(() => {
     void fetchFavorites();
-  }, [fetchFavorites]);
+  }, [fetchFavorites, selectedStoreId]);
 
   if (!isHydrated) {
     return <FavoritesSkeleton />;
@@ -302,7 +249,7 @@ const FavoriteItemCard = ({
       {!isAvailable ? (
         <div className="mb-1.5 flex items-center gap-1 text-xs">
           <span className="text-[11px] font-medium text-rose-600">
-            Под заказ
+            Нет в наличии в этом магазине
           </span>
         </div>
       ) : null}
@@ -391,6 +338,7 @@ const RecommendedSection = ({
 }: {
   onAddToCart: (product: ProductShortResponse) => void;
 }) => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
   const [recommended, setRecommended] = useState<ProductShortResponse[]>([]);
   const [, setLoading] = useState(true);
   const { toggleFavorite, isFavorite } = useFavoritesStore();
@@ -404,14 +352,14 @@ const RecommendedSection = ({
           if (res.items && Array.isArray(res.items) && res.items.length > 0) {
             setRecommended(res.items.slice(0, 4));
           } else {
-            setRecommended(FALLBACK_RECOMMENDED_PRODUCTS);
+            setRecommended([]);
           }
           setLoading(false);
         }
       })
       .catch(() => {
         if (isMounted) {
-          setRecommended(FALLBACK_RECOMMENDED_PRODUCTS);
+          setRecommended([]);
           setLoading(false);
         }
       });
@@ -419,9 +367,10 @@ const RecommendedSection = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedStoreId]);
 
-  const displayList = recommended.length > 0 ? recommended : FALLBACK_RECOMMENDED_PRODUCTS;
+  const displayList = recommended;
+  if (displayList.length === 0) return null;
 
   return (
     <section aria-labelledby="recommended-heading" className="mt-12">

@@ -102,6 +102,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
 
   const isBusy = isLoading || isPending || pendingAction !== null;
   const hasItems = cart.items.length > 0;
+  const hasAvailableItems = cart.items.some((item) => item.is_available);
   const appliedPromo = summary.promo_code ?? cart.promo_code?.code ?? null;
 
   if (!isHydrated) {
@@ -143,7 +144,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
         </nav>
 
         {/* Заголовок страницы и действие очистки */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2 sm:mb-6 sm:gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
               Корзина
@@ -162,7 +163,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
               type="button"
               disabled={isBusy}
               onClick={() => clearCart()}
-              className="inline-flex min-h-[44px] min-w-[44px] items-center gap-2 text-sm font-semibold text-rose-600 hover:text-rose-700 transition active:scale-95 disabled:opacity-50 cursor-pointer self-start sm:self-auto px-2 py-1"
+              className="inline-flex min-h-[44px] min-w-[40px] items-center gap-2 text-sm font-semibold text-rose-600 hover:text-rose-700 transition active:scale-95 disabled:opacity-50 cursor-pointer self-start sm:self-auto px-2 py-1"
               aria-label="Очистить корзину полностью"
             >
               <Trash2 size={16} />
@@ -247,7 +248,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                         type="button"
                         disabled={isBusy}
                         onClick={handleRemovePromo}
-                        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline transition px-2 cursor-pointer"
+                        className="inline-flex min-h-[44px] min-w-[40px] items-center justify-center text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline transition px-2 cursor-pointer"
                         aria-label="Удалить применённый промокод"
                       >
                         Удалить
@@ -269,7 +270,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                       <button
                         type="submit"
                         disabled={isBusy || !promoCodeInput.trim()}
-                        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition disabled:opacity-50 cursor-pointer"
+                        className="inline-flex min-h-[44px] min-w-[40px] items-center justify-center rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition disabled:opacity-50 cursor-pointer"
                       >
                         Применить
                       </button>
@@ -287,7 +288,7 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
             <aside className="xl:sticky xl:top-6 space-y-4">
               <OrderSummaryCard
                 summary={summary}
-                isBusy={isBusy}
+                isBusy={isBusy || !hasAvailableItems}
                 freeDeliveryThreshold={freeDeliveryThreshold}
               />
               <div className="hidden xl:block">
@@ -311,11 +312,13 @@ export const CartView = ({ initialCart, initialSummary }: CartViewProps) => {
                 href={ROUTES.CHECKOUT}
                 className={cn(
                   "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-700 active:scale-95 transition shrink-0",
-                  isBusy && "pointer-events-none opacity-50",
+                  (isBusy || !hasAvailableItems) && "pointer-events-none opacity-50",
                 )}
+                aria-disabled={isBusy || !hasAvailableItems}
+                tabIndex={isBusy || !hasAvailableItems ? -1 : undefined}
                 aria-label="Перейти к оформлению заказа"
               >
-                <span>Оформить заказ</span>
+                <span>{hasAvailableItems ? "Оформить заказ" : "Нет в наличии"}</span>
                 <ArrowRight size={16} />
               </Link>
             </div>
@@ -371,15 +374,15 @@ const CartItemCard = ({
   return (
     <article
       className={cn(
-        "group relative rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition-all hover:border-emerald-500/30 hover:shadow-md",
+        "group relative rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs transition-all hover:border-emerald-500/30 hover:shadow-md",
         isCurrentBusy && "opacity-70",
       )}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-x-3 gap-y-2 sm:flex sm:items-center sm:gap-4">
         {/* Изображение товара */}
         <Link
           href={item.slug ? ROUTES.PRODUCT(item.slug) : ROUTES.CATALOG}
-          className="relative flex size-24 sm:size-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 mx-auto sm:mx-0 shadow-2xs"
+          className="relative flex size-16 sm:size-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs"
         >
           {item.preview_image_url ? (
             <Image
@@ -423,14 +426,14 @@ const CartItemCard = ({
         </div>
 
         {/* Правый блок: Степпер + Сумма позиции + Кнопки действий */}
-        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-6 border-t border-slate-100 sm:border-0 pt-3 sm:pt-0">
+        <div className="col-span-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 sm:justify-end sm:gap-4 sm:border-0 sm:pt-0">
           {/* Степпер количества с доступными кнопками min-h-[44px] */}
           <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/60 p-1 shadow-inner">
             <button
               type="button"
-              disabled={isBusy}
+              disabled={isBusy || !item.is_available}
               onClick={handleMinus}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-slate-900 active:scale-90 transition disabled:opacity-40 cursor-pointer"
+              className="flex min-h-[44px] min-w-[40px] items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-slate-900 active:scale-90 transition disabled:opacity-40 cursor-pointer"
               aria-label={'Уменьшить количество ' + item.name}
             >
               <Minus size={15} />
@@ -446,9 +449,9 @@ const CartItemCard = ({
 
             <button
               type="button"
-              disabled={isBusy}
+              disabled={isBusy || !item.is_available || quantity + step > Number(item.stock_quantity)}
               onClick={handlePlus}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-slate-900 active:scale-90 transition disabled:opacity-40 cursor-pointer"
+              className="flex min-h-[44px] min-w-[40px] items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-slate-900 active:scale-90 transition disabled:opacity-40 cursor-pointer"
               aria-label={'Увеличить количество ' + item.name}
             >
               <Plus size={15} />
@@ -456,22 +459,22 @@ const CartItemCard = ({
           </div>
 
           {/* Итоговая цена позиции */}
-          <div className="text-right min-w-[85px]">
+          <div className="text-right min-w-0 flex-1 sm:flex-none">
             <p
               aria-live="polite"
               className="text-lg sm:text-xl font-black tracking-tight text-slate-900"
             >
-              {toPriceFormat(item.final_price)}
+              {item.is_available ? toPriceFormat(item.final_price) : "Не в сумме"}
             </p>
           </div>
 
-          {/* Кнопки: «В избранное» и «Удалить» — min-h-[44px] min-w-[44px] */}
+          {/* Кнопки: «В избранное» и «Удалить» — min-h-[44px] min-w-[40px] */}
           <div className="flex items-center gap-1">
             <button
               type="button"
               disabled={isBusy}
               onClick={onMoveToFavorites}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition active:scale-90 cursor-pointer"
+              className="flex min-h-[44px] min-w-[40px] items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition active:scale-90 cursor-pointer"
               aria-label={'Переместить ' + item.name + ' в избранное'}
               title="В избранное"
             >
@@ -482,7 +485,7 @@ const CartItemCard = ({
               type="button"
               disabled={isBusy}
               onClick={onRemove}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition active:scale-90 cursor-pointer"
+              className="flex min-h-[44px] min-w-[40px] items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition active:scale-90 cursor-pointer"
               aria-label={'Удалить ' + item.name + ' из корзины'}
               title="Удалить"
             >
@@ -711,7 +714,7 @@ const EmptyCartState = () => {
       <div className="mt-8 flex justify-center">
         <Link
           href={ROUTES.CATALOG}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-7 text-sm font-bold text-white shadow-md shadow-emerald-700/20 transition-all hover:bg-emerald-700 hover:scale-[1.02] active:scale-95"
+          className="inline-flex min-h-[44px] min-w-[40px] items-center justify-center gap-2.5 rounded-xl bg-emerald-600 px-7 text-sm font-bold text-white shadow-md shadow-emerald-700/20 transition-all hover:bg-emerald-700 hover:scale-[1.02] active:scale-95"
         >
           <span>Перейти в каталог</span>
           <ArrowRight size={17} />

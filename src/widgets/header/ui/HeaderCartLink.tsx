@@ -1,5 +1,7 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,6 +13,7 @@ import { toPriceFormat } from "@/shared/lib/format";
 import { getStoredAccessToken, getStoredRefreshToken } from "@/shared/ui";
 
 export const HeaderCartLink = () => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
   const pathname = usePathname() || "";
   const isActive = pathname === ROUTES.CART;
   const [itemsCount, setItemsCount] = useState(0);
@@ -55,7 +58,7 @@ export const HeaderCartLink = () => {
       window.removeEventListener(CART_CHANGED_EVENT, handleCartChanged);
       window.removeEventListener("focus", loadCartSummary);
     };
-  }, []);
+  }, [selectedStoreId]);
 
   const isAuth = hasValidStoredAccessToken();
 

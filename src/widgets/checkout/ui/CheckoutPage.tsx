@@ -81,7 +81,7 @@ export const CheckoutPage = () => {
         const defaultPickupPoint = pickupPoints.items[0];
 
         let deliveryCalculation = createDeliveryCalculationFallback(summary, deliveryOptions);
-        if (defaultAddress) {
+        if (defaultAddress && Number(summary.final_price) >= Number(deliveryOptions.delivery.min_order_amount || 0)) {
           try {
             const cartAmount = summary.final_price || summary.subtotal || 0;
             const calculated = await deliveryApi.calculate({

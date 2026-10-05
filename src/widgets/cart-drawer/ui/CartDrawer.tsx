@@ -1,9 +1,11 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
+
 import { toast } from "sonner";
 import { extractErrorMessage } from "@/shared/api";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Minus, Plus, ShoppingBag, Sparkles, Trash2, Truck, X } from "lucide-react";
@@ -28,22 +30,28 @@ export const openCartDrawer = () => {
 };
 
 export const CartDrawer = () => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
   const [isOpen, setIsOpen] = useState(false);
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number | null>(null);
   const [suggestedProducts, setSuggestedProducts] = useState<ProductShortResponse[]>([]);
   const [isPending, startTransition] = useTransition();
 
   const loadCart = async () => {
+    const storeId = useStoreBranch.getState().selectedStore?.id;
     try {
       const data = await cartApi.get();
-      setCart(data);
+      if (storeId === useStoreBranch.getState().selectedStore?.id) setCart(data);
     } catch {
-      setCart(null);
+      if (storeId === useStoreBranch.getState().selectedStore?.id) setCart(null);
     }
   };
 
   useEffect(() => {
+    setCart(null);
+    if (isOpenRef.current) void loadCart();
     const handleDrawer = (e: Event) => {
       const token = window.localStorage.getItem("access_token") ?? window.sessionStorage.getItem("access_token");
       if (!token || !isAccessTokenValid(token)) {
@@ -58,7 +66,10 @@ export const CartDrawer = () => {
     };
 
     window.addEventListener(CART_DRAWER_EVENT, handleDrawer);
-    window.addEventListener(CART_CHANGED_EVENT, loadCart);
+    const handleCartChange = () => {
+      if (isOpenRef.current) void loadCart();
+    };
+    window.addEventListener(CART_CHANGED_EVENT, handleCartChange);
 
     apiClient
       .get<{ delivery?: { free_from_amount?: string | number | null } }>("/api/delivery/options")
@@ -70,10 +81,11 @@ export const CartDrawer = () => {
       })
       .catch(() => {});
 
+    const storeId = useStoreBranch.getState().selectedStore?.id;
     productApi
       .getPopular()
       .then((res) => {
-        if (res && res.items) {
+        if (res && res.items && storeId === useStoreBranch.getState().selectedStore?.id) {
           setSuggestedProducts(res.items);
         }
       })
@@ -81,9 +93,9 @@ export const CartDrawer = () => {
 
     return () => {
       window.removeEventListener(CART_DRAWER_EVENT, handleDrawer);
-      window.removeEventListener(CART_CHANGED_EVENT, loadCart);
+      window.removeEventListener(CART_CHANGED_EVENT, handleCartChange);
     };
-  }, []);
+  }, [selectedStoreId]);
 
   const handleUpdateQty = (itemId: number, newQty: number) => {
     startTransition(async () => {
@@ -266,7 +278,7 @@ export const CartDrawer = () => {
                       {item.name}
                     </Link>
                     <p className="mt-0.5 text-[11px] font-extrabold text-slate-800">
-                      {toPriceFormat(item.total_price)}
+                      {item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии · не в сумме"}
                     </p>
 
                   {item.stock_warning && (
@@ -279,7 +291,7 @@ export const CartDrawer = () => {
                     <div className="flex h-7 items-center rounded-lg bg-slate-100 px-1 select-none">
                       <button
                         type="button"
-                        disabled={isPending}
+                        disabled={isPending || !item.is_available}
                         onClick={() => {
                           const step = item.quantity_step ? Number(item.quantity_step) : 1;
                           const current = Number(item.quantity) || 1;
@@ -295,7 +307,7 @@ export const CartDrawer = () => {
                       </span>
                       <button
                         type="button"
-                        disabled={isPending}
+                        disabled={isPending || !item.is_available}
                         onClick={() => {
                           const step = item.quantity_step ? Number(item.quantity_step) : 1;
                           const current = Number(item.quantity) || 1;

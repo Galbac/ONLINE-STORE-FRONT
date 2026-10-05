@@ -93,7 +93,7 @@ export const ProfileLoyaltyPage = () => {
           <div className="flex items-center gap-4">
             <Link
               href={ROUTES.PROFILE}
-              className="flex size-10 items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 shadow-xs"
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 shadow-xs"
             >
               <ArrowLeft size={18} />
             </Link>
@@ -104,7 +104,7 @@ export const ProfileLoyaltyPage = () => {
           </div>
 
           {/* Balance Card */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-950 p-8 text-white shadow-xl">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-950 p-5 sm:p-8 text-white shadow-xl">
             <div className="pointer-events-none absolute -top-12 -right-12 size-64 rounded-full bg-emerald-500/20 blur-2xl" />
             <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
               <div>

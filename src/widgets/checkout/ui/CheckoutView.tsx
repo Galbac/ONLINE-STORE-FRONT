@@ -175,7 +175,8 @@ export const CheckoutView = ({
   }, [addresses.items, defaultAddress, selectedAddressId]);
 
   useEffect(() => {
-    if (deliveryType === "delivery" && selectedAddress) {
+    let isActive = true;
+    if (deliveryType === "delivery" && selectedAddress && !isRepricing && Number(summary.final_price) >= Number(deliveryOptions.delivery.min_order_amount || 0)) {
       const cartAmount = summary.final_price || summary.subtotal || 0;
       deliveryApi
         .calculate({
@@ -186,13 +187,14 @@ export const CheckoutView = ({
           city: selectedAddress.city,
         })
         .then((calc) => {
-          if (calc) {
+          if (calc && isActive) {
             setActiveCalculation(calc);
           }
         })
         .catch(() => {});
     }
-  }, [selectedAddress, deliveryType, summary.final_price, summary.subtotal]);
+    return () => { isActive = false; };
+  }, [selectedAddress, deliveryType, summary.final_price, summary.subtotal, deliveryOptions.delivery.min_order_amount, isRepricing]);
 
 
   useEffect(() => {
@@ -285,7 +287,7 @@ export const CheckoutView = ({
     return !isKizlyarArea;
   }, [deliveryType, selectedAddress]);
 
-  const itemsCount = cart.items.length;
+  const itemsCount = cart.items.filter((item) => item.is_available).length;
   const itemsTotal = Number(summary.final_price || summary.subtotal || 0);
   const freeFrom = Number(activeCalculation?.free_delivery_from ?? deliveryOptions?.delivery?.free_from_amount ?? 3000);
   const isFreeDelivery = freeFrom > 0 && itemsTotal >= freeFrom;
@@ -525,7 +527,7 @@ export const CheckoutView = ({
         ) : null}
 
         <form
-          className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_390px]"
+          className="mt-5 grid gap-5 sm:mt-8 sm:gap-8 xl:grid-cols-[minmax(0,1fr)_390px]"
           onSubmit={handleCreateOrder}
         >
           <div className="min-w-0 space-y-4">
@@ -1020,7 +1022,7 @@ const ChoiceCard = ({ checked, disabled = false, onClick, text, title }: ChoiceC
   return (
     <button
       className={cn(
-        "grid min-h-18 grid-cols-[24px_1fr] items-center gap-4 rounded-lg border p-4 text-left transition",
+        "grid min-h-18 grid-cols-[24px_minmax(0,1fr)] items-center gap-4 rounded-lg border p-4 text-left transition",
         checked
           ? "border-accent-primary bg-bg-hover"
           : "border-border bg-bg-primary hover:bg-bg-secondary",
@@ -1513,29 +1515,24 @@ interface ReviewListProps {
   items: CartItemResponse[];
 }
 
-const ReviewList = ({ items }: ReviewListProps) => {
-  return (
-    <div className="space-y-3">
-      {items.map((item) => (
-        <div
-          className="grid grid-cols-[56px_minmax(0,1fr)_80px_60px_90px] items-center gap-3"
-          key={item.id}
-        >
-          <ProductThumb item={item} size={56} />
-          <div className="min-w-0">
-            <p className="truncate font-bold">{item.name}</p>
-            <p className="text-text-secondary text-sm">
-              {formatQuantity(item.quantity)} {item.unit}
-            </p>
+const ReviewList = ({ items }: ReviewListProps) => (
+  <div className="divide-y divide-slate-100">
+    {items.map((item) => (
+      <div key={item.id} className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] items-start gap-3 py-3 first:pt-0 last:pb-0 sm:grid-cols-[56px_minmax(0,1fr)_auto]">
+        <ProductThumb item={item} size={48} />
+        <div className="min-w-0">
+          <p className="break-words text-sm font-bold leading-snug">{item.name}</p>
+          <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs text-slate-500">
+            <span>{formatQuantity(item.quantity)} {item.unit} × {toPriceFormat(item.price)}</span>
+            <span className="font-bold text-slate-900 sm:hidden">{item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии"}</span>
           </div>
-          <span className="font-semibold">{toPriceFormat(item.price)}</span>
-          <span className="text-text-secondary text-center">x {formatQuantity(item.quantity)}</span>
-          <span className="text-right font-semibold">{toPriceFormat(item.final_price)}</span>
+          {!item.is_available && <p className="mt-1 text-xs text-rose-600">Не включён в заказ и сумму оплаты</p>}
         </div>
-      ))}
-    </div>
-  );
-};
+        <span className="hidden text-right text-sm font-bold sm:block">{item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии"}</span>
+      </div>
+    ))}
+  </div>
+);
 
 interface OrderSummaryProps {
   isRepricing: boolean;
@@ -1584,8 +1581,8 @@ const OrderSummary = ({
 
       {itemsCount === 0 ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-xs font-semibold text-rose-800 space-y-2">
-          <p className="font-bold text-sm">Корзина пуста</p>
-          <p className="text-slate-600 font-normal">Добавьте товары из каталога для оформления заказа.</p>
+          <p className="font-bold text-sm">{cart.items.length ? "Нет доступных товаров" : "Корзина пуста"}</p>
+          <p className="text-slate-600 font-normal">{cart.items.length ? "Товары закончились в выбранном магазине и не включены в сумму оплаты." : "Добавьте товары из каталога для оформления заказа."}</p>
           <Link
             href={ROUTES.CATALOG}
             className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition cursor-pointer"
@@ -1597,7 +1594,7 @@ const OrderSummary = ({
         <div className="space-y-4 max-h-[280px] overflow-y-auto pr-1">
           {cart.items.map((item) => (
             <div
-              className="grid grid-cols-[56px_minmax(0,1fr)_75px] items-center gap-3"
+              className="grid grid-cols-[48px_minmax(0,1fr)] sm:grid-cols-[56px_minmax(0,1fr)_75px] items-center gap-3"
               key={item.id}
             >
               <ProductThumb item={item} size={56} />
@@ -1610,7 +1607,7 @@ const OrderSummary = ({
                   {toPriceFormat(item.price)} x {formatQuantity(item.quantity)}
                 </p>
               </div>
-              <span className="text-right font-bold text-xs sm:text-sm">{toPriceFormat(item.final_price)}</span>
+              <span className="col-start-2 text-right font-bold text-xs sm:col-start-auto sm:text-sm">{item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии · не в сумме"}</span>
             </div>
           ))}
         </div>

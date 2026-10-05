@@ -21,7 +21,7 @@ export const CheckoutSuccessView = ({ order, status }: CheckoutSuccessViewProps)
   return (
     <main className="min-h-[75vh] py-10 bg-gradient-to-b from-slate-50 to-white">
       <Container className="max-w-3xl">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-xl shadow-slate-900/5 text-center space-y-6">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-12 shadow-xl shadow-slate-900/5 text-center space-y-6">
           <span className="mx-auto flex size-20 items-center justify-center rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/25 animate-in zoom-in-95 duration-200">
             <CheckCircle2 size={44} />
           </span>

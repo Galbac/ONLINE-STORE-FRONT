@@ -178,7 +178,7 @@ export const QuickViewModal = ({
       onClick={onClose}
     >
       <div
-        className="animate-in zoom-in-95 relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl duration-200 md:flex-row"
+        className="animate-in zoom-in-95 relative flex max-h-[calc(100dvh-24px)] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl duration-200 md:flex-row"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -192,7 +192,7 @@ export const QuickViewModal = ({
         </button>
 
         {/* Left column: Image & Gallery */}
-        <div className="relative flex shrink-0 flex-col items-center justify-center border-b border-slate-100 bg-gradient-to-b from-slate-50 via-slate-50/80 to-slate-100/60 p-6 sm:p-8 md:w-1/2 md:border-r md:border-b-0">
+        <div className="relative flex shrink-0 flex-col items-center justify-center border-b border-slate-100 bg-gradient-to-b from-slate-50 via-slate-50/80 to-slate-100/60 p-3 sm:p-8 md:w-1/2 md:border-r md:border-b-0">
           {/* Discount badge */}
           {product.discount_percent ? (
             <span className="absolute top-4 left-4 z-20 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1 text-xs font-black text-white shadow-sm shadow-rose-500/20">
@@ -201,7 +201,7 @@ export const QuickViewModal = ({
           ) : null}
 
           {/* Main Image */}
-          <div className="relative flex size-52 items-center justify-center sm:size-64 md:size-72">
+          <div className="relative flex size-36 items-center justify-center sm:size-64 md:size-72">
             {activeImageUrl ? (
               <Image
                 src={activeImageUrl}
@@ -260,7 +260,7 @@ export const QuickViewModal = ({
         </div>
 
         {/* Right column: Info & Actions */}
-        <div className="flex max-h-[75vh] flex-col justify-between overflow-y-auto p-5 sm:p-7 md:max-h-[85vh] md:w-1/2">
+        <div className="flex min-h-0 max-h-[75dvh] flex-col justify-between overflow-y-auto overscroll-contain p-5 sm:p-7 md:max-h-[85vh] md:w-1/2">
           <div>
             {/* Badges row */}
             <div className="flex flex-wrap items-center gap-2 pr-8">

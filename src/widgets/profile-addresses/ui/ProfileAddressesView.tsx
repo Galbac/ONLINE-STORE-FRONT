@@ -319,7 +319,7 @@ export const ProfileAddressesView = ({ initialAddresses }: ProfileAddressesViewP
         </nav>
 
         {/* Layout: Sidebar on left, Content on right */}
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-8 items-start">
           <ProfileSidebar activeItem="addresses" />
 
           <div className="min-w-0 space-y-6">

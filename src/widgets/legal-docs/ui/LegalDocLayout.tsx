@@ -213,7 +213,7 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
           </div>
 
           {/* Main 2-Column Responsive Grid */}
-          <div className="grid gap-8 lg:grid-cols-[290px_1fr] xl:grid-cols-[320px_1fr] lg:items-start">
+          <div className="grid gap-8 lg:grid-cols-[290px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
             {/* LEFT COLUMN: Sticky Sidebar Navigation (Desktop) */}
             <aside className="hidden lg:block space-y-6 sticky top-24 print:hidden">
               {/* Document Switcher Card */}

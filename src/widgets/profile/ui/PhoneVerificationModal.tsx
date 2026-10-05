@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal } from "react-dom";
+
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { AlertCircle, Loader2, ShieldCheck, X } from "lucide-react";
 import { userApi } from "@/entities/user";
@@ -76,9 +78,10 @@ export const PhoneVerificationModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150">
-      <div className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-150">
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150">
+      <div className="relative max-h-[calc(100dvh-32px)] overflow-y-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-150">
         <button
           type="button"
           onClick={onClose}
@@ -162,5 +165,5 @@ export const PhoneVerificationModal = ({
         </form>
       </div>
     </div>
-  );
+  , document.body);
 };

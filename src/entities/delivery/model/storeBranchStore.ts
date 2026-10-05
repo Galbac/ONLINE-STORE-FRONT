@@ -16,16 +16,16 @@ export const useStoreBranch = create<StoreBranchState>()(
     (set) => ({
       selectedStore: null,
       setSelectedStore: (store: PickupPointResponse) => {
-        set({ selectedStore: store });
         if (typeof document !== "undefined") {
           document.cookie = `current_store_id=${store.id}; path=/; max-age=31536000; SameSite=Lax`;
         }
+        set({ selectedStore: store });
       },
       clearSelectedStore: () => {
-        set({ selectedStore: null });
         if (typeof document !== "undefined") {
           document.cookie = "current_store_id=; path=/; max-age=0";
         }
+        set({ selectedStore: null });
       },
     }),
     {

@@ -1,5 +1,7 @@
 "use client";
 
+import { Select } from "../select";
+
 import { useRouter, useSearchParams } from "next/navigation";
 
 export interface AutoSubmitSelectOption {
@@ -32,8 +34,7 @@ export const AutoSubmitSelect = ({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newValue = e.target.value;
+  const handleChange = (newValue: string) => {
     const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
 
     // Apply hidden fields preserved from current filter state
@@ -60,20 +61,9 @@ export const AutoSubmitSelect = ({
   };
 
   return (
-    <div className="border-border bg-bg-primary flex h-12 min-w-0 items-center gap-3 rounded-lg border px-4 shadow-2xs">
+    <div className="flex min-w-0 items-center gap-3">
       <span className="text-text-secondary hidden text-sm sm:inline">{label}</span>
-      <select
-        className="min-w-0 bg-transparent text-sm outline-none cursor-pointer"
-        defaultValue={defaultValue}
-        name={name}
-        onChange={handleChange}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <Select className="flex-1" label={label} value={defaultValue} onChange={handleChange} options={options} />
     </div>
   );
 };

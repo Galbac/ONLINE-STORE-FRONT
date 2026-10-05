@@ -143,7 +143,7 @@ export const ChangePasswordForm = () => {
       </form>
 
       {isSuccess ? (
-        <div className="border-success/25 bg-bg-secondary mt-16 flex items-center gap-7 rounded-lg border p-8 md:p-10">
+        <div className="border-success/25 bg-bg-secondary mt-8 flex flex-col items-start gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:gap-7 sm:p-8 md:p-10">
           <span className="bg-success text-accent-contrast grid size-16 shrink-0 place-items-center rounded-full">
             <Check size={38} />
           </span>

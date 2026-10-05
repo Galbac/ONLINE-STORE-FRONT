@@ -2,6 +2,8 @@
 
 import { toast } from "sonner";
 
+import { useStoreBranch } from "@/entities/delivery";
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { safeJsonStorage } from "@/shared/lib/safe-storage";
@@ -51,7 +53,9 @@ const DEFAULT_FREE_DELIVERY_THRESHOLD = 3000;
 
 export const useCartStore = create<CartState>()(
   persist(
-    (set, get) => ({
+    (setState, get) => {
+      const set = setState;
+      return {
       cart: emptyCartResponse,
       summary: emptyCartSummaryResponse,
       freeDeliveryThreshold: DEFAULT_FREE_DELIVERY_THRESHOLD,
@@ -76,6 +80,10 @@ export const useCartStore = create<CartState>()(
       },
 
       fetchCart: async () => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<CartState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         set({ isLoading: true, errorMessage: null });
         try {
           const [cart, summary] = await Promise.all([
@@ -83,13 +91,17 @@ export const useCartStore = create<CartState>()(
             cartApi.getSummary(),
           ]);
           set({ cart, summary, isLoading: false });
-          notifyCartChanged({ itemsCount: summary.items_count });
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyCartChanged({ itemsCount: summary.items_count });
         } catch {
           set({ isLoading: false });
         }
       },
 
       addItem: async ({product_id, quantity}) => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<CartState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         set({ pendingAction: 'add-' + product_id, errorMessage: null });
         try {
           const res = await cartApi.addItem({ product_id, quantity });
@@ -106,7 +118,7 @@ export const useCartStore = create<CartState>()(
             pendingAction: null,
           });
 
-          notifyCartChanged({ itemsCount: res.cart.items_count });
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyCartChanged({ itemsCount: res.cart.items_count });
           
           return true;
         } catch (error: unknown) {
@@ -121,6 +133,10 @@ export const useCartStore = create<CartState>()(
       },
 
       updateQuantity: async (cartItemId: number, quantity: number, item?: CartItemResponse) => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<CartState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         if (quantity <= 0) {
           return get().removeItem(cartItemId, item?.name);
         }
@@ -175,7 +191,7 @@ export const useCartStore = create<CartState>()(
             summary: nextSummary,
             pendingAction: null,
           });
-          notifyCartChanged({ itemsCount: nextSummary.items_count });
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyCartChanged({ itemsCount: nextSummary.items_count });
         } catch (error: unknown) {
           const msg = extractErrorMessage(error, "Не удалось обновить количество");
           set({
@@ -189,6 +205,10 @@ export const useCartStore = create<CartState>()(
       },
 
       removeItem: async (cartItemId: number, _productName?: string) => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<CartState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         const prevCart = get().cart;
         const prevSummary = get().summary;
 
@@ -225,7 +245,7 @@ export const useCartStore = create<CartState>()(
             summary: nextSummary,
             pendingAction: null,
           });
-          notifyCartChanged({ itemsCount: nextSummary.items_count });
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyCartChanged({ itemsCount: nextSummary.items_count });
         } catch (error: unknown) {
           const msg = extractErrorMessage(error, "Не удалось удалить товар");
           set({
@@ -239,6 +259,10 @@ export const useCartStore = create<CartState>()(
       },
 
       clearCart: async () => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<CartState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         set({ pendingAction: 'clear', errorMessage: null });
         try {
           const res = await cartApi.clear();
@@ -248,7 +272,7 @@ export const useCartStore = create<CartState>()(
             summary,
             pendingAction: null,
           });
-          notifyCartChanged({ itemsCount: 0 });
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyCartChanged({ itemsCount: 0 });
         } catch (error: unknown) {
           const msg = extractErrorMessage(error, "Не удалось очистить корзину");
           set({
@@ -260,6 +284,10 @@ export const useCartStore = create<CartState>()(
       },
 
       applyPromoCode: async (code: string) => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<CartState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         set({ pendingAction: 'promo-apply', errorMessage: null });
         try {
           const response = await cartApi.applyPromoCodeToCart({ code });
@@ -283,6 +311,10 @@ export const useCartStore = create<CartState>()(
       },
 
       removePromoCode: async () => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<CartState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         set({ pendingAction: 'promo-remove', errorMessage: null });
         try {
           const response = await cartApi.removePromoCode();
@@ -306,24 +338,29 @@ export const useCartStore = create<CartState>()(
       },
 
       moveToFavorites: async (item: CartItemResponse) => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<CartState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         set({ pendingAction: 'fav-' + item.id });
         try {
           await favoriteApi.add(item.product_id);
-          notifyFavoritesChanged();
-          await get().removeItem(item.id, item.name);
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyFavoritesChanged();
+          if (storeId === useStoreBranch.getState().selectedStore?.id) await get().removeItem(item.id, item.name);
           
         } catch {
           set({ pendingAction: null });
           
         }
       },
-    }),
+      };
+    },
     {
       name: "pobeda_cart_store",
       storage: safeJsonStorage(),
+      version: 1,
+      migrate: () => ({}),
       partialize: (state) => ({
-        cart: state.cart,
-        summary: state.summary,
         freeDeliveryThreshold: state.freeDeliveryThreshold,
       }),
       onRehydrateStorage: () => (state) => {

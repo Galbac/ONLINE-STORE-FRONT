@@ -253,14 +253,14 @@ export const ProfileOrderDetailsView = ({
           <span>Заказ {order.order_number}</span>
         </nav>
 
-        <section className="mb-8 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+        <section className="mb-8 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <h1 className="text-text-primary text-3xl font-bold break-words md:text-5xl">
               Заказ N°{order.order_number}
             </h1>
             <p className="text-text-secondary mt-4">{formatDateTime(order.created_at)}</p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+          <div className="flex flex-wrap gap-2 lg:justify-end">
             <Button
               type="button"
               disabled={isPending}
@@ -578,9 +578,9 @@ const OrderItemRow = ({ item }: OrderItemRowProps) => {
   const [hasError, setHasError] = useState(false);
 
   return (
-    <div className="grid gap-4 p-5 sm:grid-cols-[64px_1fr_auto] sm:items-center md:p-7">
+    <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 p-4 sm:p-5 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:items-center md:p-7">
       <Link
-        className="group/img relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs transition hover:opacity-90"
+        className="group/img relative flex size-14 sm:size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 shadow-2xs transition hover:opacity-90"
         href={ROUTES.PRODUCT(item.product_slug)}
       >
         {item.preview_image_url && !hasError ? (
@@ -608,7 +608,7 @@ const OrderItemRow = ({ item }: OrderItemRowProps) => {
         </Link>
         <p className="text-text-secondary mt-2 text-sm">{formatUnit(item)}</p>
       </div>
-      <div className="grid grid-cols-2 items-center gap-5 sm:min-w-56">
+      <div className="col-start-2 flex flex-wrap items-center justify-between gap-2 sm:col-start-auto sm:grid sm:grid-cols-2 sm:gap-5 sm:min-w-48">
         <span className="text-text-secondary text-sm">
           {formatQuantity(item.quantity)} x {toPriceFormat(item.price)}
         </span>

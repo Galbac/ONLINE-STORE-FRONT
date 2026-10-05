@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal } from "react-dom";
+
 import { type FormEvent, useEffect, useState } from "react";
 import { MapPin, X } from "lucide-react";
 import type { Address } from "../types";
@@ -128,15 +130,16 @@ export const AddressModal = ({
     );
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="address-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div
-        className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl relative border border-slate-200/80 max-h-[92vh] overflow-y-auto"
+        className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl relative border border-slate-200/80 max-h-[calc(100dvh-32px)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -338,5 +341,5 @@ export const AddressModal = ({
         </form>
       </div>
     </div>
-  );
+  , document.body);
 };

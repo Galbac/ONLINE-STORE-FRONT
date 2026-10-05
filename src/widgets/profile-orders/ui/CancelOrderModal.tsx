@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal } from "react-dom";
+
 import { AlertTriangle, Loader2, X } from "lucide-react";
 
 interface CancelOrderModalProps {
@@ -14,15 +16,15 @@ export const CancelOrderModal = ({
   isPending,
   onClose,
   onConfirm,
-}: CancelOrderModalProps) => (
+}: CancelOrderModalProps) => typeof document === "undefined" ? null : createPortal(
   <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+    className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
     onClick={isPending ? undefined : onClose}
   >
     <section
       aria-labelledby="cancel-order-title"
       aria-modal="true"
-      className="relative w-full max-w-md rounded-2xl border border-rose-100 bg-white p-6 shadow-2xl sm:p-7"
+      className="relative max-h-[calc(100dvh-32px)] overflow-y-auto w-full max-w-md rounded-2xl border border-rose-100 bg-white p-6 shadow-2xl sm:p-7"
       onClick={(event) => event.stopPropagation()}
       role="dialog"
     >
@@ -65,4 +67,4 @@ export const CancelOrderModal = ({
       </div>
     </section>
   </div>
-);
+, document.body);

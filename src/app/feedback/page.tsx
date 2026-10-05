@@ -1,5 +1,7 @@
 "use client";
 
+import { Select } from "@/shared/ui/select";
+
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
@@ -323,7 +325,7 @@ export default function FeedbackPage() {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             {/* Form Column */}
             <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
               {isSuccess && submittedTicket ? (
@@ -531,33 +533,18 @@ export default function FeedbackPage() {
 
                   {/* Subject Dropdown Select */}
                   <div>
-                    <label htmlFor="feedback-subject" className="block text-xs font-semibold text-slate-700 mb-1">
+                    <p className="block text-xs font-semibold text-slate-700 mb-1">
                       Тема обращения <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      id="feedback-subject"
+                    </p>
+                    <Select
+                      label="Тема обращения"
                       value={subject}
-                      onChange={(e) => {
-                        setSubject(e.target.value as FeedbackSubject);
+                      onChange={(value) => {
+                        setSubject(value as FeedbackSubject);
                         if (formErrors.subject) setFormErrors((prev) => ({ ...prev, subject: "" }));
                       }}
-                      className={cn(
-                        "w-full rounded-xl border bg-slate-50/50 p-3 text-xs outline-none transition focus:bg-white cursor-pointer",
-                        formErrors.subject
-                          ? "border-rose-300 focus:border-rose-500 focus:ring-1 focus:ring-rose-400"
-                          : "border-slate-200 focus:border-emerald-500",
-                        !subject && "text-slate-400",
-                      )}
-                    >
-                      <option value="" disabled>
-                        -- Выберите тему обращения --
-                      </option>
-                      {FEEDBACK_SUBJECT_OPTIONS.map((option) => (
-                        <option key={option} value={option} className="text-slate-800">
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                      options={[{ value: "", label: "Выберите тему обращения" }, ...FEEDBACK_SUBJECT_OPTIONS.map((option) => ({ value: option, label: option }))]}
+                    />
                     {formErrors.subject && (
                       <p className="mt-1 text-[11px] font-medium text-rose-500 flex items-center gap-1">
                         <AlertCircle size={12} />

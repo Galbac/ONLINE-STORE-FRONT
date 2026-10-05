@@ -1,6 +1,7 @@
 "use client";
 
 import { StoreBranchSelector } from "@/widgets/header/ui/StoreBranchSelector";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { LayoutGrid, MapPin, Phone } from "lucide-react";
 import { HeaderSearch } from "./HeaderSearch";
@@ -19,9 +20,19 @@ interface HeaderProps {
 
 export const Header = ({ hideSearchOnMobile = false }: HeaderProps) => {
   const { city, phone, phoneHref } = useDynamicStoreInfo();
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const measure = () => document.documentElement.style.setProperty("--store-header-height", `${header.getBoundingClientRect().height}px`);
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    measure();
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 shadow-xs backdrop-blur-none sm:backdrop-blur-md">
+    <header ref={headerRef} className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white shadow-xs backdrop-blur-none sm:backdrop-blur-md">
       {/* 1. Верхний микро-бар (стабильно зафиксирован, без прыжков) */}
       <div className="hidden sm:block border-b border-slate-100 bg-slate-50/70 text-xs text-slate-500 py-1.5">
         <Container className="flex items-center justify-between gap-4">

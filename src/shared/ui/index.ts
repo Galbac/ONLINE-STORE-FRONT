@@ -30,3 +30,5 @@ export type { PhoneInputProps } from "./phone-input";
 export { PaymentStatusBadge } from "./payment-status-badge";
 export { SyncStatusBadge } from "./sync-status-badge";
 export * from "./admin-filters";
+
+export { Select } from "./select";

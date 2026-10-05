@@ -299,12 +299,12 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
           <UserRound size={58} />
         </span>
         <div className="space-y-4">
-          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+          <div className="grid grid-cols-[90px_minmax(0,1fr)] sm:grid-cols-[140px_minmax(0,1fr)] items-center gap-2 text-sm">
             <span className="text-text-secondary">Имя:</span>
             <span className="text-text-primary font-bold break-words">{user.name}</span>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+          <div className="grid grid-cols-[90px_minmax(0,1fr)] sm:grid-cols-[140px_minmax(0,1fr)] items-center gap-2 text-sm">
             <span className="text-text-secondary">Телефон:</span>
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-text-primary font-bold font-mono text-xs sm:text-sm">
@@ -321,7 +321,7 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+          <div className="grid grid-cols-[90px_minmax(0,1fr)] sm:grid-cols-[140px_minmax(0,1fr)] items-center gap-2 text-sm">
             <span className="text-text-secondary">Email:</span>
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-text-primary font-bold break-all text-xs sm:text-sm">
@@ -340,7 +340,7 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] items-center gap-2 text-sm">
+          <div className="grid grid-cols-[90px_minmax(0,1fr)] sm:grid-cols-[140px_minmax(0,1fr)] items-center gap-2 text-sm">
             <span className="text-text-secondary">Дата регистрации:</span>
             <span className="text-text-primary font-medium text-xs sm:text-sm">
               {formatDateTime(user.created_at)}

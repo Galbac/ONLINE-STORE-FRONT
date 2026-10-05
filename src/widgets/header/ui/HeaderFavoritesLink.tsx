@@ -1,5 +1,7 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +16,7 @@ import {
 import { getStoredAccessToken, getStoredRefreshToken } from "@/shared/ui";
 
 export const HeaderFavoritesLink = () => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
   const pathname = usePathname() || "";
   const isActive = pathname === ROUTES.FAVORITES || pathname.startsWith(`${ROUTES.FAVORITES}/`);
   const [itemsCount, setItemsCount] = useState(0);
@@ -62,7 +65,7 @@ export const HeaderFavoritesLink = () => {
       window.removeEventListener(FAVORITES_CHANGED_EVENT, handleFavoritesChanged);
       window.removeEventListener("focus", loadFavoritesCount);
     };
-  }, []);
+  }, [selectedStoreId]);
 
   return (
     <Link

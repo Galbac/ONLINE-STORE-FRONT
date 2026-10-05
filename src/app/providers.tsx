@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { useStoreBranch } from "@/entities/delivery";
+import { useCartStore, emptyCartResponse, emptyCartSummaryResponse } from "@/entities/cart";
+import { useFavoritesStore } from "@/entities/favorite";
+import { getStoredAccessToken, getStoredRefreshToken } from "@/shared/ui";
 import { Toaster } from "sonner";
 import { StoreSettingsProvider } from "@/entities/settings/model/StoreSettingsProvider";
 import { PullToRefresh } from "@/shared/ui/pull-to-refresh";
@@ -25,6 +29,7 @@ const isLegalDocumentPath = (pathname: string): boolean => {
 };
 
 export const AppProviders = ({ children }: AppProvidersProps) => {
+  const selectedStoreId = useStoreBranch((state) => state.selectedStore?.id);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const previousPathnameRef = useRef(pathname);
@@ -96,6 +101,15 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
     previousPathnameRef.current = pathname;
     previousHrefRef.current = `${window.location.pathname}${window.location.search}`;
   }, [pathname]);
+
+  useEffect(() => {
+    useCartStore.setState({ cart: emptyCartResponse, summary: emptyCartSummaryResponse, pendingAction: null, isLoading: false, errorMessage: null });
+    useFavoritesStore.setState({ items: [], pendingProductId: null, isLoading: false, isClearing: false, isAddingAllToCart: false, errorMessage: null });
+    if (getStoredAccessToken() || getStoredRefreshToken()) {
+      void useCartStore.getState().fetchCart();
+      void useFavoritesStore.getState().fetchFavorites();
+    }
+  }, [selectedStoreId]);
 
   return (
     <StoreSettingsProvider>

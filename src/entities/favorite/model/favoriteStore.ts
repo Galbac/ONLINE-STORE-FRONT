@@ -1,5 +1,7 @@
 "use client";
 
+import { useStoreBranch } from "@/entities/delivery";
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { safeJsonStorage } from "@/shared/lib/safe-storage";
@@ -34,7 +36,9 @@ export interface FavoriteState {
 
 export const useFavoritesStore = create<FavoriteState>()(
   persist(
-    (set, get) => ({
+    (setState, get) => {
+      const set = setState;
+      return {
       items: [],
       isLoading: false,
       pendingProductId: null,
@@ -57,17 +61,25 @@ export const useFavoritesStore = create<FavoriteState>()(
       },
 
       fetchFavorites: async () => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<FavoriteState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         set({ isLoading: true, errorMessage: null });
         try {
           const response = await favoriteApi.getList({ page: 1, limit: 100 });
           set({ items: response.items, isLoading: false });
-          notifyFavoritesChanged({ itemsCount: response.items.length });
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyFavoritesChanged({ itemsCount: response.items.length });
         } catch {
           set({ isLoading: false });
         }
       },
 
       addFavorite: async (product: FavoriteProductResponse) => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<FavoriteState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         const prevItems = get().items;
         if (prevItems.some((it) => it.id === product.id)) {
           return true;
@@ -83,14 +95,18 @@ export const useFavoritesStore = create<FavoriteState>()(
           set({ pendingProductId: null });
           await get().fetchFavorites();
           return true;
-        } catch {
-          // If 409 already exists, keep it
-          set({ pendingProductId: null });
-          return true;
+        } catch (error: unknown) {
+          set({ items: prevItems, pendingProductId: null, errorMessage: extractErrorMessage(error, "Не удалось добавить в избранное") });
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyFavoritesChanged({ itemsCount: prevItems.length });
+          return false;
         }
       },
 
       removeFavorite: async (productId: number, _productName?: string) => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<FavoriteState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         const prevItems = get().items;
                 
         // Optimistic removal
@@ -136,6 +152,10 @@ export const useFavoritesStore = create<FavoriteState>()(
       },
 
       clearFavorites: async () => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<FavoriteState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         const prevItems = get().items;
         if (prevItems.length === 0) return;
 
@@ -153,6 +173,10 @@ export const useFavoritesStore = create<FavoriteState>()(
       },
 
       addAllToCart: async () => {
+        const storeId = useStoreBranch.getState().selectedStore?.id;
+        const set = (patch: Partial<FavoriteState>) => {
+          if (storeId === useStoreBranch.getState().selectedStore?.id) setState(patch);
+        };
         const items = get().items;
         if (items.length === 0) {
           return { addedCount: 0, failedCount: 0 };
@@ -164,6 +188,8 @@ export const useFavoritesStore = create<FavoriteState>()(
         let latestCartItemsCount = 0;
 
         for (const item of items) {
+          if (storeId !== useStoreBranch.getState().selectedStore?.id) break;
+          if (!item.is_available) { failedCount++; continue; }
           try {
             const step = item.quantity_step ? Number(item.quantity_step) : 1;
             const res = await cartApi.addItem({
@@ -180,18 +206,19 @@ export const useFavoritesStore = create<FavoriteState>()(
         set({ isAddingAllToCart: false });
 
         if (latestCartItemsCount > 0) {
-          notifyCartChanged({ itemsCount: latestCartItemsCount });
+          if (storeId === useStoreBranch.getState().selectedStore?.id) notifyCartChanged({ itemsCount: latestCartItemsCount });
         }
 
         return { addedCount, failedCount };
       },
-    }),
+      };
+    },
     {
       name: "pobeda_favorites_store",
       storage: safeJsonStorage(),
-      partialize: (state) => ({
-        items: state.items,
-      }),
+      version: 1,
+      migrate: () => ({}),
+      partialize: () => ({}),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

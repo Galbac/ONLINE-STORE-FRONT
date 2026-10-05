@@ -235,7 +235,7 @@ export const LoginForm = () => {
 
       <p className="text-[11px] text-center text-slate-400 leading-relaxed px-1">
         Нажимая «Войти», вы соглашаетесь с{" "}
-        <Link className="underline hover:text-emerald-700" href="/terms" target="_blank">
+        <Link className="underline hover:text-emerald-700" href={ROUTES.OFFER} target="_blank">
           условиями Оферты
         </Link>{" "}
         и{" "}

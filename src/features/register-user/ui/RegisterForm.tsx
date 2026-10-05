@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { authApi } from "@/entities/auth";
@@ -37,6 +37,9 @@ export const RegisterForm = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next");
+  const loginHref = `${ROUTES.LOGIN}?mode=form${nextPath ? `&next=${encodeURIComponent(nextPath)}` : ""}`;
 
   // Restore draft from sessionStorage if user clicked "back"
   useEffect(() => {
@@ -374,7 +377,7 @@ export const RegisterForm = () => {
 
       <div className="border-t border-slate-100 pt-4 text-center text-xs text-slate-500">
         Уже есть аккаунт?{" "}
-        <Link href={ROUTES.LOGIN} className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
+        <Link href={loginHref} className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
           Войти
         </Link>
       </div>

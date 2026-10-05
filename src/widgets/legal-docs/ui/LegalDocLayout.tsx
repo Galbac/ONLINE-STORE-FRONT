@@ -13,16 +13,12 @@ import {
   Mail,
   Phone,
   Printer,
-  Search,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
 import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { Container } from "@/shared/ui";
 import { useDynamicStoreInfo } from "@/entities/settings";
-import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { LEGAL_DOCS_NAV } from "../data/legalDocs";
 import type { LegalDocumentConfig } from "../types";
 
@@ -36,7 +32,6 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
   const [activeSectionId, setActiveSectionId] = useState<string>(
     document.sections[0]?.id || "",
   );
-  const [searchQuery, setSearchQuery] = useState("");
   const [copiedSectionId, setCopiedSectionId] = useState<string | null>(null);
   const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
 
@@ -106,33 +101,16 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
     setTimeout(() => setCopiedSectionId(null), 2000);
   };
 
-  // Filter sections by search query
-  const filteredSections = useMemo(() => {
-    if (!searchQuery.trim()) return document.sections;
-    const q = searchQuery.toLowerCase().trim();
-    return document.sections.filter((s) => {
-      const titleMatch = s.title.toLowerCase().includes(q);
-      const paragraphMatch = s.paragraphs.some((p) => p.toLowerCase().includes(q));
-      return titleMatch || paragraphMatch;
-    });
-  }, [document.sections, searchQuery]);
-
   // Handle native browser print
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <>
-      {/* Hide global header during print */}
-      <div className="print:hidden">
-        <Header />
-      </div>
-
-      <main
-        data-no-mobile-nav
-        className="min-h-screen bg-slate-50/50 py-6 sm:py-10 print:bg-white print:p-0"
-      >
+    <main
+      data-no-mobile-nav
+      className="min-h-screen bg-slate-50/50 py-6 sm:py-10 print:bg-white print:p-0"
+    >
         <Container className="max-w-7xl">
           {/* Breadcrumbs (Hidden on print) */}
           <nav
@@ -343,30 +321,8 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                     </span>
                   </div>
 
-                  {/* Actions: Search & Native Print */}
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Live in-doc search input */}
-                    <div className="relative min-w-[200px] flex-1 sm:flex-initial">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Поиск по документу..."
-                        className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-8 pr-7 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-500"
-                      />
-                      {searchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => setSearchQuery("")}
-                          aria-label="Очистить поиск"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                        >
-                          <X size={13} />
-                        </button>
-                      )}
-                    </div>
-
+                  {/* Native Print */}
+                  <div className="flex items-center justify-end gap-2.5">
                     {/* Print / Save to PDF Button */}
                     <button
                       type="button"
@@ -446,9 +402,9 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                       className="prose prose-slate max-w-none text-sm leading-relaxed text-slate-700 divide-y divide-slate-100 [&>p]:leading-relaxed [&>p]:text-slate-700 [&>h2]:pt-6 [&>h2:first-child]:pt-0"
                       dangerouslySetInnerHTML={{ __html: processedHtml }}
                     />
-                  ) : filteredSections.length > 0 ? (
+                  ) : document.sections.length > 0 ? (
                     <div className="space-y-8 divide-y divide-slate-100">
-                      {filteredSections.map((section, idx) => (
+                      {document.sections.map((section, idx) => (
                         <section
                           key={section.id}
                           id={section.id}
@@ -505,16 +461,7 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center">
-                      <p className="text-xs text-slate-500">
-                        По запросу «<span className="font-bold text-slate-700">{searchQuery}</span>» ничего не найдено в тексте документа.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery("")}
-                        className="mt-3 text-xs font-bold text-emerald-700 hover:underline"
-                      >
-                        Сбросить фильтр
-                      </button>
+                      <p className="text-xs text-slate-500">Текст документа пока недоступен.</p>
                     </div>
                   )}
                 </div>
@@ -551,12 +498,6 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
             </div>
           </div>
         </Container>
-      </main>
-
-      {/* Hide global footer during print */}
-      <div className="print:hidden">
-        <Footer />
-      </div>
-    </>
+    </main>
   );
 }

@@ -304,7 +304,7 @@ export default function FeedbackPage() {
 
   return (
     <>
-      <Header />
+      <Header hideSearchOnMobile />
       <main className="min-h-[70vh] bg-slate-50/50 py-10">
         <Container className="max-w-5xl space-y-8">
           {/* Header navigation & title */}

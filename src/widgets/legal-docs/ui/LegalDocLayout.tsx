@@ -14,7 +14,6 @@ import {
   Link as LinkIcon,
   Mail,
   Phone,
-  Printer,
   ShieldCheck,
 } from "lucide-react";
 import { cn, ROUTES, STORE_INFO } from "@/shared/config";
@@ -25,7 +24,16 @@ import { LEGAL_DOCS_NAV } from "../data/legalDocs";
 import type { LegalDocumentConfig } from "../types";
 
 const legalDocumentReturnPathKey = "grocery-legal-document-return-path";
+const legalDocumentScrollStateKey = "grocery-legal-document-scroll-state";
 const legalDocumentPaths = new Set(["/offer", "/privacy", "/personal-data-consent", "/cookies"]);
+
+const saveLegalDocumentScrollState = (): void => {
+  const tabs = window.document.querySelector<HTMLElement>("[data-legal-document-tabs]");
+  sessionStorage.setItem(
+    legalDocumentScrollStateKey,
+    JSON.stringify({ scrollY: window.scrollY, tabsScrollLeft: tabs?.scrollLeft ?? 0 }),
+  );
+};
 
 interface LegalDocLayoutProps {
   document: LegalDocumentConfig;
@@ -40,6 +48,26 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
   );
   const [copiedSectionId, setCopiedSectionId] = useState<string | null>(null);
   const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
+
+  useEffect(() => {
+    const savedState = sessionStorage.getItem(legalDocumentScrollStateKey);
+    if (!savedState) return;
+
+    sessionStorage.removeItem(legalDocumentScrollStateKey);
+    try {
+      const { scrollY, tabsScrollLeft } = JSON.parse(savedState) as {
+        scrollY: number;
+        tabsScrollLeft: number;
+      };
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+        const tabs = window.document.querySelector<HTMLElement>("[data-legal-document-tabs]");
+        if (tabs) tabs.scrollLeft = tabsScrollLeft;
+      });
+    } catch {
+      // Ignore malformed saved scroll state.
+    }
+  }, [document.slug]);
 
   // Parse headings from HTML if contentHtml is provided
   const { processedHtml, htmlToc } = useMemo(() => {
@@ -107,11 +135,6 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
     setTimeout(() => setCopiedSectionId(null), 2000);
   };
 
-  // Handle native browser print
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <main
       data-no-mobile-nav
@@ -126,6 +149,7 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
             <button
               type="button"
               onClick={() => {
+                sessionStorage.removeItem(legalDocumentScrollStateKey);
                 const returnPath = sessionStorage.getItem(legalDocumentReturnPathKey);
                 sessionStorage.removeItem(legalDocumentReturnPathKey);
                 const returnPathname = returnPath?.split(/[?#]/, 1)[0] ?? "";
@@ -148,7 +172,10 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
           </nav>
 
           {/* Mobile Document Selector Tabs Carousel (Hidden on print) */}
-          <div className="mb-6 overflow-x-auto pb-2 lg:hidden print:hidden">
+          <div
+            data-legal-document-tabs
+            className="mb-6 overflow-x-auto pb-2 lg:hidden print:hidden"
+          >
             <div className="flex gap-2">
               {LEGAL_DOCS_NAV.map((navItem) => {
                 const isActive = navItem.slug === document.slug;
@@ -156,6 +183,8 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                   <Link
                     key={navItem.slug}
                     href={navItem.href}
+                    scroll={false}
+                    onClick={saveLegalDocumentScrollState}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all active:scale-95",
@@ -202,6 +231,8 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                       <Link
                         key={item.slug}
                         href={item.href}
+                        scroll={false}
+                        onClick={saveLegalDocumentScrollState}
                         aria-current={isCurrent ? "page" : undefined}
                         className={cn(
                           "group flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold transition-all",
@@ -342,19 +373,6 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                     </span>
                   </div>
 
-                  {/* Native Print */}
-                  <div className="flex items-center justify-end gap-2.5">
-                    {/* Print / Save to PDF Button */}
-                    <button
-                      type="button"
-                      onClick={handlePrint}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-emerald-300 hover:bg-slate-50 hover:text-emerald-700 active:scale-95 cursor-pointer"
-                      title="Распечатать или сохранить в PDF"
-                    >
-                      <Printer size={14} />
-                      <span className="hidden sm:inline">Печать / PDF</span>
-                    </button>
-                  </div>
                 </div>
 
                 {/* Mobile Collapsible TOC Trigger Button */}
@@ -384,7 +402,6 @@ export function LegalDocLayout({ document, contentHtml }: LegalDocLayoutProps) {
                           <a
                             key={sec.id}
                             href={`#${sec.id}`}
-                            onClick={() => setIsMobileTocOpen(false)}
                             className="block rounded-lg px-2.5 py-1.5 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"
                           >
                             {sec.title}

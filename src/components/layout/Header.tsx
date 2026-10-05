@@ -13,7 +13,11 @@ import { HeaderNav } from "@/widgets/header/ui/HeaderNav";
 import { HeaderUserLink } from "@/widgets/header/ui/HeaderUserLink";
 import { HeaderNotificationsLink } from "@/widgets/header/ui/HeaderNotificationsLink";
 
-export const Header = () => {
+interface HeaderProps {
+  hideSearchOnMobile?: boolean;
+}
+
+export const Header = ({ hideSearchOnMobile = false }: HeaderProps) => {
   const { city, phone, phoneHref } = useDynamicStoreInfo();
 
   return (
@@ -78,7 +82,7 @@ export const Header = () => {
           </Link>
 
           {/* Строка поиска */}
-          <div className="w-full">
+          <div className={hideSearchOnMobile ? "hidden w-full lg:block" : "w-full"}>
             <HeaderSearch />
           </div>
 

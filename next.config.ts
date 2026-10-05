@@ -137,20 +137,24 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: API_PROXY_TARGET + "/api/:path*",
-      },
-      {
-        source: "/health",
-        destination: API_PROXY_TARGET + "/health",
-      },
-      {
-        source: "/media/:path*",
-        destination: API_PROXY_TARGET + "/media/:path*",
-      },
-    ];
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [
+        {
+          source: "/api/:path*",
+          destination: API_PROXY_TARGET + "/api/:path*",
+        },
+        {
+          source: "/health",
+          destination: API_PROXY_TARGET + "/health",
+        },
+        {
+          source: "/media/:path*",
+          destination: API_PROXY_TARGET + "/media/:path*",
+        },
+      ],
+    };
   },
 };
 

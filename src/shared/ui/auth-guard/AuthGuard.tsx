@@ -16,7 +16,7 @@ export interface AuthTokens {
   remember?: boolean;
 }
 
-const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 export const getLoginRedirectHref = (pathname: string): string => {
   return `${ROUTES.LOGIN}?next=${encodeURIComponent(pathname)}`;

@@ -8,7 +8,7 @@ interface ApiClientConfig {
 const DEFAULT_API_TIMEOUT_MS = 10000;
 const UPLOAD_API_TIMEOUT_MS = 60000;
 let ongoingRefreshPromise: Promise<TokenPairResponse | null> | null = null;
-const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 interface StoredRefreshToken {
   remember: boolean;

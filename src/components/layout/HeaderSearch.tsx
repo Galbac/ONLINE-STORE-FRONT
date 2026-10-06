@@ -257,12 +257,13 @@ export const HeaderSearch = ({
             autoComplete="off"
             className="h-11 w-full bg-transparent pr-10 pl-10 text-sm text-slate-800 outline-none placeholder:text-slate-500"
             id="header-site-search"
+            inputMode="search"
             name="q"
             placeholder={placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setIsOpen(true)}
-            type="search"
+            type="text"
           />
 
           {/* Правая панель: индикатор загрузки, кнопка очистки, хоткей Cmd+K */}

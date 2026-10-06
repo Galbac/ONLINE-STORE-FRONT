@@ -16,7 +16,6 @@ import {
   ShoppingBag,
   Smartphone,
   Truck,
-  X,
 } from "lucide-react";
 import {
   notificationApi,
@@ -72,10 +71,8 @@ export const ProfileNotificationsView = () => {
     isSubscribed,
     isLoading: isPushLoading,
     isTesting: isPushTesting,
-    isBannerDismissed,
     requestPermission,
     sendTestPush,
-    dismissBanner,
   } = usePushNotifications();
 
   useEffect(() => {
@@ -173,8 +170,18 @@ export const ProfileNotificationsView = () => {
     });
   };
 
-  // Показываем промо-баннер только если статус браузера 'default' и баннер не закрыт
-  const showPushBanner = isMounted && permission === "default" && !isBannerDismissed;
+  // Напоминание остаётся, пока браузер не разрешил push и устройство не подписано.
+  const showPushBanner = isMounted && !(permission === "granted" && isSubscribed);
+  const pushBannerMessage =
+    permission === "loading"
+      ? "Проверяем настройки push-уведомлений на этом устройстве."
+      : permission === "unsupported"
+        ? "Этот браузер не поддерживает push-уведомления. На iPhone добавьте сайт на экран «Домой» и откройте его оттуда."
+        : permission === "denied"
+          ? "Разрешение заблокировано браузером. Разрешите уведомления для этого сайта в настройках браузера, затем вернитесь сюда."
+          : permission === "granted"
+            ? "Разрешение уже выдано. Включите уведомления, чтобы получать сообщения о заказах и доставке."
+            : "Моментально узнавайте о статусе доставки, выезде курьера и персональных спецпредложениях.";
 
   return (
     <main className="bg-bg-primary min-h-[75vh] animate-in fade-in-0 duration-200">
@@ -242,7 +249,7 @@ export const ProfileNotificationsView = () => {
           </div>
         </header>
 
-        {/* Баннер Push-уведомлений (H2) - отображается безопасно и только когда статус 'default' */}
+        {/* Напоминание о Push остаётся, пока уведомления не разрешены и не включены. */}
         {showPushBanner && (
           <section
             aria-labelledby="push-banner-heading"
@@ -258,31 +265,37 @@ export const ProfileNotificationsView = () => {
                     id="push-banner-heading"
                     className="text-base sm:text-lg font-bold text-slate-900 leading-snug"
                   >
-                    Включите push-уведомления
+                    {permission === "denied"
+                      ? "Разрешите уведомления в браузере"
+                      : permission === "unsupported"
+                        ? "Push-уведомления недоступны"
+                        : permission === "granted"
+                          ? "Завершите подключение уведомлений"
+                          : "Включите push-уведомления"}
                   </h2>
                   <p className="mt-0.5 text-xs sm:text-sm text-slate-600 max-w-xl">
-                    Моментально узнавайте о статусе доставки, выезде курьера и персональных спецпредложениях.
+                    {pushBannerMessage}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 pt-2 sm:pt-0 shrink-0 self-end sm:self-center">
-                <Button
-                  onClick={requestPermission}
-                  disabled={isPushLoading}
-                  className="min-h-[44px] px-5 text-sm font-bold gap-2 shadow-sm shadow-emerald-700/20 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <BellRing size={16} />
-                  <span>{isPushLoading ? "Подключение..." : "Включить пуши"}</span>
-                </Button>
-                <button
-                  type="button"
-                  onClick={dismissBanner}
-                  aria-label="Закрыть предложение push-уведомлений"
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  <X size={18} />
-                </button>
+                {(permission === "default" || permission === "granted" || permission === "loading") && (
+                  <Button
+                    onClick={requestPermission}
+                    disabled={isPushLoading || permission === "loading"}
+                    className="min-h-[44px] px-5 text-sm font-bold gap-2 shadow-sm shadow-emerald-700/20 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <BellRing size={16} />
+                    <span>
+                      {isPushLoading
+                        ? "Подключение..."
+                        : permission === "granted"
+                          ? "Завершить подключение"
+                          : "Включить уведомления"}
+                    </span>
+                  </Button>
+                )}
               </div>
             </div>
           </section>

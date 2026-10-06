@@ -76,7 +76,6 @@ export const productApi = {
     return apiClient.get<ProductNewResponse>(API_ENDPOINTS.PRODUCT.NEW, {
       limit: 8,
       in_stock: true,
-      days: 30,
       store_id: storeId ?? getCurrentStoreId(),
     });
   },

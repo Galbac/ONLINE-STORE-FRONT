@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Clock, MapPin, Store, Truck } from "lucide-react";
 import { ROUTES } from "@/shared/config";
 import { useDynamicStoreInfo } from "@/entities/settings";
+import { useStoreBranch } from "@/entities/delivery";
 import { toPriceFormat } from "@/shared/lib/format";
 
 export interface DeliveryWidgetsProps {
@@ -25,7 +26,11 @@ export const DeliveryWidgets = ({
   pickupDescription = "Соберем ваш заказ заранее. Забирайте без очередей в удобное время.",
   currentCartAmount = 300,
 }: DeliveryWidgetsProps) => {
-  const { address } = useDynamicStoreInfo();
+  const { address: defaultAddress } = useDynamicStoreInfo();
+  const selectedStore = useStoreBranch((state) => state.selectedStore);
+  const address = selectedStore
+    ? [selectedStore.city, selectedStore.address].filter(Boolean).join(", ")
+    : defaultAddress;
   const targetFreeAmount = freeFromAmount ? parseFloat(freeFromAmount) || 1500 : 1500;
   const currentTotal = currentCartAmount || 0;
   const amountToFree = Math.max(0, targetFreeAmount - currentTotal);

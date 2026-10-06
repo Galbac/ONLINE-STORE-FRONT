@@ -10,12 +10,10 @@ import {
   Fish,
   Leaf,
   Milk,
-  RotateCcw,
   ShoppingBag,
   Wheat,
 } from "lucide-react";
 import type { CategoryShortResponse } from "@/entities/category";
-import { ROUTES } from "@/shared/config";
 import { buildCatalogHref, type CatalogUrlParams } from "@/widgets/catalog/lib/catalogUrl";
 import { CatalogPriceFilter } from "@/widgets/catalog/ui/CatalogPriceFilter";
 
@@ -213,14 +211,6 @@ export const CatalogSidebar = ({
         </div>
       )}
 
-      {/* Кнопка сброса всех фильтров */}
-      <Link
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-emerald-700 active:scale-95"
-        href={ROUTES.CATALOG}
-      >
-        <RotateCcw size={15} />
-        Сбросить все фильтры
-      </Link>
     </aside>
   );
 };

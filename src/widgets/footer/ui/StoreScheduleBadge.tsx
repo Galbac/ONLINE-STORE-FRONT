@@ -2,22 +2,25 @@
 
 import { useState } from "react";
 import { Clock, X, CheckCircle2, AlertCircle, MapPin, Phone } from "lucide-react";
-import type { DayScheduleItem } from "@/entities/admin-settings";
+import { useStoreBranch } from "@/entities/delivery";
+import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { useDynamicStoreInfo } from "@/entities/settings";
-
-const DEFAULT_SCHEDULE: DayScheduleItem[] = [
-  { day: 1, day_name: "Понедельник", is_day_off: false, open_time: "08:00", close_time: "22:00" },
-  { day: 2, day_name: "Вторник", is_day_off: false, open_time: "08:00", close_time: "22:00" },
-  { day: 3, day_name: "Среда", is_day_off: false, open_time: "08:00", close_time: "22:00" },
-  { day: 4, day_name: "Четверг", is_day_off: false, open_time: "08:00", close_time: "22:00" },
-  { day: 5, day_name: "Пятница", is_day_off: false, open_time: "08:00", close_time: "22:00" },
-  { day: 6, day_name: "Суббота", is_day_off: false, open_time: "08:00", close_time: "22:00" },
-  { day: 7, day_name: "Воскресенье", is_day_off: false, open_time: "08:00", close_time: "22:00" },
-];
 
 export const StoreScheduleBadge = () => {
   const [isOpenModal, setIsOpenModal] = useState(false);
-  const { schedule: dynamicSchedule, isOpenNow, statusText: dynamicStatusText, address, phone, phoneHref, workingHours } = useDynamicStoreInfo();
+  const storeInfo = useDynamicStoreInfo();
+  const selectedStore = useStoreBranch((state) => state.selectedStore);
+  const workingHours = selectedStore
+    ? selectedStore.working_hours?.trim() || "График работы не указан"
+    : storeInfo.workingHours;
+  const address = selectedStore
+    ? [selectedStore.city, selectedStore.address].filter(Boolean).join(", ")
+    : storeInfo.address;
+  const rawPhone = selectedStore?.phone;
+  const phone = selectedStore ? (rawPhone ? formatPhoneMask(rawPhone) : null) : storeInfo.phone;
+  const phoneHref = rawPhone ? `tel:${rawPhone.replace(/[^\d+]/g, "")}` : storeInfo.phoneHref;
+  const isRoundTheClock = /круглосуточно|24\s*\/\s*7|^24\s*часа$/i.test(workingHours);
+  const isOpenNow = selectedStore ? isRoundTheClock : storeInfo.isOpenNow;
 
   // Current day of week (1: Monday .. 7: Sunday)
   const todayWeekday = (() => {
@@ -25,10 +28,11 @@ export const StoreScheduleBadge = () => {
     return day === 0 ? 7 : day;
   })();
 
-  const schedule = dynamicSchedule && dynamicSchedule.length === 7 ? dynamicSchedule : DEFAULT_SCHEDULE;
-  const statusText = dynamicStatusText || (isOpenNow ? "Открыто сегодня" : "Сейчас закрыто");
-
-  const todayItem: DayScheduleItem = schedule.find((d) => d.day === todayWeekday) ?? schedule[0] ?? DEFAULT_SCHEDULE[0]!;
+  const schedule = selectedStore ? [] : storeInfo.schedule || [];
+  const todayItem = schedule.find((d) => d.day === todayWeekday);
+  const statusText = selectedStore
+    ? workingHours
+    : storeInfo.statusText || (isOpenNow ? "Открыто сегодня" : "Сейчас закрыто");
 
   return (
     <>
@@ -40,20 +44,20 @@ export const StoreScheduleBadge = () => {
               <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
             </span>
           ) : (
-            <span className="inline-block size-2.5 rounded-full bg-amber-500" />
+            <span className={`inline-block size-2.5 rounded-full ${selectedStore ? "bg-slate-400" : "bg-amber-500"}`} />
           )}
 
           <div className="flex items-center gap-1.5">
             <span
               className={`text-xs font-semibold ${
-                isOpenNow ? "text-emerald-700" : "text-amber-800"
+                isOpenNow ? "text-emerald-700" : selectedStore ? "text-slate-700" : "text-amber-800"
               }`}
             >
-              {isOpenNow
-                ? todayItem.is_day_off
-                  ? "Открыто"
-                  : `Открыто · до ${todayItem.close_time || "22:00"}`
-                : statusText}
+              {selectedStore
+                ? workingHours
+                : isOpenNow && todayItem?.close_time && !todayItem.is_day_off
+                  ? `Открыто · до ${todayItem.close_time}`
+                  : statusText}
             </span>
 
             <button
@@ -66,9 +70,6 @@ export const StoreScheduleBadge = () => {
           </div>
         </div>
 
-        <p className="text-[11px] text-slate-400 leading-tight">
-          {workingHours || "Доставка ежедневно 08:00–22:00 • Заказы онлайн 24/7"}
-        </p>
       </div>
 
       {/* Модальное окно с подробным графиком по дням недели */}
@@ -89,7 +90,7 @@ export const StoreScheduleBadge = () => {
                 </span>
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900">Режим работы магазина</h3>
-                  <p className="text-xs text-slate-400">Доставка курьером 08:00–22:00 • Прием заказов 24/7</p>
+                  <p className="text-xs text-slate-400">{selectedStore?.name || workingHours}</p>
                 </div>
               </div>
               <button
@@ -106,7 +107,7 @@ export const StoreScheduleBadge = () => {
               className={`mt-4 flex items-center gap-3 rounded-xl p-3.5 border ${
                 isOpenNow
                   ? "border-emerald-200/80 bg-emerald-50/60 text-emerald-900"
-                  : "border-amber-200/80 bg-amber-50/60 text-amber-900"
+                  : selectedStore ? "border-slate-200 bg-slate-50 text-slate-900" : "border-amber-200/80 bg-amber-50/60 text-amber-900"
               }`}
             >
               {isOpenNow ? (
@@ -116,16 +117,17 @@ export const StoreScheduleBadge = () => {
               )}
               <div className="text-xs">
                 <span className="font-bold block">
-                  {isOpenNow ? "Магазин сейчас открыт" : "Магазин сейчас закрыт"}
+                  {selectedStore ? workingHours : isOpenNow ? "Магазин сейчас открыт" : "Магазин сейчас закрыт"}
                 </span>
                 <span className="text-slate-600 text-[11px]">
-                  {statusText} · Сегодня: {todayItem.is_day_off ? "Выходной" : `${todayItem.open_time} – ${todayItem.close_time}`}
+                  {selectedStore ? selectedStore.name : statusText}
+                  {!selectedStore && todayItem && ` · Сегодня: ${todayItem.is_day_off ? "Выходной" : `${todayItem.open_time} – ${todayItem.close_time}`}`}
                 </span>
               </div>
             </div>
 
             {/* Weekly list */}
-            <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200/80 bg-slate-50/40 overflow-hidden">
+            {schedule.length > 0 && <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200/80 bg-slate-50/40 overflow-hidden">
               {schedule.map((dayItem) => {
                 const isToday = dayItem.day === todayWeekday;
                 return (
@@ -158,7 +160,7 @@ export const StoreScheduleBadge = () => {
                   </div>
                 );
               })}
-            </div>
+            </div>}
 
             {/* Contacts & note */}
             <div className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
@@ -166,12 +168,12 @@ export const StoreScheduleBadge = () => {
                 <MapPin size={13} className="text-emerald-600 shrink-0" />
                 <span>{address}</span>
               </div>
-              <div className="flex items-center gap-2">
+              {phone && <div className="flex items-center gap-2">
                 <Phone size={13} className="text-emerald-600 shrink-0" />
                 <a href={phoneHref} className="font-medium text-slate-700 hover:text-emerald-700">
                   {phone}
                 </a>
-              </div>
+              </div>}
             </div>
 
             <button

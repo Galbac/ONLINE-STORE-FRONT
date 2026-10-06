@@ -15,7 +15,6 @@ import { formatFoundProducts } from "@/utils/pluralize";
 import { Footer } from "@/widgets/footer";
 import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
 import { CatalogProductFeed } from "./CatalogProductFeed";
-import { QuickFilterChips } from "./QuickFilterChips";
 
 interface CatalogPageProps {
   searchParams: CatalogSearchParams;
@@ -142,19 +141,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
   const rawMaxPrice = Number(facets.max_price) || 500;
   const sliderMax = Math.max(Math.ceil(rawMaxPrice), Number(maxPrice) || 0, Number(minPrice) || 0);
 
-  const quickFilterChips = [
-    {
-      id: "farm",
-      label: "🌿 Фермерское",
-      active: tag === "farm",
-      href: buildCatalogHref({
-        ...urlParams,
-        tag: tag === "farm" ? undefined : "farm",
-        page: undefined,
-      }),
-    },
-  ];
-
   return (
     <>
       <main className="pb-24 md:pb-12">
@@ -221,11 +207,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
                 sort={sort}
                 viewMode={viewMode}
               />
-
-              {/* Компактная лента БЫСТРЫХ ТЕГОВ */}
-              <div className="my-5">
-                <QuickFilterChips chips={quickFilterChips} className="py-1" />
-              </div>
 
               {/* Сетка товаров */}
               {products.items.length > 0 ? (

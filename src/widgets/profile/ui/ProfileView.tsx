@@ -130,30 +130,6 @@ export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) =>
           </section>
         ) : null}
 
-        <section className="mt-10">
-          <h2 className="text-text-primary text-2xl font-bold">Быстрые ссылки</h2>
-          <div className="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <QuickLink
-              href={ROUTES.PROFILE_LOYALTY}
-              icon={<Sparkles size={30} className="text-emerald-600" />}
-              title="Бонусы и лояльность"
-              text="Баланс и кэшбэк"
-            />
-            <QuickLink
-              href={ROUTES.PROFILE_NOTIFICATIONS}
-              icon={<Bell size={30} />}
-              title="Уведомления"
-              text="Настройки уведомлений"
-            />
-            <QuickLink
-              href={ROUTES.PROFILE_CHANGE_PASSWORD}
-              icon={<KeyRound size={30} />}
-              title="Безопасность"
-              text="Смена пароля аккаунта"
-            />
-          </div>
-        </section>
-
         <section className="border-border mt-12 hidden gap-5 rounded-lg border bg-white p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)] md:grid md:grid-cols-2 xl:grid-cols-4">
           {serviceBenefits.map((benefit) => {
             const Icon = benefit.icon;
@@ -371,6 +347,24 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
               />
             </label>
           </div>
+
+          <Link
+            href={ROUTES.PROFILE_NOTIFICATIONS}
+            className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 text-left transition hover:border-emerald-200 hover:bg-emerald-50/50 lg:hidden"
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-100/80 text-emerald-700">
+                <Bell size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-bold text-slate-900">Уведомления</span>
+                <span className="mt-0.5 block text-[11px] text-slate-500">
+                  Настройки уведомлений о заказах
+                </span>
+              </span>
+            </span>
+            <ChevronRight className="shrink-0 text-slate-400" size={18} />
+          </Link>
         </div>
       </div>
 
@@ -394,6 +388,22 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
           </Link>
         </div>
       </div>
+
+      <Link
+        href={ROUTES.PROFILE_LOYALTY}
+        className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 transition hover:border-emerald-200 hover:bg-emerald-50"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-emerald-600 shadow-2xs">
+            <Sparkles size={19} />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-slate-900">Бонусы и лояльность</span>
+            <span className="mt-0.5 block text-xs text-slate-600">Баланс и кэшбэк</span>
+          </span>
+        </span>
+        <ChevronRight className="shrink-0 text-emerald-700" size={19} />
+      </Link>
 
       {/* Лаконичная кнопка удаления аккаунта */}
       <div className="mt-6 flex justify-end pt-4 border-t border-slate-100">
@@ -501,34 +511,6 @@ const StatRow = ({ icon, label, value }: StatRowProps) => {
         <span className="text-text-primary mt-2 block text-2xl font-bold break-words">{value}</span>
       </span>
     </div>
-  );
-};
-
-interface QuickLinkProps {
-  href: string;
-  icon: ReactNode;
-  text: string;
-  title: string;
-}
-
-const QuickLink = ({ href, icon, text, title }: QuickLinkProps) => {
-  return (
-    <Link
-      className="border-border group min-h-48 rounded-lg border bg-white p-7 shadow-[0_10px_28px_rgb(20_28_18/0.04)] transition hover:-translate-y-1 hover:shadow-[0_18px_38px_rgb(20_28_18/0.08)]"
-      href={href}
-    >
-      <span className="flex items-start justify-between gap-4">
-        <span className="bg-bg-hover text-accent-primary grid size-14 place-items-center rounded-full border border-green-100">
-          {icon}
-        </span>
-        <ChevronRight
-          className="text-text-muted group-hover:text-accent-primary transition"
-          size={30}
-        />
-      </span>
-      <span className="text-text-primary mt-8 block text-xl font-bold">{title}</span>
-      <span className="text-text-secondary mt-3 block leading-7">{text}</span>
-    </Link>
   );
 };
 

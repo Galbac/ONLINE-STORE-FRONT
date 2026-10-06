@@ -18,7 +18,6 @@ import {
   getStoredAccessToken,
 } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { CheckoutSuccessView } from "./CheckoutSuccessView";
 
 interface CheckoutSuccessPageProps {
@@ -193,7 +192,6 @@ export const CheckoutSuccessPage = ({ orderId, paymentId }: CheckoutSuccessPageP
 
   return (
     <AuthGuard>
-      <Header />
       {renderContent()}
       <Footer />
     </AuthGuard>

@@ -23,7 +23,6 @@ import { fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { Container, ProductCard, BackButton } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { ProductReviews } from "@/widgets/product-reviews";
 import { KizlyarDeliveryZonesModal } from "./KizlyarDeliveryZonesModal";
 import { ProductArticleCopy } from "./ProductArticleCopy";
@@ -154,7 +153,6 @@ export const ProductPage = async ({ slug }: ProductPageProps) => {
 
   return (
     <>
-      <Header />
       <script
         id="product-jsonld"
         type="application/ld+json"

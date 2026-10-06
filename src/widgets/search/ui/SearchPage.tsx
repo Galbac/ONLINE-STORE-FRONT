@@ -21,7 +21,6 @@ import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
 import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
 import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 
 interface SearchPageProps {
   searchParams: SearchPageParams;
@@ -217,7 +216,6 @@ export const SearchPage = async ({ searchParams }: SearchPageProps) => {
 
   return (
     <>
-      <Header />
       <main className="pb-20 md:pb-8">
         <Container className="py-6">
           <nav className="text-text-secondary mb-5 flex items-center gap-2 text-sm">

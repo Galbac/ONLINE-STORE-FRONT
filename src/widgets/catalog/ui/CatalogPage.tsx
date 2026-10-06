@@ -13,7 +13,6 @@ import { AutoSubmitSelect, Container, ViewModeToggle } from "@/shared/ui";
 import type { ProductViewMode } from "@/shared/ui";
 import { formatFoundProducts } from "@/utils/pluralize";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { buildCatalogHref, type CatalogUrlParams } from "../lib/catalogUrl";
 import { CatalogProductFeed } from "./CatalogProductFeed";
 import { QuickFilterChips } from "./QuickFilterChips";
@@ -158,7 +157,6 @@ export const CatalogPage = async ({ searchParams }: CatalogPageProps) => {
 
   return (
     <>
-      <Header />
       <main className="pb-24 md:pb-12">
         <Container className="py-6">
           <nav className="mb-5 flex items-center gap-2 text-sm text-slate-500">

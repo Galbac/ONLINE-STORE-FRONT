@@ -16,6 +16,7 @@ import { CookieBanner } from "@/shared/ui/cookie-banner";
 import { PwaInstallPrompt, PwaInstallModal } from "@/shared/ui/pwa-install";
 import { OfflineIndicator } from "@/shared/ui/offline-indicator";
 import { PushPermissionPrompt } from "@/shared/ui/push-permission-prompt";
+import { Header } from "@/components/layout/Header";
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -46,6 +47,8 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
     pathname === "/privacy" ||
     pathname === "/offer" ||
     pathname === "/cookies";
+  const showStoreHeader =
+    !pathname?.startsWith("/admin") && !isLegalDocumentPath(pathname ?? "");
 
   useEffect(() => {
     setMounted(true);
@@ -89,6 +92,7 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
 
   return (
     <StoreSettingsProvider>
+      {showStoreHeader && <Header hideSearchOnMobile={pathname === "/feedback"} />}
       <PullToRefresh>{children}</PullToRefresh>
       {!isAuthRoute && (
         <>

@@ -10,7 +10,6 @@ import { LoginForm } from "@/features/login-user";
 import { ROUTES } from "@/shared/config";
 import { Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { MobileAuthOptions } from "./MobileAuthOptions";
 
 interface LoginPageProps {
@@ -61,7 +60,6 @@ export const LoginPage = ({ isMobile, showLoginForm }: LoginPageProps) => {
 
   return (
     <>
-      <Header />
       <main className="min-h-[75vh] py-10 bg-gradient-to-b from-slate-50 to-white">
         <Container className="max-w-5xl">
           <nav className="text-slate-400 mb-8 flex items-center gap-2 text-xs font-semibold">

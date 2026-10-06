@@ -26,7 +26,6 @@ import { apiClient, fallbackOnUnauthorized } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { Container, ProductCard, Section } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { QuickRepeatOrderBanner } from "./QuickRepeatOrderBanner";
 
 export const HomePage = async () => {
@@ -91,7 +90,6 @@ export const HomePage = async () => {
 
   return (
     <>
-      <Header />
       <main className="space-y-8 pb-20 md:space-y-12 md:pb-8">
         <Container className="hidden pt-6 md:block">
           <Hero

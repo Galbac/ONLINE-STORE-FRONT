@@ -4,12 +4,10 @@ import { ForgotPasswordForm } from "@/features/forgot-password";
 import { ROUTES } from "@/shared/config";
 import { Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 
 export const ForgotPasswordPage = () => {
   return (
     <>
-      <Header />
       <main className="min-h-[75vh] py-10 bg-gradient-to-b from-slate-50 to-white">
         <Container className="max-w-4xl">
           <nav className="text-slate-400 mb-8 flex items-center gap-2 text-xs font-semibold">

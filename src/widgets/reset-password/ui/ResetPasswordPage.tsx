@@ -4,7 +4,6 @@ import { ResetPasswordForm } from "@/features/reset-password";
 import { ROUTES } from "@/shared/config";
 import { Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 
 interface ResetPasswordPageProps {
   token: string;
@@ -36,7 +35,6 @@ const serviceBenefits = [
 export const ResetPasswordPage = ({ token }: ResetPasswordPageProps) => {
   return (
     <>
-      <Header />
       <main>
         <Container className="py-6">
           <nav className="text-text-secondary mb-12 flex items-center gap-2 text-sm">

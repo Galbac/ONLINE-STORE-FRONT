@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Header } from "@/widgets/header";
 
 interface ProfileLayoutProps {
   children: ReactNode;
@@ -8,7 +7,6 @@ interface ProfileLayoutProps {
 export default function ProfileLayout({ children }: ProfileLayoutProps) {
   return (
     <>
-      <Header />
       {children}
     </>
   );

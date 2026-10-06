@@ -22,7 +22,6 @@ import {
   getStoredAccessToken,
 } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { CheckoutView } from "./CheckoutView";
 
 interface CheckoutPageState {
@@ -182,7 +181,6 @@ export const CheckoutPage = () => {
 
   return (
     <AuthGuard>
-      <Header />
       {content}
       <Footer />
     </AuthGuard>

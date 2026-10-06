@@ -3,7 +3,6 @@ import { RegisterForm } from "@/features/register-user";
 import { ROUTES } from "@/shared/config";
 import { Container } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { Sparkles, Gift, ShieldCheck } from "lucide-react";
 
 interface RegisterPageProps {
@@ -23,7 +22,6 @@ export const RegisterPage = ({ isMobile }: RegisterPageProps) => {
 
   return (
     <>
-      <Header />
       <main className="min-h-[75vh] py-10 bg-gradient-to-b from-slate-50 to-white">
         <Container className="max-w-5xl">
           <nav className="text-slate-400 mb-8 flex items-center gap-2 text-xs font-semibold">

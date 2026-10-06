@@ -13,7 +13,6 @@ import {
 import { isApiErrorStatus } from "@/shared/api";
 import { AuthGuard, clearStoredAuth, Container, getLoginRedirectHref } from "@/shared/ui";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 import { CartSkeleton, CartView } from "./CartView";
 
 interface CartPageState {
@@ -67,7 +66,6 @@ export const CartPage = () => {
 
   return (
     <>
-      <Header />
       <AuthGuard fallback={<CartSkeleton />}>
         {state.status === "ready" ? (
           <CartView initialCart={state.cart} initialSummary={state.summary} />

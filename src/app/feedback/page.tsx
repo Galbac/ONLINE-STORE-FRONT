@@ -29,7 +29,6 @@ import { formatPhoneMask, handlePhoneInputChange, normalizePhoneNumber } from "@
 import { Button, Container } from "@/shared/ui";
 import { useDynamicStoreInfo } from "@/entities/settings";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 
 const FEEDBACK_SUBJECT_OPTIONS = [
   "Качество продуктов или срок годности",
@@ -306,7 +305,6 @@ export default function FeedbackPage() {
 
   return (
     <>
-      <Header hideSearchOnMobile />
       <main className="min-h-[70vh] bg-slate-50/50 py-10">
         <Container className="max-w-5xl space-y-8">
           {/* Header navigation & title */}

@@ -22,7 +22,6 @@ import { DietaryFilter } from "@/widgets/catalog/ui/DietaryFilter";
 import { ProductTypeFilter } from "@/widgets/catalog/ui/ProductTypeFilter";
 import { QuickFilterChips } from "@/widgets/catalog/ui/QuickFilterChips";
 import { Footer } from "@/widgets/footer";
-import { Header } from "@/widgets/header";
 
 interface CategoryPageProps {
   slug: string;
@@ -146,7 +145,6 @@ export const CategoryPage = async ({ searchParams, slug }: CategoryPageProps) =>
 
   return (
     <>
-      <Header />
       <main className="pb-20 md:pb-8">
         <Container className="py-6">
           <CategoryBreadcrumbs breadcrumbs={category.breadcrumbs} categoryName={category.name} />

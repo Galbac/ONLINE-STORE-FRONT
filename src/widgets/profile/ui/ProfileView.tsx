@@ -34,6 +34,7 @@ import { useDynamicStoreInfo } from "@/entities/settings";
 import { formatPhoneMask } from "@/shared/lib/format/phone";
 import { toPriceFormat } from "@/shared/lib/format";
 import { Container } from "@/shared/ui";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { ProfileLogoutButton } from "./ProfileLogoutButton";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 
@@ -247,6 +248,7 @@ interface ProfileCardProps {
 }
 
 const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
+  const unreadNotificationCount = useUnreadNotifications();
   const [showPhone, setShowPhone] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(user.marketing_consent ?? false);
@@ -351,6 +353,11 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
           <Link
             href={ROUTES.PROFILE_NOTIFICATIONS}
             className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 text-left transition hover:border-emerald-200 hover:bg-emerald-50/50 lg:hidden"
+            aria-label={
+              unreadNotificationCount > 0
+                ? `Уведомления, непрочитанных: ${unreadNotificationCount}`
+                : "Настройки уведомлений о заказах"
+            }
           >
             <span className="flex min-w-0 items-center gap-3">
               <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-100/80 text-emerald-700">
@@ -358,8 +365,12 @@ const ProfileCard = ({ email, user, onUserUpdated }: ProfileCardProps) => {
               </span>
               <span className="min-w-0">
                 <span className="block text-xs font-bold text-slate-900">Уведомления</span>
-                <span className="mt-0.5 block text-[11px] text-slate-500">
-                  Настройки уведомлений о заказах
+                <span
+                  className={`mt-0.5 block text-[11px] ${unreadNotificationCount > 0 ? "font-semibold text-rose-600" : "text-slate-500"}`}
+                >
+                  {unreadNotificationCount > 0
+                    ? `${unreadNotificationCount} непрочитанных уведомлений`
+                    : "Настройки уведомлений о заказах"}
                 </span>
               </span>
             </span>

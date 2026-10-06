@@ -142,6 +142,30 @@ export const CheckoutPage = () => {
     };
   }, [pathname, router, selectedStoreId]);
 
+  useEffect(() => {
+    let isActive = true;
+
+    const refreshUser = async () => {
+      const accessToken = getStoredAccessToken();
+      if (!accessToken || document.visibilityState !== "visible") return;
+
+      try {
+        const user = await userApi.getMe(accessToken);
+        if (isActive) setState((current) => ({ ...current, user }));
+      } catch {
+        // Сохраняем последнее полученное состояние при ошибке запроса.
+      }
+    };
+
+    window.addEventListener("focus", refreshUser);
+    document.addEventListener("visibilitychange", refreshUser);
+    return () => {
+      isActive = false;
+      window.removeEventListener("focus", refreshUser);
+      document.removeEventListener("visibilitychange", refreshUser);
+    };
+  }, []);
+
   const {
     addresses,
     cart,

@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import {
   Calendar,
   Check,
@@ -63,16 +63,7 @@ interface ContactState {
 }
 
 type DeliveryType = "delivery" | "pickup";
-type PaymentMethod = "online" | "on_delivery" | "sbp";
-
-const steps = [
-  "Контакты",
-  "Получение",
-  "Адрес / ПВЗ",
-  "Дата и время",
-  "Оплата",
-  "Проверка",
-] as const;
+type PaymentMethod = "online" | "on_delivery";
 
 export const CheckoutView = ({
   isRepricing = false,
@@ -88,7 +79,7 @@ export const CheckoutView = ({
   const { isMaintenance, statusText } = useDynamicStoreInfo();
   const defaultAddress =
     addresses.items.find((address) => address.is_default) ?? addresses.items[0];
-  const { selectedStore, setSelectedStore } = useStoreBranch();
+  const { selectedStore } = useStoreBranch();
   const defaultPickupPoint =
     (selectedStore && pickupPoints.items.find((point) => point.id === selectedStore.id)) ??
     pickupPoints.items[0];
@@ -119,15 +110,6 @@ export const CheckoutView = ({
   }, [currentUser]);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
-  const [apartment, setApartment] = useState("");
-  const [entrance, setEntrance] = useState("");
-  const [floor, setFloor] = useState("");
-  const [intercom, setIntercom] = useState("");
-  const [leaveAtDoor, setLeaveAtDoor] = useState(false);
-  const [dontRingDoorbell, setDontRingDoorbell] = useState(false);
-  const [substitutionPolicy, setSubstitutionPolicy] = useState<"call" | "replace" | "remove">(
-    "call",
-  );
   const [selectedAddressId, setSelectedAddressId] = useState(defaultAddress?.id ?? null);
   const [activeCalculation, setActiveCalculation] =
     useState<DeliveryCalculateResponse>(deliveryCalculation);
@@ -141,8 +123,6 @@ export const CheckoutView = ({
   );
   const [selectedDate, setSelectedDate] = useState(timeSlots.date);
   const [selectedSlotId, setSelectedSlotId] = useState(firstAvailableSlot?.id ?? null);
-  const [timeMode, setTimeMode] = useState<"slot" | "asap" | "custom">("slot");
-  const [customTime, setCustomTime] = useState<string>("");
   const [order, setOrder] = useState<OrderCreateResponse | null>(null);
   const [payment, setPayment] = useState<PaymentCreateResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -303,49 +283,14 @@ export const CheckoutView = ({
   const isMinOrderMet =
     itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
-  const isStep1Done = Boolean(
-    contact.name.trim().length >= 2 && normalizePhoneNumber(contact.phone).length >= 11,
-  );
-  const isStep2Done = Boolean(deliveryType === "delivery" || deliveryType === "pickup");
-  const isStep3Done =
-    deliveryType === "pickup" ? Boolean(selectedPickupPointId) : Boolean(selectedAddressId);
-  const isStep4Done = Boolean(
-    selectedDate &&
-    (timeMode === "asap" ||
-      (timeMode === "custom" && customTime.trim().length >= 2) ||
-      (timeMode === "slot" && selectedSlotId && selectedSlot?.available)),
-  );
-  const isStep5Done = Boolean(paymentMethod);
-  const isStep6Done = Boolean(order);
-
-  const completedSteps = useMemo(
-    () => ({
-      1: isStep1Done,
-      2: isStep2Done,
-      3: isStep3Done,
-      4: isStep4Done,
-      5: isStep5Done,
-      6: isStep6Done,
-    }),
-    [isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done, isStep6Done],
-  );
-
-  const currentStep = useMemo(() => {
-    if (order) return 6;
-    if (!isStep1Done) return 1;
-    if (!isStep2Done) return 2;
-    if (!isStep3Done) return 3;
-    if (!isStep4Done) return 4;
-    if (!isStep5Done) return 5;
-    return 6;
-  }, [order, isStep1Done, isStep2Done, isStep3Done, isStep4Done, isStep5Done]);
-
-  const handleScrollToStep = (stepNumber: number) => {
-    const elem = document.getElementById("checkout-step-" + stepNumber);
-    if (elem) {
-      elem.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const contactErrors = {
+    name: contact.name.trim().length < 2,
+    phone: !/^\+7\d{10}$/.test(normalizePhoneNumber(contact.phone)),
+    email: !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim()),
   };
+  const locationError = deliveryType === "delivery" ? !selectedAddress?.id : !selectedPickupPoint?.id;
+  const timeError = !selectedDate || !selectedSlot?.available || isLoadingSlots;
 
   const handleContactChange = (field: keyof ContactState, value: string): void => {
     let nextValue = value;
@@ -360,6 +305,13 @@ export const CheckoutView = ({
 
   const handleCreateOrder = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
+    setIsSubmitted(true);
+    if (Object.values(contactErrors).some(Boolean) || locationError || timeError) {
+      setErrorMessage("Заполните обязательные поля, выделенные красным.");
+      const invalidSection = Object.values(contactErrors).some(Boolean) ? 1 : locationError ? 3 : 4;
+      document.getElementById(`checkout-step-${invalidSection}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     if (isRepricing) {
       setErrorMessage("Дождитесь пересчёта корзины для выбранного магазина");
       return;
@@ -370,35 +322,12 @@ export const CheckoutView = ({
       userApi.updateMarketingConsent(true).catch(() => {});
     }
 
-    let timeComment = "";
-    if (timeMode === "asap") {
-      timeComment = "[Время: Как можно скорее (60-90 мин)]";
-    } else if (timeMode === "custom" && customTime.trim()) {
-      timeComment = `[Время: ${customTime.trim()}]`;
-    }
+    const resolvedSlotId = selectedSlot?.available ? selectedSlot.id : null;
 
-    const resolvedSlotId =
-      timeMode === "slot"
-        ? selectedSlot?.available
-          ? selectedSlot.id
-          : firstAvailableSlot?.available
-            ? firstAvailableSlot.id
-            : null
-        : null;
-
-    if (timeMode === "slot" && !resolvedSlotId) {
-      setErrorMessage(
-        "Выбранный интервал времени недоступен. Пожалуйста, выберите свободный интервал или переключитесь на режим «Как можно скорее» / «Своё время».",
-      );
+    if (!resolvedSlotId) {
+      setErrorMessage("Выберите доступный интервал времени.");
       return;
     }
-
-    const notesParts = [
-      timeComment,
-      leaveAtDoor ? "Оставить заказ у двери" : "",
-      dontRingDoorbell ? "Не звонить в звонок" : "",
-    ].filter(Boolean);
-    const fullComment = notesParts.join(". ");
 
     const request: OrderCreateRequest = {
       expected_cart_total: String(summary.final_price),
@@ -409,15 +338,12 @@ export const CheckoutView = ({
       customer_email: contact.email || null,
       delivery_date: selectedDate,
       delivery_time_slot_id: resolvedSlotId,
-      comment: fullComment || null,
+      comment: null,
       use_points: 0,
-      leave_at_door: leaveAtDoor,
-      dont_ring_doorbell: dontRingDoorbell,
-      substitution_policy: substitutionPolicy,
-      apartment: apartment.trim() || null,
-      entrance: entrance.trim() || null,
-      floor: floor.trim() || null,
-      intercom: intercom.trim() || null,
+      apartment: selectedAddress?.apartment ?? null,
+      entrance: selectedAddress?.entrance ?? null,
+      floor: selectedAddress?.floor ?? null,
+      intercom: selectedAddress?.intercom ?? null,
     };
 
     const minAmount = activeCalculation.min_order_amount
@@ -509,7 +435,7 @@ export const CheckoutView = ({
         notifyCartChanged({ itemsCount: 0 });
 
         let createdPaymentId: number | null = null;
-        if (paymentMethod === "online" || paymentMethod === "sbp") {
+        if (paymentMethod === "online") {
           try {
             const createdPayment = await paymentApi.create({ order_id: createdOrder.id });
             setPayment(createdPayment);
@@ -576,12 +502,6 @@ export const CheckoutView = ({
           </div>
         ) : null}
 
-        <CheckoutSteps
-          currentStep={currentStep}
-          completedSteps={completedSteps}
-          onStepClick={handleScrollToStep}
-        />
-
         {errorMessage ? (
           <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {errorMessage}
@@ -590,6 +510,7 @@ export const CheckoutView = ({
 
         <form
           className="mt-5 grid gap-5 sm:mt-8 sm:gap-8 xl:grid-cols-[minmax(0,1fr)_390px]"
+          noValidate
           onSubmit={handleCreateOrder}
         >
           <div className="min-w-0 space-y-4">
@@ -597,11 +518,13 @@ export const CheckoutView = ({
               <div className="grid gap-4 md:grid-cols-3">
                 <Field
                   label="Имя"
+                  error={isSubmitted && contactErrors.name}
                   value={contact.name}
                   onChange={(value) => handleContactChange("name", value)}
                 />
                 <Field
                   label="Телефон"
+                  error={isSubmitted && contactErrors.phone}
                   value={contact.phone}
                   onChange={(value) => handleContactChange("phone", value)}
                   type="tel"
@@ -620,6 +543,7 @@ export const CheckoutView = ({
                 />
                 <Field
                   label="Email"
+                  error={isSubmitted && contactErrors.email}
                   type="email"
                   value={contact.email}
                   onChange={(value) => handleContactChange("email", value)}
@@ -650,6 +574,7 @@ export const CheckoutView = ({
               icon={<MapPin size={24} />}
               number={3}
               title={deliveryType === "delivery" ? "Адрес доставки" : "Точка самовывоза"}
+              error={isSubmitted && locationError}
             >
               {deliveryType === "delivery" ? (
                 <>
@@ -658,181 +583,42 @@ export const CheckoutView = ({
                     selectedAddressId={selectedAddressId}
                     onSelect={setSelectedAddressId}
                   />
-                  <div className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                    <h4 className="text-xs font-bold text-slate-800">
-                      Пожелания к доставке и сборке
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <div>
-                        <label className="mb-1 block text-[11px] font-semibold text-slate-600">
-                          Кв. / Офис
-                        </label>
-                        <input
-                          className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
-                          placeholder="12"
-                          value={apartment}
-                          onChange={(e) => setApartment(e.target.value)}
-                        />
+                  {isOutsideKizlyar ? (
+                    <div className="mt-4 rounded-xl border border-rose-200/80 bg-rose-50 p-3.5 text-xs font-medium text-rose-800">
+                      <div className="mb-0.5 flex items-center gap-1.5 font-bold text-rose-900">
+                        <AlertCircle size={15} className="shrink-0 text-rose-600" />
+                        <span>Адрес за пределами зоны курьерской доставки</span>
                       </div>
-                      <div>
-                        <label className="mb-1 block text-[11px] font-semibold text-slate-600">
-                          Подъезд
-                        </label>
-                        <input
-                          className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
-                          placeholder="1"
-                          value={entrance}
-                          onChange={(e) => setEntrance(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-[11px] font-semibold text-slate-600">
-                          Этаж
-                        </label>
-                        <input
-                          className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
-                          placeholder="3"
-                          value={floor}
-                          onChange={(e) => setFloor(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-[11px] font-semibold text-slate-600">
-                          Домофон
-                        </label>
-                        <input
-                          className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs outline-none focus:border-emerald-500"
-                          placeholder="12К"
-                          value={intercom}
-                          onChange={(e) => setIntercom(e.target.value)}
-                        />
-                      </div>
+                      <p className="leading-relaxed">
+                        По этому адресу курьерская доставка недоступна. Можно оформить заказ
+                        самовывозом из выбранного пункта выдачи.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryType("pickup")}
+                        className="mt-2.5 cursor-pointer rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
+                      >
+                        Перейти на самовывоз
+                      </button>
                     </div>
-
-                    <div className="flex flex-wrap gap-6 pt-4 pb-1">
-                      <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-slate-700 select-none">
-                        <input
-                          type="checkbox"
-                          className="size-4 cursor-pointer rounded border-slate-300 text-emerald-600 accent-emerald-600 focus:ring-emerald-500"
-                          checked={leaveAtDoor}
-                          onChange={(e) => setLeaveAtDoor(e.target.checked)}
-                        />
-                        <span>Оставить заказ у двери</span>
-                      </label>
-                      <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-slate-700 select-none">
-                        <input
-                          type="checkbox"
-                          className="size-4 cursor-pointer rounded border-slate-300 text-emerald-600 accent-emerald-600 focus:ring-emerald-500"
-                          checked={dontRingDoorbell}
-                          onChange={(e) => setDontRingDoorbell(e.target.checked)}
-                        />
-                        <span>Не звонить в звонок (спит ребёнок)</span>
-                      </label>
-                    </div>
-
-                    <div className="border-t border-slate-100 pt-4">
-                      <label className="mb-3 block text-xs font-bold text-slate-800">
-                        Если товара не окажется на складе:
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { value: "call", label: "Позвонить и согласовать" },
-                          { value: "replace", label: "Заменить на свежий" },
-                          { value: "remove", label: "Убрать из заказа" },
-                        ].map((p) => (
-                          <button
-                            key={p.value}
-                            type="button"
-                            onClick={() => setSubstitutionPolicy(p.value as any)}
-                            className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
-                              substitutionPolicy === p.value
-                                ? "border-emerald-600 bg-emerald-600 text-white"
-                                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                            }`}
-                          >
-                            {p.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Зона и стоимость доставки по Кизляру (Интегрировано в шаг 3) */}
-                  <div className="mt-4 space-y-2 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4.5 shadow-2xs">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
-                          <Truck size={16} />
-                        </span>
-                        <div>
-                          <p className="text-xs font-bold text-slate-800">
-                            Зона доставки:{" "}
-                            {isOutsideKizlyar
-                              ? "Вне зоны курьерской доставки"
-                              : activeCalculation.zone?.name || "Кизляр — Центральный"}
-                          </p>
-                          <p className="text-[11px] text-slate-500">
-                            {isOutsideKizlyar
-                              ? "Курьерская доставка действует по г. Кизляр и пригородным поселкам"
-                              : `Тариф доставки: ${deliveryPrice === "0" ? "Бесплатно" : `${deliveryPrice} ₽`} (бесплатно от ${toPriceFormat(activeCalculation.free_delivery_from || 3000)})`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span
-                          className={cn(
-                            "rounded-lg px-2.5 py-1 text-xs font-black",
-                            isOutsideKizlyar
-                              ? "bg-rose-100 text-rose-800"
-                              : "bg-emerald-100/80 text-emerald-800",
-                          )}
-                        >
-                          {isOutsideKizlyar
-                            ? "Курьер недоступен"
-                            : deliveryPrice === "0"
-                              ? "0 ₽ (Бесплатно)"
-                              : `${deliveryPrice} ₽`}
-                        </span>
-                      </div>
-                    </div>
-
-                    {isOutsideKizlyar ? (
-                      <div className="mt-2 rounded-xl border border-rose-200/80 bg-rose-50 p-3.5 text-xs font-medium text-rose-800">
-                        <div className="mb-0.5 flex items-center gap-1.5 font-bold text-rose-900">
-                          <AlertCircle size={15} className="shrink-0 text-rose-600" />
-                          <span>Адрес за пределами зоны курьерской доставки</span>
-                        </div>
-                        <p className="leading-relaxed">
-                          По данному адресу курьерская доставка не осуществляется. Вы можете забрать
-                          заказ самовывозом из супермаркета в г. Кизляр.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDeliveryType("pickup");
-                            if (!selectedPickupPointId && pickupPoints.items.length > 0) {
-                              if (pickupPoints.items[0]?.id)
-                                setSelectedPickupPointId(pickupPoints.items[0].id);
-                            }
-                          }}
-                          className="mt-2.5 cursor-pointer rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
-                        >
-                          Перейти на самовывоз (Бесплатно)
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
+                  ) : null}
                 </>
               ) : (
-                <PickupSelector
-                  pickupPoints={pickupPoints.items}
-                  selectedPickupPointId={selectedPickupPointId}
-                  onSelect={(pointId) => {
-                    const point = pickupPoints.items.find((item) => item.id === pointId);
-                    setSelectedPickupPointId(pointId);
-                    if (point && point.id !== selectedStore?.id) setSelectedStore(point);
-                  }}
-                />
+                selectedPickupPoint ? (
+                  <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-4">
+                    <p className="text-sm font-bold text-slate-900">{selectedPickupPoint.name}</p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      {selectedPickupPoint.city}, {selectedPickupPoint.address}
+                    </p>
+                    <p className="mt-2 text-[11px] font-semibold text-emerald-700">
+                      Пункт выдачи выбран в шапке сайта
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    Выберите пункт выдачи в шапке сайта.
+                  </p>
+                )
               )}
             </CheckoutSection>
 
@@ -840,34 +626,24 @@ export const CheckoutView = ({
               icon={<Calendar size={24} />}
               number={4}
               title="Дата и время получения"
+              error={isSubmitted && timeError}
             >
               <DateAndSlotPicker
                 selectedDate={selectedDate}
                 selectedSlotId={selectedSlotId}
                 slots={slotsData.items}
                 isLoading={isLoadingSlots}
-                deliveryType={deliveryType}
                 onDateChange={setSelectedDate}
                 onSlotChange={setSelectedSlotId}
-                timeMode={timeMode}
-                onTimeModeChange={setTimeMode}
-                customTime={customTime}
-                onCustomTimeChange={setCustomTime}
               />
             </CheckoutSection>
 
             <CheckoutSection icon={<CreditCard size={24} />} number={5} title="Способ оплаты">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <ChoiceCard
-                  checked={paymentMethod === "sbp"}
-                  title="СБП (в 1 клик)"
-                  text="Приложение банка, 0% комиссии"
-                  onClick={() => setPaymentMethod("sbp")}
-                />
+              <div className="grid gap-3 sm:grid-cols-2">
                 <ChoiceCard
                   checked={paymentMethod === "online"}
-                  title="Банковская карта"
-                  text="Любая карта онлайн"
+                  title="Онлайн"
+                  text="Карта или СБП на странице оплаты"
                   onClick={() => setPaymentMethod("online")}
                 />
                 <ChoiceCard
@@ -924,106 +700,19 @@ export const CheckoutView = ({
   );
 };
 
-interface CheckoutStepsProps {
-  currentStep: number;
-  completedSteps: Record<number, boolean>;
-  onStepClick?: (stepNumber: number) => void;
-}
-
-const CheckoutSteps = ({ currentStep, completedSteps, onStepClick }: CheckoutStepsProps) => {
-  return (
-    <div className="relative mb-2">
-      <div className="[scrollbar-width:none] overflow-x-auto pb-2 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <ol className="flex min-w-[580px] gap-3 pr-8 md:grid md:min-w-0 md:grid-cols-6 md:pr-0">
-          {steps.map((step, index) => {
-            const stepNumber = index + 1;
-            const isStepDone = Boolean(completedSteps[stepNumber]);
-            const allPreviousDone = Boolean(
-              completedSteps[1] &&
-              completedSteps[2] &&
-              completedSteps[3] &&
-              completedSteps[4] &&
-              completedSteps[5],
-            );
-
-            // Для шагов 1-5: если данные заполнены — показываем галочку
-            // Для шага 6 (Проверка): галочка только если заказ уже отправлен, иначе активен если все 1-5 заполнены
-            const isCompleted = stepNumber === 6 ? isStepDone : isStepDone;
-            const isCurrent =
-              stepNumber === 6
-                ? !isStepDone && allPreviousDone
-                : !isStepDone && stepNumber === currentStep;
-            const isUpcoming = !isCompleted && !isCurrent;
-
-            return (
-              <li
-                className="group relative flex flex-1 shrink-0 cursor-pointer items-center gap-2.5 md:block md:text-center"
-                key={step}
-                onClick={() => onStepClick?.(stepNumber)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onStepClick?.(stepNumber);
-                  }
-                }}
-              >
-                <span
-                  className={cn(
-                    "relative z-10 mx-auto grid size-8 shrink-0 place-items-center rounded-full border text-xs font-bold transition-all duration-200 md:size-9 md:text-sm",
-                    isCompleted && "border-emerald-600 bg-emerald-600 text-white shadow-xs",
-                    isCurrent &&
-                      "border-2 border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm ring-4 ring-emerald-100",
-                    isUpcoming &&
-                      "border-slate-200 bg-slate-100 text-slate-400 group-hover:border-slate-300",
-                  )}
-                >
-                  {isCompleted ? <Check className="size-4 stroke-[2.5] md:size-4.5" /> : stepNumber}
-                </span>
-                {stepNumber < steps.length ? (
-                  <span
-                    className={cn(
-                      "absolute top-4 left-1/2 hidden h-0.5 w-full transition-colors duration-200 md:block",
-                      isCompleted ? "bg-emerald-500" : "bg-slate-200",
-                    )}
-                  />
-                ) : null}
-                <p
-                  className={cn(
-                    "max-w-[85px] truncate text-xs leading-tight transition-colors md:mt-2 md:max-w-none md:text-sm",
-                    isCompleted && "font-medium text-slate-700 group-hover:text-emerald-700",
-                    isCurrent && "font-bold text-emerald-700",
-                    isUpcoming && "font-normal text-slate-400 group-hover:text-slate-600",
-                  )}
-                >
-                  {step}
-                </p>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-0 right-0 bottom-2 w-8 bg-gradient-to-l from-slate-50 via-slate-50/80 to-transparent md:hidden"
-      />
-    </div>
-  );
-};
-
 interface CheckoutSectionProps {
   children: React.ReactNode;
   icon: React.ReactNode;
   number: number;
   title: string;
+  error?: boolean;
 }
 
-const CheckoutSection = ({ children, icon, number, title }: CheckoutSectionProps) => {
+const CheckoutSection = ({ children, icon, number, title, error }: CheckoutSectionProps) => {
   return (
     <section
       id={"checkout-step-" + number}
-      className="border-border bg-bg-primary scroll-mt-24 rounded-lg border p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)]"
+      className={cn("bg-bg-primary scroll-mt-24 rounded-lg border p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)]", error ? "border-red-500 ring-1 ring-red-500" : "border-border")}
     >
       <h2 className="mb-5 flex items-center gap-3 text-xl font-bold">
         <span className="text-accent-primary">{icon}</span>
@@ -1037,6 +726,7 @@ const CheckoutSection = ({ children, icon, number, title }: CheckoutSectionProps
 interface FieldProps {
   label: string;
   value: string;
+  error?: boolean;
   type?: string;
   placeholder?: string;
   maxLength?: number;
@@ -1047,6 +737,7 @@ interface FieldProps {
 
 const Field = ({
   label,
+  error,
   onChange,
   onFocus,
   onBlur,
@@ -1059,8 +750,9 @@ const Field = ({
     <label className="block">
       <span className="text-text-secondary mb-2 block text-sm">{label}</span>
       <input
-        className="border-border focus:border-accent-primary h-12 w-full rounded-lg border px-4 text-sm transition outline-none"
-        required={label !== "Email"}
+        className={cn("h-12 w-full rounded-lg border px-4 text-sm transition outline-none", error ? "border-red-500 bg-red-50 focus:border-red-500" : "border-border focus:border-accent-primary")}
+        aria-invalid={error || undefined}
+        required
         type={type}
         placeholder={placeholder}
         maxLength={maxLength}
@@ -1069,6 +761,7 @@ const Field = ({
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
+      {error && <span className="mt-1 block text-xs text-red-600">{value.trim() ? "Проверьте правильность заполнения" : "Обязательное поле"}</span>}
     </label>
   );
 };
@@ -1163,40 +856,13 @@ const AddressSelector = ({ addresses, onSelect, selectedAddressId }: AddressSele
   );
 };
 
-interface PickupSelectorProps {
-  pickupPoints: PickupPointListResponse["items"];
-  selectedPickupPointId: number | null;
-  onSelect: (pointId: number) => void;
-}
-
-const PickupSelector = ({ onSelect, pickupPoints, selectedPickupPointId }: PickupSelectorProps) => {
-  return (
-    <div className="grid gap-3">
-      {pickupPoints.map((point) => (
-        <ChoiceCard
-          key={point.id}
-          checked={selectedPickupPointId === point.id}
-          title={point.name}
-          text={`${point.city}, ${point.address}`}
-          onClick={() => onSelect(point.id)}
-        />
-      ))}
-    </div>
-  );
-};
-
 interface DateAndSlotPickerProps {
   selectedDate: string;
   selectedSlotId: number | null;
   slots: DeliveryTimeSlotResponse[];
   isLoading?: boolean;
-  deliveryType: DeliveryType;
   onDateChange: (date: string) => void;
   onSlotChange: (slotId: number) => void;
-  timeMode: "slot" | "asap" | "custom";
-  onTimeModeChange: (mode: "slot" | "asap" | "custom") => void;
-  customTime: string;
-  onCustomTimeChange: (time: string) => void;
 }
 
 const DateAndSlotPicker = ({
@@ -1206,19 +872,33 @@ const DateAndSlotPicker = ({
   selectedSlotId,
   slots,
   isLoading = false,
-  deliveryType,
-  timeMode,
-  onTimeModeChange,
-  customTime,
-  onCustomTimeChange,
 }: DateAndSlotPickerProps) => {
-  const dateOptions = getDateOptions();
   const todayStr = formatDateValue(new Date());
   const isToday = selectedDate === todayStr;
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const date = parseDateValue(selectedDate);
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  });
+  const monthLabel = new Intl.DateTimeFormat("ru-RU", {
+    month: "long",
+    year: "numeric",
+  }).format(visibleMonth);
+  const monthStartOffset = (visibleMonth.getDay() + 6) % 7;
+  const daysInMonth = new Date(
+    visibleMonth.getFullYear(),
+    visibleMonth.getMonth() + 1,
+    0,
+  ).getDate();
+  const calendarDays: Array<number | null> = [
+    ...Array.from({ length: monthStartOffset }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
+  ];
+  const today = parseDateValue(todayStr);
+  const isPreviousMonthDisabled =
+    visibleMonth.getFullYear() === today.getFullYear() && visibleMonth.getMonth() <= today.getMonth();
 
-  // Filter out past slots for Today
   const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes() + 30; // +30 мин на сборку заказа
+  const currentMinutes = now.getHours() * 60 + now.getMinutes() + 30;
 
   const processedSlots = slots.map((slot) => {
     let available = slot.available;
@@ -1232,211 +912,131 @@ const DateAndSlotPicker = ({
     return { ...slot, available };
   });
 
-  const quickCustomTimes = ["к 18:30", "к 19:00", "к 19:30", "к 20:00", "после 20:00", "к 21:00"];
-
   return (
-    <div className="space-y-5">
-      {/* 1. Выбор дня */}
-      <div>
-        <label className="mb-2 block text-xs font-bold text-slate-700">
-          1. Дата получения заказа:
-        </label>
-        <div className="flex flex-wrap items-center gap-2.5">
-          {dateOptions.map((option) => {
-            const isSelected = selectedDate === option.value;
-            return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(230px,0.85fr)]">
+        <div className="min-w-0">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="text-xs font-bold capitalize text-slate-800">{monthLabel}</p>
+            <div className="flex items-center gap-1">
               <button
-                className={cn(
-                  "flex h-13 min-w-28 cursor-pointer flex-col items-center justify-center rounded-xl border px-4 transition-all active:scale-98",
-                  isSelected
-                    ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-800 shadow-xs ring-2 ring-emerald-600/20"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                )}
                 type="button"
-                key={option.value}
-                onClick={() => onDateChange(option.value)}
+                aria-label="Предыдущий месяц"
+                disabled={isPreviousMonthDisabled}
+                onClick={() =>
+                  setVisibleMonth(
+                    (month) => new Date(month.getFullYear(), month.getMonth() - 1, 1),
+                  )
+                }
+                className="grid size-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <span className="text-xs font-bold">{option.label}</span>
-                <span className="text-[11px] text-slate-400">{option.subLabel}</span>
+                <ChevronLeft size={16} />
               </button>
-            );
-          })}
+              <button
+                type="button"
+                aria-label="Следующий месяц"
+                onClick={() =>
+                  setVisibleMonth(
+                    (month) => new Date(month.getFullYear(), month.getMonth() + 1, 1),
+                  )
+                }
+                className="grid size-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-emerald-300"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center">
+            {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((weekday) => (
+              <span
+                className="py-1 text-[10px] font-semibold text-slate-400"
+                key={weekday}
+              >
+                {weekday}
+              </span>
+            ))}
+            {calendarDays.map((day, index) => {
+              if (day === null) {
+                return <span aria-hidden="true" className="aspect-square" key={`empty-${index}`} />;
+              }
+
+              const date = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), day);
+              const dateValue = formatDateValue(date);
+              const isSelected = dateValue === selectedDate;
+              const isPast = dateValue < todayStr;
+
+              return (
+                <button
+                  aria-pressed={isSelected}
+                  className={cn(
+                    "aspect-square rounded-lg text-xs font-semibold transition",
+                    isSelected
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : isPast
+                        ? "cursor-not-allowed text-slate-300"
+                        : "bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-700",
+                  )}
+                  disabled={isPast}
+                  key={dateValue}
+                  onClick={() => onDateChange(dateValue)}
+                  type="button"
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* 2. Формат времени доставки */}
-      <div>
-        <label className="mb-2 block text-xs font-bold text-slate-700">
-          2. Предпочтение по времени доставки:
-        </label>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          {/* Режим: Как можно скорее */}
-          <button
-            type="button"
-            onClick={() => onTimeModeChange("asap")}
-            className={cn(
-              "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98",
-              timeMode === "asap"
-                ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-900 shadow-2xs ring-2 ring-emerald-600/20"
-                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
-            )}
-          >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-sm text-white">
-              ⚡
-            </span>
-            <div>
-              <p className="text-xs font-bold">Как можно скорее</p>
-              <p className="text-[11px] text-slate-500">Обычно 60–90 мин</p>
-            </div>
-          </button>
-
-          {/* Режим: Интервал времени */}
-          <button
-            type="button"
-            onClick={() => onTimeModeChange("slot")}
-            className={cn(
-              "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98",
-              timeMode === "slot"
-                ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-900 shadow-2xs ring-2 ring-emerald-600/20"
-                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
-            )}
-          >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-700">
-              🕒
-            </span>
-            <div>
-              <p className="text-xs font-bold">Интервал слотов</p>
-              <p className="text-[11px] text-slate-500">Выбрать из графика</p>
-            </div>
-          </button>
-
-          {/* Режим: Своё время */}
-          <button
-            type="button"
-            onClick={() => onTimeModeChange("custom")}
-            className={cn(
-              "flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-left transition-all active:scale-98",
-              timeMode === "custom"
-                ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-900 shadow-2xs ring-2 ring-emerald-600/20"
-                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
-            )}
-          >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-700">
-              ✏️
-            </span>
-            <div>
-              <p className="text-xs font-bold">Своё точное время</p>
-              <p className="text-[11px] text-slate-500">Указать точный час</p>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* 3. Детали выбранного режима */}
-      {timeMode === "slot" && (
-        <div className="pt-1">
-          <label className="mb-2 block text-xs font-bold text-slate-700">
-            Выберите доступный интервал:
-          </label>
+        <div className="min-w-0 border-t border-slate-200 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
+          <p className="mb-3 text-xs font-bold text-slate-800">Доступное время</p>
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
+            <div className="grid grid-cols-2 gap-2">
+              {[1, 2, 3, 4].map((index) => (
                 <div
-                  key={i}
-                  className="h-11 animate-pulse rounded-xl border border-slate-200/60 bg-slate-100"
+                  className="h-10 animate-pulse rounded-lg bg-slate-200/70"
+                  key={index}
                 />
               ))}
             </div>
-          ) : processedSlots.length === 0 ? (
-            <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-4 text-xs font-medium text-slate-600">
-              {deliveryType === "pickup"
-                ? "Для выбранного пункта самовывоза нет фиксированных интервалов. Вы можете выбрать режим «Как можно скорее» или указать удобное время."
-                : "На выбранную дату нет доступных интервалов доставки. Пожалуйста, выберите другую дату или режим «Как можно скорее»."}
+          ) : processedSlots.some((slot) => slot.available) ? (
+            <div className="grid grid-cols-2 gap-2">
+              {processedSlots
+                .filter((slot) => slot.available)
+                .map((slot) => {
+                  const isSelected = selectedSlotId === slot.id;
+
+                  return (
+                    <button
+                      className={cn(
+                        "min-h-10 rounded-lg border px-2 text-[11px] font-bold transition",
+                        isSelected
+                          ? "border-emerald-600 bg-emerald-600 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300",
+                      )}
+                      key={slot.id}
+                      onClick={() => onSlotChange(slot.id)}
+                      type="button"
+                    >
+                      {slot.label}
+                    </button>
+                  );
+                })}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {processedSlots.map((slot) => {
-                const isSelected = selectedSlotId === slot.id;
-                return (
-                  <button
-                    className={cn(
-                      "flex h-11 items-center justify-center rounded-xl border px-3 text-xs font-bold transition-all active:scale-98",
-                      isSelected && slot.available
-                        ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
-                        : slot.available
-                          ? "cursor-pointer border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30"
-                          : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 line-through opacity-60",
-                    )}
-                    type="button"
-                    disabled={!slot.available}
-                    key={slot.id}
-                    onClick={() => onSlotChange(slot.id)}
-                  >
-                    {slot.label}
-                  </button>
-                );
-              })}
-            </div>
+            <p className="rounded-lg bg-white p-3 text-[11px] leading-relaxed text-slate-500">
+              На выбранную дату нет доступных интервалов. Выберите другой день.
+            </p>
           )}
-          {!isLoading &&
-          isToday &&
-          processedSlots.length > 0 &&
-          processedSlots.every((s) => !s.available) ? (
-            <p className="mt-2.5 rounded-xl border border-amber-200/70 bg-amber-50 p-3 text-xs font-semibold text-amber-700">
-              🕒 Все стандартные интервалы на сегодня завершены. Выберите режим{" "}
-              <strong>«Как можно скорее»</strong>, укажите <strong>«Своё точное время»</strong> или
-              получение на завтра.
+
+          {!isLoading && isToday && processedSlots.length > 0 && processedSlots.every((slot) => !slot.available) ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-amber-700">
+              На сегодня свободных интервалов больше нет. Выберите другой день.
             </p>
           ) : null}
         </div>
-      )}
-
-      {timeMode === "custom" && (
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-          <label className="block text-xs font-bold text-slate-800">
-            {deliveryType === "pickup"
-              ? "В какое время вам удобно забрать заказ из пункта выдачи?"
-              : "В какое время вам удобно встретить курьера?"}
-          </label>
-          <input
-            type="text"
-            value={customTime}
-            onChange={(e) => onCustomTimeChange(e.target.value)}
-            placeholder="Например: к 19:30, после 20:00 или с 18:00 до 19:00"
-            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
-          />
-          <div>
-            <span className="mr-2 text-[11px] font-semibold text-slate-500">Быстрый выбор:</span>
-            <div className="mt-1.5 inline-flex flex-wrap gap-1.5">
-              {quickCustomTimes.map((t) => (
-                <button
-                  type="button"
-                  key={t}
-                  onClick={() => onCustomTimeChange(t)}
-                  className={cn(
-                    "cursor-pointer rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition",
-                    customTime === t
-                      ? "border-emerald-600 bg-emerald-600 text-white"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300",
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {timeMode === "asap" && (
-        <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs text-emerald-900">
-          <span className="text-base">🚀</span>
-          <p className="leading-relaxed">
-            Курьер доставит заказ <strong>в течение 60–90 минут</strong> после сборки. Наш оператор
-            сразу передаст заказ на сборку в супермаркет.
-          </p>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -1711,7 +1311,7 @@ const OrderSummary = ({
       </p>
 
       {/* Опциональное согласие на маркетинговые рассылки (38-ФЗ) */}
-      {!currentUser?.marketing_consent ? (
+      {currentUser?.marketing_consent === false ? (
         <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-[11px] text-slate-600 select-none">
           <input
             type="checkbox"
@@ -1872,37 +1472,15 @@ const getCartItemPriceBreakdown = (item: CartItemResponse) => {
   };
 };
 
-const getDateOptions = (): Array<{ label: string; subLabel: string; value: string }> => {
-  const now = new Date();
-
-  return [0, 1, 2, 3].map((offset) => {
-    const d = new Date(now);
-    d.setDate(now.getDate() + offset);
-    const label =
-      offset === 0
-        ? "Сегодня"
-        : offset === 1
-          ? "Завтра"
-          : offset === 2
-            ? "Послезавтра"
-            : new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(d);
-    const subLabel = new Intl.DateTimeFormat("ru-RU", {
-      day: "numeric",
-      month: "short",
-    }).format(d);
-
-    return {
-      label: label.charAt(0).toUpperCase() + label.slice(1),
-      subLabel,
-      value: formatDateValue(d),
-    };
-  });
-};
-
 const formatDateValue = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+};
+
+const parseDateValue = (value: string): Date => {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1);
 };

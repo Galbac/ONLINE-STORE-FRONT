@@ -8,17 +8,14 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import {
   Calendar,
   Check,
-  ClipboardCheck,
   CreditCard,
   LockKeyhole,
   MapPin,
   PackageCheck,
   ShieldCheck,
   ShoppingBag,
-  Sparkles,
   Truck,
   UserRound,
-  X,
 } from "lucide-react";
 import type { CartItemResponse, CartResponse, CartSummaryResponse } from "@/entities/cart";
 import { useStoreBranch } from "@/entities/delivery";
@@ -35,8 +32,8 @@ import { paymentApi, type PaymentCreateResponse } from "@/entities/payment";
 import type { AddressListResponse, AddressResponse } from "@/entities/profile";
 import { useDynamicStoreInfo } from "@/entities/settings";
 import { userApi, type UserMeResponse } from "@/entities/user";
-import { apiClient, extractErrorMessage } from "@/shared/api";
-import { cn, ROUTES, STORE_INFO } from "@/shared/config";
+import { extractErrorMessage } from "@/shared/api";
+import { cn, ROUTES } from "@/shared/config";
 import { notifyCartChanged } from "@/shared/lib/cart-events";
 import { toPriceFormat } from "@/shared/lib/format";
 import {
@@ -122,19 +119,6 @@ export const CheckoutView = ({
   }, [currentUser]);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
-  const [usePoints, setUsePoints] = useState<number>(0);
-  const [loyaltyBalance, setLoyaltyBalance] = useState<number>(0);
-
-  useEffect(() => {
-    apiClient
-      .get<{ balance: number }>("/api/profile/loyalty")
-      .then((res) => {
-        if (typeof res?.balance === "number") {
-          setLoyaltyBalance(res.balance);
-        }
-      })
-      .catch(() => {});
-  }, []);
   const [apartment, setApartment] = useState("");
   const [entrance, setEntrance] = useState("");
   const [floor, setFloor] = useState("");
@@ -426,7 +410,7 @@ export const CheckoutView = ({
       delivery_date: selectedDate,
       delivery_time_slot_id: resolvedSlotId,
       comment: fullComment || null,
-      use_points: usePoints > 0 ? usePoints : 0,
+      use_points: 0,
       leave_at_door: leaveAtDoor,
       dont_ring_doorbell: dontRingDoorbell,
       substitution_policy: substitutionPolicy,
@@ -894,55 +878,8 @@ export const CheckoutView = ({
                 />
               </div>
 
-              {/* Блок списания бонусов внутри шага оплаты */}
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4.5 shadow-xs">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
-                    <Sparkles size={18} />
-                  </span>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">Бонусные баллы</h4>
-                    <p className="text-xs text-slate-500">
-                      Доступно: {loyaltyBalance} бонусов. Оплата бонусами до 50% стоимости товаров.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    max={Math.min(loyaltyBalance, Math.floor(itemsTotal * 0.5))}
-                    className="w-32 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-emerald-500"
-                    placeholder="0 бонусов"
-                    value={usePoints || ""}
-                    onChange={(e) => {
-                      const maxPoints = Math.min(loyaltyBalance, Math.floor(itemsTotal * 0.5));
-                      const val = Math.max(0, Math.min(Number(e.target.value) || 0, maxPoints));
-                      setUsePoints(val);
-                    }}
-                  />
-                  <span className="text-xs font-bold text-slate-600">₽</span>
-                </div>
-              </div>
             </CheckoutSection>
 
-            <CheckoutSection
-              icon={<ClipboardCheck size={24} />}
-              number={6}
-              title="Проверьте ваш заказ"
-            >
-              <ReviewList items={cart.items} />
-              {order ? (
-                <div className="bg-bg-hover mt-4 rounded-lg p-4 text-sm">
-                  <p className="font-bold">Заказ создан: {order.order_number}</p>
-                  {payment ? (
-                    <p className="text-text-secondary mt-1">
-                      Платеж создан: #{payment.id}, статус {payment.status}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-            </CheckoutSection>
           </div>
 
           <aside className="space-y-5 xl:sticky xl:top-5 xl:self-start">
@@ -1174,129 +1111,6 @@ const ChoiceCard = ({ checked, disabled = false, onClick, text, title }: ChoiceC
   );
 };
 
-interface AddressSuggestionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAddAddress: (addressText: string) => void;
-}
-
-const COMMON_ADDRESS_SUGGESTIONS = [
-  `ул. Победы, д. 15, ${STORE_INFO.city}`,
-  `ул. Победы, д. 87А, ${STORE_INFO.city}`,
-  `ул. Ленина, д. 24, ${STORE_INFO.city}`,
-  `ул. Советская, д. 10, ${STORE_INFO.city}`,
-  `ул. Гагарина, д. 42, ${STORE_INFO.city}`,
-  `ул. Мира, д. 5, ${STORE_INFO.city}`,
-  `ул. Пушкина, д. 18, ${STORE_INFO.city}`,
-];
-
-const AddressAutocompleteModal = ({
-  isOpen,
-  onClose,
-  onAddAddress,
-}: AddressSuggestionModalProps) => {
-  const [query, setQuery] = useState("");
-  const [apt, setApt] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
-
-  if (!isOpen) return null;
-
-  const filtered = query.trim()
-    ? COMMON_ADDRESS_SUGGESTIONS.filter((s) => s.toLowerCase().includes(query.toLowerCase().trim()))
-    : COMMON_ADDRESS_SUGGESTIONS.slice(0, 5);
-
-  const handleSelect = (s: string) => {
-    setQuery(s);
-    setIsFocused(false);
-  };
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalAddr = apt.trim() ? `${query.trim()}, кв. ${apt.trim()}` : query.trim();
-    if (finalAddr) {
-      onAddAddress(finalAddr);
-      onClose();
-    }
-  };
-
-  return (
-    <div className="animate-in fade-in-0 fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs duration-150">
-      <div className="animate-in zoom-in-95 relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl duration-150">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
-            <MapPin size={18} className="text-emerald-600" />
-            Быстрое добавление адреса
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="relative">
-            <label className="mb-1 block text-xs font-bold text-slate-600">
-              Улица и номер дома (начните вводить):
-            </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              placeholder="Например: ул. Ленина, д. 15"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
-            />
-
-            {isFocused && filtered.length > 0 && (
-              <div className="absolute top-full right-0 left-0 z-20 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                <div className="p-1">
-                  {filtered.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onMouseDown={() => handleSelect(s)}
-                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-800"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-bold text-slate-600">
-              Квартира / Офис (необязательно):
-            </label>
-            <input
-              type="text"
-              placeholder="Например: 42"
-              value={apt}
-              onChange={(e) => setApt(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={onClose} className="h-10 text-xs">
-              Отмена
-            </Button>
-            <Button type="submit" disabled={!query.trim()} className="h-10 text-xs font-bold">
-              Сохранить адрес
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 interface AddressSelectorProps {
   addresses: AddressResponse[];
   selectedAddressId: number | null;
@@ -1304,64 +1118,47 @@ interface AddressSelectorProps {
 }
 
 const AddressSelector = ({ addresses, onSelect, selectedAddressId }: AddressSelectorProps) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [customAddresses, setCustomAddresses] = useState<
-    Array<{ id: number; title: string; city: string }>
-  >([]);
-
-  const handleAddCustom = (fullAddress: string) => {
-    const newId = Date.now();
-    setCustomAddresses((prev) => [
-      ...prev,
-      { id: newId, title: fullAddress, city: STORE_INFO.city },
-    ]);
-    onSelect(newId);
-  };
+  const selectedAddress = addresses.find((address) => address.id === selectedAddressId);
 
   return (
-    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
-      <div className="grid gap-3">
-        {addresses.map((address) => (
-          <ChoiceCard
-            key={address.id}
-            checked={selectedAddressId === address.id}
-            title={formatAddressTitle(address)}
-            text={`${address.city}, Россия`}
-            onClick={() => onSelect(address.id)}
-          />
-        ))}
-        {customAddresses.map((custom) => (
-          <ChoiceCard
-            key={custom.id}
-            checked={selectedAddressId === custom.id}
-            title={custom.title}
-            text={`${custom.city}, Россия`}
-            onClick={() => onSelect(custom.id)}
-          />
-        ))}
-      </div>
-      <div className="flex flex-col gap-2">
-        <Button
-          className="w-full self-start text-xs font-bold"
-          variant="secondary"
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-        >
-          + Быстрый адрес
-        </Button>
-        <Link
-          href={ROUTES.PROFILE_ADDRESSES}
-          className="text-center text-[11px] text-slate-400 hover:text-emerald-700"
-        >
-          Управление адресами
-        </Link>
-      </div>
-
-      <AddressAutocompleteModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddAddress={handleAddCustom}
-      />
+    <div className="grid items-center gap-3 md:grid-cols-[minmax(0,1fr)_180px]">
+      {addresses.length > 1 ? (
+        <label className="block min-w-0">
+          <span className="mb-2 block text-xs font-semibold text-slate-600">
+            Выберите адрес доставки
+          </span>
+          <select
+            className="h-12 w-full min-w-0 rounded-lg border border-emerald-600 bg-emerald-50 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/20"
+            value={selectedAddress?.id ?? ""}
+            onChange={(event) => onSelect(Number(event.target.value))}
+          >
+            {!selectedAddress && <option value="" disabled>Выберите адрес</option>}
+            {addresses.map((address) => (
+              <option key={address.id} value={address.id}>
+                {address.city}, {formatAddressTitle(address)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : addresses[0] ? (
+        <div className="flex min-h-18 items-center gap-4 rounded-lg border border-emerald-600 bg-emerald-50 p-4">
+          <Check size={20} className="shrink-0 text-emerald-600" />
+          <div className="min-w-0">
+            <p className="font-bold text-slate-800">{formatAddressTitle(addresses[0])}</p>
+            <p className="mt-1 text-sm text-slate-500">{addresses[0].city}</p>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500">
+          Добавьте адрес доставки в разделе «Управление адресами».
+        </p>
+      )}
+      <Link
+        href={ROUTES.PROFILE_ADDRESSES}
+        className="text-center text-xs font-semibold text-emerald-700 underline transition hover:text-emerald-800"
+      >
+        Управление адресами
+      </Link>
     </div>
   );
 };
@@ -1644,40 +1441,6 @@ const DateAndSlotPicker = ({
   );
 };
 
-interface ReviewListProps {
-  items: CartItemResponse[];
-}
-
-const ReviewList = ({ items }: ReviewListProps) => (
-  <div className="divide-y divide-slate-100">
-    {items.map((item) => (
-      <div
-        key={item.id}
-        className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] items-start gap-3 py-3 first:pt-0 last:pb-0 sm:grid-cols-[56px_minmax(0,1fr)_auto]"
-      >
-        <ProductThumb item={item} size={48} />
-        <div className="min-w-0">
-          <p className="text-sm leading-snug font-bold break-words">{item.name}</p>
-          <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs text-slate-500">
-            <span>
-              {formatQuantity(item.quantity)} {item.unit} × {toPriceFormat(item.price)}
-            </span>
-            <span className="font-bold text-slate-900 sm:hidden">
-              {item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии"}
-            </span>
-          </div>
-          {!item.is_available && (
-            <p className="mt-1 text-xs text-rose-600">Не включён в заказ и сумму оплаты</p>
-          )}
-        </div>
-        <span className="hidden text-right text-sm font-bold sm:block">
-          {item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии"}
-        </span>
-      </div>
-    ))}
-  </div>
-);
-
 interface OrderSummaryProps {
   isRepricing: boolean;
   cart: CartResponse;
@@ -1721,7 +1484,10 @@ const OrderSummary = ({
     itemsCount > 0 && (deliveryType === "pickup" || itemsTotal >= minOrderAmount);
 
   return (
-    <section className="border-border bg-bg-primary rounded-2xl border p-5 shadow-[0_14px_40px_rgb(20_28_18/0.08)]">
+    <section
+      className="border-border bg-bg-primary rounded-2xl border p-5 shadow-[0_14px_40px_rgb(20_28_18/0.08)]"
+      id="checkout-step-6"
+    >
       <h2 className="mb-5 text-xl font-bold text-slate-900">Ваш заказ</h2>
 
       {itemsCount === 0 ? (
@@ -1743,26 +1509,54 @@ const OrderSummary = ({
         </div>
       ) : (
         <div className="max-h-[280px] space-y-4 overflow-y-auto pr-1">
-          {cart.items.map((item) => (
-            <div
-              className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[56px_minmax(0,1fr)_75px]"
-              key={item.id}
-            >
-              <ProductThumb item={item} size={56} />
-              <div className="min-w-0">
-                <p className="truncate text-xs font-bold sm:text-sm">{item.name}</p>
-                <p className="text-text-secondary text-xs">
-                  {formatQuantity(item.quantity)} {item.unit}
-                </p>
-                <p className="text-text-secondary text-[11px]">
-                  {toPriceFormat(item.price)} x {formatQuantity(item.quantity)}
-                </p>
+          {cart.items.map((item) => {
+            const { lineDiscount, originalTotal } = getCartItemPriceBreakdown(item);
+
+            return (
+              <div
+                className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[56px_minmax(0,1fr)_90px]"
+                key={item.id}
+              >
+                <ProductThumb item={item} size={56} />
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold sm:text-sm">{item.name}</p>
+                  <p className="text-text-secondary text-xs">
+                    {formatQuantity(item.quantity)} {item.unit}
+                  </p>
+                  <p className="text-text-secondary text-[11px]">
+                    {toPriceFormat(item.price)} x {formatQuantity(item.quantity)}
+                  </p>
+                </div>
+                <div className="col-start-2 flex flex-col items-end text-right sm:col-start-auto">
+                  {item.is_available ? (
+                    <>
+                      {lineDiscount > 0 ? (
+                        <>
+                          <span className="text-[10px] text-slate-400 line-through">
+                            {toPriceFormat(originalTotal)}
+                          </span>
+                          <span className="text-xs font-bold sm:text-sm">
+                            {toPriceFormat(item.final_price)}
+                          </span>
+                          <span className="text-[10px] font-semibold text-rose-600">
+                            −{toPriceFormat(lineDiscount)} скидка
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xs font-bold sm:text-sm">
+                          {toPriceFormat(item.final_price)}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs font-medium text-slate-500">
+                      Нет в наличии · не в сумме
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className="col-start-2 text-right text-xs font-bold sm:col-start-auto sm:text-sm">
-                {item.is_available ? toPriceFormat(item.final_price) : "Нет в наличии · не в сумме"}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -2064,6 +1858,18 @@ const formatQuantity = (value: number | string): string => {
   }
 
   return Number.isInteger(numberValue) ? String(numberValue) : numberValue.toFixed(1);
+};
+
+const getCartItemPriceBreakdown = (item: CartItemResponse) => {
+  const quantity = Number(item.quantity) || 0;
+  const oldUnitPrice = Number(item.old_price ?? item.price) || 0;
+  const originalTotal = Math.max(Number(item.total_price) || 0, oldUnitPrice * quantity);
+  const finalTotal = Number(item.final_price) || 0;
+
+  return {
+    originalTotal,
+    lineDiscount: Math.max(0, originalTotal - finalTotal),
+  };
 };
 
 const getDateOptions = (): Array<{ label: string; subLabel: string; value: string }> => {

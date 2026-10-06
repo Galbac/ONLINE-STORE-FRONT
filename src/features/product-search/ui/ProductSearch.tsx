@@ -4,7 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Clock, LayoutGrid, Loader2, Search, ShoppingBag, Sparkles, Trash2, X } from "lucide-react";
+import {
+  ArrowRight,
+  Clock,
+  LayoutGrid,
+  Loader2,
+  Search,
+  ShoppingBag,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import { apiClient, API_ENDPOINTS } from "@/shared/api";
 import { ROUTES } from "@/shared/config";
 import { toPriceFormat } from "@/shared/lib/format";
@@ -34,17 +44,6 @@ interface ProductSearchProps {
   defaultValue?: string | undefined;
 }
 
-const POPULAR_SEARCHES = [
-  "Фрукты и ягоды",
-  "Молоко фермерское",
-  "Сыр твердый",
-  "Свежий хлеб",
-  "Мясо и птица",
-  "Кофе зерновой",
-  "Авокадо Хасс",
-  "Без сахара",
-];
-
 const RECENT_SEARCHES_STORAGE_KEY = "grocery_recent_searches";
 
 const highlightMatch = (text: string, query: string): React.ReactNode => {
@@ -57,7 +56,9 @@ const highlightMatch = (text: string, query: string): React.ReactNode => {
   return (
     <>
       {before}
-      <span className="font-extrabold text-emerald-600 underline decoration-emerald-500/40">{match}</span>
+      <span className="font-extrabold text-emerald-600 underline decoration-emerald-500/40">
+        {match}
+      </span>
       {after}
     </>
   );
@@ -81,16 +82,23 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
         setRecentSearches(JSON.parse(stored));
       }
     } catch {}
-
-    apiClient
-      .get<{ items: Array<{ name: string }> }>("/api/categories")
-      .then((res) => {
-        if (res.items && Array.isArray(res.items) && res.items.length > 0) {
-          setDynamicPopularSearches(res.items.slice(0, 8).map((c) => c.name));
-        }
-      })
-      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || query.trim()) return;
+    let active = true;
+    apiClient
+      .get<string[]>(API_ENDPOINTS.PRODUCT.SEARCH_POPULAR, { limit: 8 })
+      .then((items) => {
+        if (active && Array.isArray(items)) setDynamicPopularSearches(items);
+      })
+      .catch(() => {
+        if (active) setDynamicPopularSearches([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isOpen, query]);
 
   // Горячая клавиша Cmd/Ctrl + K для мгновенного фокуса поиска
   useEffect(() => {
@@ -109,7 +117,10 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
     try {
       const cleanTerm = term.trim();
       if (!cleanTerm) return;
-      const updated = [cleanTerm, ...recentSearches.filter((item) => item.toLowerCase() !== cleanTerm.toLowerCase())].slice(0, 5);
+      const updated = [
+        cleanTerm,
+        ...recentSearches.filter((item) => item.toLowerCase() !== cleanTerm.toLowerCase()),
+      ].slice(0, 5);
       setRecentSearches(updated);
       localStorage.setItem(RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(updated));
     } catch {}
@@ -120,6 +131,14 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
       setRecentSearches([]);
       localStorage.removeItem(RECENT_SEARCHES_STORAGE_KEY);
     } catch {}
+  };
+
+  const trackSearch = (term: string) => {
+    void apiClient
+      .post<{ query: string }, { tracked: boolean }>(API_ENDPOINTS.PRODUCT.SEARCH_TRACK, {
+        query: term,
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -164,13 +183,15 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
     const trimmed = query.trim();
     if (trimmed) {
       saveRecentSearch(trimmed);
+      trackSearch(trimmed);
       setIsOpen(false);
       router.push(`${ROUTES.SEARCH}?q=${encodeURIComponent(trimmed)}`);
     }
   };
 
-  const handleSelectSearch = (term: string) => {
+  const handleSelectSearch = (term: string, shouldTrack = true) => {
     saveRecentSearch(term);
+    if (shouldTrack) trackSearch(term);
     setQuery(term);
     router.push(`${ROUTES.SEARCH}?q=${encodeURIComponent(term)}`);
     setIsOpen(false);
@@ -185,17 +206,17 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
         <label className="sr-only" htmlFor="site-search">
           Поиск товаров
         </label>
-        
+
         {/* Иконка лупы внутри инпута слева */}
         <Search
-          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-emerald-600 shrink-0"
+          className="pointer-events-none absolute top-1/2 left-3.5 shrink-0 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-emerald-600"
           size={18}
         />
 
         <input
           ref={inputRef}
           autoComplete="off"
-          className="h-11 w-full bg-transparent pl-10 pr-20 text-sm text-slate-800 placeholder:text-slate-400 outline-none"
+          className="h-11 w-full bg-transparent pr-20 pl-10 text-sm text-slate-800 outline-none placeholder:text-slate-400"
           id="site-search"
           name="q"
           placeholder="Найти свежие продукты, мясо, молоко..."
@@ -206,12 +227,12 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
         />
 
         {/* Правая панель: Индикатор загрузки / очистка / хоткей Cmd+K */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+        <div className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1.5">
           {isLoading ? (
             <Loader2 className="size-4 animate-spin text-emerald-600" />
           ) : query ? (
             <button
-              className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200/50 transition cursor-pointer"
+              className="cursor-pointer rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200/50 hover:text-slate-600"
               onClick={() => {
                 setQuery("");
                 inputRef.current?.focus();
@@ -224,7 +245,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
           ) : null}
 
           {/* Хоткей бейдж на десктопе */}
-          <div className="hidden lg:flex items-center gap-0.5 rounded-md border border-slate-200 bg-white/90 px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-400 select-none shadow-2xs">
+          <div className="hidden items-center gap-0.5 rounded-md border border-slate-200 bg-white/90 px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-400 shadow-2xs select-none lg:flex">
             <span>⌘</span>
             <span>K</span>
           </div>
@@ -232,66 +253,70 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
       </form>
 
       {/* Popular and recent searches dropdown */}
-      {isOpen && !query.trim() && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150">
-          {recentSearches.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <Clock size={12} className="text-slate-400" />
-                  Вы недавно искали
-                </span>
-                <button
-                  type="button"
-                  onClick={clearRecentSearches}
-                  className="text-[11px] text-slate-400 hover:text-rose-600 flex items-center gap-1 font-medium transition cursor-pointer"
-                >
-                  <Trash2 size={11} />
-                  Очистить
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {recentSearches.map((item) => (
+      {isOpen &&
+        !query.trim() &&
+        (recentSearches.length > 0 || dynamicPopularSearches.length > 0) && (
+          <div className="animate-in fade-in-0 zoom-in-95 absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl duration-150">
+            {recentSearches.length > 0 && (
+              <div className="mb-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                    <Clock size={12} className="text-slate-400" />
+                    Вы недавно искали
+                  </span>
                   <button
-                    key={item}
                     type="button"
-                    onClick={() => handleSelectSearch(item)}
-                    className="rounded-xl bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition border border-transparent cursor-pointer"
+                    onClick={clearRecentSearches}
+                    className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-slate-400 transition hover:text-rose-600"
                   >
-                    {item}
+                    <Trash2 size={11} />
+                    Очистить
                   </button>
-                ))}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {recentSearches.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => handleSelectSearch(item)}
+                      className="cursor-pointer rounded-xl border border-transparent bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2.5">
-              <Sparkles size={12} className="text-amber-500" />
-              Часто ищут
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {(dynamicPopularSearches.length > 0 ? dynamicPopularSearches : POPULAR_SEARCHES).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => handleSelectSearch(item)}
-                  className="rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-emerald-500 hover:text-emerald-700 hover:bg-emerald-50/50 transition cursor-pointer"
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
+            {dynamicPopularSearches.length > 0 && (
+              <div>
+                <span className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                  <Sparkles size={12} className="text-amber-500" />
+                  Часто ищут
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {dynamicPopularSearches.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => handleSelectSearch(item, false)}
+                      className="cursor-pointer rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
       {/* Autocomplete Dropdown */}
       {isOpen && suggestions && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150">
+        <div className="animate-in fade-in-0 zoom-in-95 absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl duration-150">
           {suggestions.categories.length > 0 && (
             <div className="mb-3">
-              <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                 Категории
               </span>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -299,7 +324,11 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
                   <Link
                     key={c.id}
                     href={ROUTES.CATEGORY(c.slug)}
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      saveRecentSearch(query);
+                      trackSearch(query);
+                      setIsOpen(false);
+                    }}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
                   >
                     <LayoutGrid size={13} className="text-emerald-600" />
@@ -312,7 +341,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
 
           {suggestions.products.length > 0 && (
             <div>
-              <span className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                 Товары
               </span>
               <div className="mt-1.5 divide-y divide-slate-100">
@@ -322,12 +351,13 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
                     href={ROUTES.PRODUCT(p.slug)}
                     onClick={() => {
                       saveRecentSearch(p.name);
+                      trackSearch(query);
                       setIsOpen(false);
                     }}
                     className="group flex items-center justify-between gap-3 rounded-xl p-2.5 transition hover:bg-slate-50"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 overflow-hidden shadow-2xs">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200/80 bg-slate-50 shadow-2xs">
                         {p.preview_image_url ? (
                           <Image
                             alt={p.name}
@@ -340,12 +370,12 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
                           <ShoppingBag size={18} className="text-emerald-600/70" />
                         )}
                       </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="line-clamp-1 text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition">
+                      <div className="flex min-w-0 flex-col">
+                        <span className="line-clamp-1 text-xs font-bold text-slate-800 transition group-hover:text-emerald-700">
                           {highlightMatch(p.name, query)}
                         </span>
                         {p.article ? (
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="font-mono text-[10px] text-slate-400">
                             Арт. {highlightMatch(p.article, query)}
                           </span>
                         ) : null}
@@ -362,7 +392,7 @@ export const ProductSearch = ({ defaultValue }: ProductSearchProps) => {
 
           <div className="mt-2 border-t border-slate-100 pt-2 text-center">
             <button
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition cursor-pointer"
+              className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-bold text-emerald-700 transition hover:text-emerald-800"
               onClick={handleSubmit}
               type="button"
             >

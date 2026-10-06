@@ -47,17 +47,6 @@ export interface HeaderSearchProps {
   className?: string | undefined;
 }
 
-const POPULAR_SEARCHES = [
-  "Фрукты и ягоды",
-  "Молоко фермерское",
-  "Сыр твердый",
-  "Свежий хлеб",
-  "Мясо и птица",
-  "Кофе зерновой",
-  "Авокадо Хасс",
-  "Без сахара",
-];
-
 const RECENT_SEARCHES_STORAGE_KEY = "grocery_recent_searches";
 
 const highlightMatch = (text: string, query: string): React.ReactNode => {
@@ -95,7 +84,7 @@ export const HeaderSearch = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Загрузка недавних и популярных запросов
+  // Загрузка пользовательской истории поиска
   useEffect(() => {
     try {
       const stored = localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY);
@@ -103,16 +92,23 @@ export const HeaderSearch = ({
         setRecentSearches(JSON.parse(stored));
       }
     } catch {}
-
-    apiClient
-      .get<{ items: Array<{ name: string }> }>("/api/categories")
-      .then((res) => {
-        if (res.items && Array.isArray(res.items) && res.items.length > 0) {
-          setDynamicPopularSearches(res.items.slice(0, 8).map((c) => c.name));
-        }
-      })
-      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || query.trim()) return;
+    let active = true;
+    apiClient
+      .get<string[]>(API_ENDPOINTS.PRODUCT.SEARCH_POPULAR, { limit: 8 })
+      .then((items) => {
+        if (active && Array.isArray(items)) setDynamicPopularSearches(items);
+      })
+      .catch(() => {
+        if (active) setDynamicPopularSearches([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isOpen, query]);
 
   // Горячая клавиша Cmd/Ctrl + K и клавиша Escape
   useEffect(() => {
@@ -165,6 +161,14 @@ export const HeaderSearch = ({
     } catch {}
   };
 
+  const trackSearch = (term: string) => {
+    void apiClient
+      .post<{ query: string }, { tracked: boolean }>(API_ENDPOINTS.PRODUCT.SEARCH_TRACK, {
+        query: term,
+      })
+      .catch(() => {});
+  };
+
   // Поиск саджестов с debounce 200ms
   useEffect(() => {
     const trimmed = query.trim();
@@ -205,14 +209,16 @@ export const HeaderSearch = ({
     const trimmed = query.trim();
     if (trimmed) {
       saveRecentSearch(trimmed);
+      trackSearch(trimmed);
       setIsOpen(false);
       inputRef.current?.blur();
       router.push(`${ROUTES.SEARCH}?q=${encodeURIComponent(trimmed)}`);
     }
   };
 
-  const handleSelectSearch = (term: string) => {
+  const handleSelectSearch = (term: string, shouldTrack = true) => {
     saveRecentSearch(term);
+    if (shouldTrack) trackSearch(term);
     setQuery(term);
     setIsOpen(false);
     inputRef.current?.blur();
@@ -292,62 +298,63 @@ export const HeaderSearch = ({
         </form>
 
         {/* Выпадающий блок: недавние запросы и часто ищут */}
-        {isOpen && !query.trim() && (
-          <div className="animate-in fade-in-0 zoom-in-95 absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl duration-150">
-            {recentSearches.length > 0 && (
-              <div className="mb-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                    <Clock size={12} className="text-slate-400" />
-                    Вы недавно искали
-                  </span>
-                  <button
-                    type="button"
-                    onClick={clearRecentSearches}
-                    className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-slate-400 transition hover:text-rose-600"
-                  >
-                    <Trash2 size={11} />
-                    Очистить
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {recentSearches.map((item) => (
+        {isOpen &&
+          !query.trim() &&
+          (recentSearches.length > 0 || dynamicPopularSearches.length > 0) && (
+            <div className="animate-in fade-in-0 zoom-in-95 absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl duration-150">
+              {recentSearches.length > 0 && (
+                <div className="mb-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                      <Clock size={12} className="text-slate-400" />
+                      Вы недавно искали
+                    </span>
                     <button
-                      key={item}
                       type="button"
-                      onClick={() => handleSelectSearch(item)}
-                      className="cursor-pointer rounded-xl border border-transparent bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700"
+                      onClick={clearRecentSearches}
+                      className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-slate-400 transition hover:text-rose-600"
                     >
-                      {item}
+                      <Trash2 size={11} />
+                      Очистить
                     </button>
-                  ))}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {recentSearches.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => handleSelectSearch(item)}
+                        className="cursor-pointer rounded-xl border border-transparent bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700"
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div>
-              <span className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                <Sparkles size={12} className="text-amber-500" />
-                Часто ищут
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {(dynamicPopularSearches.length > 0
-                  ? dynamicPopularSearches
-                  : POPULAR_SEARCHES
-                ).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => handleSelectSearch(item)}
-                    className="cursor-pointer rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700"
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
+              {dynamicPopularSearches.length > 0 && (
+                <div>
+                  <span className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                    <Sparkles size={12} className="text-amber-500" />
+                    Часто ищут
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {dynamicPopularSearches.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => handleSelectSearch(item, false)}
+                        className="cursor-pointer rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700"
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
 
         {/* Выпадающий блок: результаты автокомплита */}
         {isOpen && suggestions && (
@@ -362,7 +369,11 @@ export const HeaderSearch = ({
                     <Link
                       key={c.id}
                       href={`/catalog?category_id=${c.id}`}
-                      onClick={() => setIsOpen(false)}
+                      onClick={() => {
+                        saveRecentSearch(query);
+                        trackSearch(query);
+                        setIsOpen(false);
+                      }}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
                     >
                       <LayoutGrid size={13} className="text-emerald-600" />
@@ -385,6 +396,7 @@ export const HeaderSearch = ({
                       href={ROUTES.PRODUCT(p.slug)}
                       onClick={() => {
                         saveRecentSearch(p.name);
+                        trackSearch(query);
                         setIsOpen(false);
                       }}
                       className="group flex items-center justify-between gap-3 rounded-xl p-2.5 transition hover:bg-slate-50"

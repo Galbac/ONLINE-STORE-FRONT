@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ShoppingBasket } from "lucide-react";
+import Image from "next/image";
 import { useDynamicStoreInfo } from "@/entities/settings/model/StoreSettingsProvider";
 import { ROUTES } from "@/shared/config";
 
@@ -19,8 +19,8 @@ export const MobileAuthOptions = () => {
     >
       <div className="flex w-full max-w-sm flex-col items-center gap-10">
         <div className="flex items-center gap-3">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-900/15">
-            <ShoppingBasket aria-hidden="true" size={28} strokeWidth={2.1} />
+          <span className="flex size-14 items-center justify-center overflow-hidden rounded-2xl bg-white p-1 shadow-lg shadow-slate-900/10">
+            <Image src="/brand-emblem.png" alt="" width={56} height={56} className="size-full object-contain" />
           </span>
           <span className="text-2xl font-extrabold tracking-tight text-slate-900">{name}</span>
         </div>

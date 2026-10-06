@@ -1,5 +1,5 @@
 // Service Worker for GroceryStore PWA & Web Push
-const CACHE_NAME = "grocery-store-cache-v3";
+const CACHE_NAME = "grocery-store-cache-v4";
 const STATIC_ASSETS = [
   "/favicon.svg",
   "/apple-touch-icon.png",

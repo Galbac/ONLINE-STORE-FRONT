@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
 
 import { useDynamicStoreInfo } from "@/entities/settings";
 import { ROUTES } from "@/shared/config";
@@ -15,8 +15,15 @@ export const Logo = () => {
       href={ROUTES.HOME}
       aria-label={name}
     >
-      <span className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-700 via-emerald-600 to-teal-500 shadow-md shadow-emerald-700/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-emerald-700/30 sm:size-10">
-        <Sparkles className="text-white" size={20} />
+      <span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 shadow-md shadow-slate-900/10 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-slate-900/15 sm:size-10">
+        <Image
+          src="/brand-emblem.png"
+          alt=""
+          width={40}
+          height={40}
+          priority
+          className="size-full object-contain"
+        />
       </span>
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-base font-extrabold tracking-tight text-slate-900 transition-colors group-hover:text-emerald-700 sm:text-xl">

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, MapPin, Phone, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { ROUTES, STORE_INFO } from "@/shared/config";
 import { useDynamicStoreInfo } from "@/entities/settings";
 import { Container } from "@/shared/ui";
@@ -34,8 +35,8 @@ export const Footer = ({ showAdvantages: _showAdvantages }: FooterProps = {}) =>
           {/* Колонка 1: Логотип, описание сервиса, статус работы магазина */}
           <div className="flex flex-col">
             <Link className="flex items-center gap-2.5" href={ROUTES.HOME}>
-              <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-700 to-teal-500 text-white shadow-xs">
-                <Sparkles size={18} />
+              <span className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 shadow-xs">
+                <Image src="/brand-emblem.png" alt="" width={36} height={36} className="size-full object-contain" />
               </span>
               <span className="text-xl font-black text-slate-900 tracking-tight">
                 {name}

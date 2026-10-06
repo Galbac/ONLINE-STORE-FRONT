@@ -108,29 +108,6 @@ export const ProfileView = ({ profile, user: initialUser }: ProfileViewProps) =>
           />
         </section>
 
-        {/* Мои регулярные покупки */}
-        {profile.stats.orders_count > 0 || profile.recent_orders.length > 0 ? (
-          <section className="mt-8 flex flex-col gap-4 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/80 to-teal-50/50 p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
-                <Sparkles size={28} />
-              </span>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Мои регулярные покупки</h3>
-                <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-600">
-                  Соберите вашу привычную недельную продуктовую корзину в 1 клик на основе ваших прошлых заказов!
-                </p>
-              </div>
-            </div>
-            <Link
-              href={ROUTES.CART}
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
-            >
-              Собрать корзину ⚡
-            </Link>
-          </section>
-        ) : null}
-
         <section className="border-border mt-12 hidden gap-5 rounded-lg border bg-white p-5 shadow-[0_12px_34px_rgb(20_28_18/0.05)] md:grid md:grid-cols-2 xl:grid-cols-4">
           {serviceBenefits.map((benefit) => {
             const Icon = benefit.icon;
